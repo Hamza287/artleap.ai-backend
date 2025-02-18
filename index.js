@@ -9,7 +9,7 @@ const favoriteRouter = require("./routers/favourites_router");
 const followRouter = require("./routers/follow_router");
 const userRoutes = require("./routers/user_router");
 const app = express();
-const PORT = 3000;
+const PORT = 8000;
 
 // Middleware
 app.use(express.json());
