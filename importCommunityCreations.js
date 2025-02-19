@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const fs = require("fs");
-const Image = require("./models/Image");
+const Image = require("./models/image_model");
 const User = require("../models/User");
 
 mongoose.connect("mongodb://localhost:27017/user-auth", {
