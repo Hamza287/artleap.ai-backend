@@ -1,0 +1,44 @@
+const mongoose = require("mongoose");
+const fs = require("fs");
+const Follower = require("./models/Follower");
+const User = require("../models/User");
+
+mongoose.connect("mongodb://localhost:27017/user-auth", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const rawData = fs.readFileSync("Followers.json");
+const jsonData = JSON.parse(rawData);
+
+const importData = async () => {
+  try {
+    for (let item of jsonData) {
+      const user = await User.findOne({ _id: item.userId });
+      const follower = await User.findOne({ _id: item.followerId });
+
+      if (user && follower) {
+        const newFollow = new Follower({
+          userId: user._id,
+          followerId: follower._id,
+        });
+
+        await newFollow.save();
+
+        // Update user and follower lists
+        user.followers.push(follower._id);
+        follower.following.push(user._id);
+        await user.save();
+        await follower.save();
+      }
+    }
+
+    console.log("✅ Followers imported successfully!");
+    mongoose.connection.close();
+  } catch (err) {
+    console.error("❌ Error importing followers:", err);
+    mongoose.connection.close();
+  }
+};
+
+importData();

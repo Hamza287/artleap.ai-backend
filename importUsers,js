@@ -1,0 +1,28 @@
+const mongoose = require("mongoose");
+const fs = require("fs");
+const User = require("../models/User");
+
+mongoose.connect("mongodb://localhost:27017/user-auth", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const rawData = fs.readFileSync("Users.json");
+const jsonData = JSON.parse(rawData);
+
+const transformedData = jsonData.map((user) => ({
+  username: user.username,
+  email: user.email || "",
+  profilePic: user.profilePic || "",
+  createdAt: new Date(user.timestamp._seconds * 1000),
+}));
+
+User.insertMany(transformedData)
+  .then(() => {
+    console.log("✅ Users imported successfully!");
+    mongoose.connection.close();
+  })
+  .catch((err) => {
+    console.error("❌ Error importing users:", err);
+    mongoose.connection.close();
+  });
