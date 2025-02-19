@@ -3,10 +3,7 @@ const fs = require("fs");
 const Image = require("./models/image_model");
 const User = require("./models/user");
 
-mongoose.connect("mongodb://localhost:27017/user-auth", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+mongoose.connect("mongodb://localhost:27017/");
 
 const rawData = fs.readFileSync("CommunityCreations.json");
 const jsonData = JSON.parse(rawData);
