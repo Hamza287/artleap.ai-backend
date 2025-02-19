@@ -7,7 +7,7 @@ mongoose.connect("mongodb://localhost:27017/user-auth", {
   useUnifiedTopology: true,
 });
 
-const rawData = fs.readFileSync("Users.json");
+const rawData = fs.readFileSync("users.json");
 const jsonData = JSON.parse(rawData);
 
 const transformedData = jsonData.map((user) => ({
