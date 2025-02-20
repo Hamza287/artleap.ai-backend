@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const fs = require("fs");
 const User = require("./models/user");
+const Image = require("./models/image_model");
 
 // **MongoDB Connection**
 const MONGO_URI = "mongodb://localhost:27017/user-auth";
@@ -12,7 +13,7 @@ mongoose
     process.exit(1);
   });
 
-const filePath = "usersProfileData.json";
+const filePath = "userFavourites.json";
 
 // **Check if JSON file exists**
 if (!fs.existsSync(filePath)) {
@@ -24,65 +25,66 @@ if (!fs.existsSync(filePath)) {
 const rawData = fs.readFileSync(filePath);
 const jsonData = JSON.parse(rawData);
 
-const importData = async () => {
+const importFavorites = async () => {
   try {
     for (const item of jsonData) {
-      // **Find User**
-      const user = await User.findOne({ _id: item.id });
+      const user = await User.findOne({ _id: item._id });
 
       if (!user) {
-        console.log(`⚠️ Skipping: User not found for ID: ${item.id}`);
+        console.log(`⚠️ Skipping: User not found for ID: ${item._id}`);
         continue;
       }
 
       console.log(`✅ Found User: ${user.username} (${user._id})`);
 
-      // **Ensure fields exist (Avoid undefined issues)**
-      if (!Array.isArray(user.followers)) user.followers = [];
-      if (!Array.isArray(user.following)) user.following = [];
-
-      // **Process Followers**
-      for (const follower of item.followers || []) {
-        const followerUser = await User.findOne({ _id: follower.id });
-
-        if (followerUser) {
-          const followerId = new mongoose.Types.ObjectId(followerUser._id); // ✅ Convert to ObjectId
-          if (!user.followers.some((id) => id.toString() === followerId.toString())) {
-            user.followers.push(followerId);
-            console.log(`➡️ Added follower: ${followerUser.username} (${followerId})`);
-          }
-        } else {
-          console.log(`⚠️ Skipping follower: User not found for ID: ${follower.id}`);
-        }
+      if (!item.favourites || item.favourites.length === 0) {
+        console.log(`⚠️ User ${user.username} has no favorites, skipping...`);
+        continue;
       }
 
-      // **Process Following**
-      for (const following of item.following || []) {
-        const followingUser = await User.findOne({ _id: following.userid });
-
-        if (followingUser) {
-          const followingId = new mongoose.Types.ObjectId(followingUser._id); // ✅ Convert to ObjectId
-          if (!user.following.some((id) => id.toString() === followingId.toString())) {
-            user.following.push(followingId);
-            console.log(`➡️ Added following: ${followingUser.username} (${followingId})`);
-          }
-        } else {
-          console.log(`⚠️ Skipping following: User not found for ID: ${following.userid}`);
+      const favoriteImages = [];
+      for (const fav of item.favourites) {
+        if (!fav.imageUrl || fav.imageUrl.trim() === "") {
+          console.warn(`⚠️ Skipping favorite with missing imageUrl for user: ${user.username}`);
+          continue;
         }
+
+        let createdAt = new Date(); // Default timestamp
+
+        // **Create Image Document**
+        const newImage = new Image({
+          userId: user._id, // ✅ Store user ID as `String`
+          username: fav.creator_name || "Unknown",
+          imageUrl: fav.imageUrl.trim(), // Ensure valid URL
+          createdAt,
+          modelName: fav.model_name || "Unknown",
+          prompt: fav.prompt || "No prompt provided",
+        });
+
+        favoriteImages.push(newImage);
       }
 
-      // **Update User Document in DB**
-      await user.save();
-      console.log(`✅ Updated user: ${user.username}`);
+      // **Bulk Insert Images & Get their IDs**
+      if (favoriteImages.length > 0) {
+        const insertedImages = await Image.insertMany(favoriteImages);
+        const imageIds = insertedImages.map((img) => img._id);
+
+        // **Update User's Favorite Images**
+        await User.updateOne({ _id: user._id }, { $push: { favorites: { $each: imageIds } } });
+
+        console.log(`✅ Added ${imageIds.length} favorite images for user: ${user.username}`);
+      } else {
+        console.log(`⚠️ No valid favorite images found for user: ${user.username}, skipping insert.`);
+      }
     }
 
-    console.log("✅ Followers & Following Imported Successfully!");
+    console.log("✅ User Favorites Imported Successfully!");
     mongoose.connection.close();
   } catch (err) {
-    console.error("❌ Error importing data:", err);
+    console.error("❌ Error importing favorites:", err);
     mongoose.connection.close();
   }
 };
 
 // **Run Import Function**
-importData();
+importFavorites();
