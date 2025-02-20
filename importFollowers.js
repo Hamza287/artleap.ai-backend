@@ -3,8 +3,8 @@ const fs = require("fs");
 const User = require("./models/user"); // Import User model
 const Image = require("./models/image_model"); // Import Image model
 
-// **AWS MongoDB Connection**
-const MONGO_URI = "mongodb://localhost:27017/user-auth"; // Update if using a remote MongoDB
+// **MongoDB Connection**
+const MONGO_URI = "mongodb://localhost:27017/user-auth"; // Update if using AWS or remote MongoDB
 mongoose
   .connect(MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
@@ -26,61 +26,96 @@ const rawData = fs.readFileSync(filePath);
 const jsonData = JSON.parse(rawData);
 
 const importData = async () => {
-  try { 
+  try {
     for (const item of jsonData) {
-      const user = await User.findOne({ _id: item.id });
+      if (!item._id || typeof item._id !== "string") {
+        console.warn(`⚠️ Skipping entry due to missing or invalid user ID:`, item);
+        continue;
+      }
+
+      const user = await User.findOne({ _id: item._id });
 
       if (!user) {
-        console.log(`⚠️ Skipping: User not found for ID: ${item.id}`);
+        console.warn(`⚠️ Skipping: User not found for ID: ${item._id}`);
         continue;
       }
 
       console.log(`✅ Found User: ${user.username} (${user._id})`);
 
-      // **Process Followers**
-      for (const follower of item.followers || []) {
-        const followerUser = await User.findOne({ _id: follower.id });
+      // **Ensure user.followers, user.following, and user.images exist as arrays**
+      if (!Array.isArray(user.followers)) user.followers = [];
+      if (!Array.isArray(user.following)) user.following = [];
+      if (!Array.isArray(user.images)) user.images = [];
 
-        if (followerUser) {
-          const followerId = followerUser._id.toString();
-          if (!user.followers.includes(followerId)) {
-            user.followers.push(followerId);
-            console.log(`➡️ Added follower: ${followerUser.username} (${followerId})`);
+      // **Process Followers**
+      if (Array.isArray(item.followers)) {
+        for (const follower of item.followers) {
+          if (!follower._id || typeof follower._id !== "string") {
+            console.warn(`⚠️ Skipping invalid follower entry for user: ${user.username}`);
+            continue;
+          }
+
+          const followerUser = await User.findOne({ _id: follower._id });
+
+          if (followerUser) {
+            const followerId = new mongoose.Types.ObjectId(); // Generate ObjectId
+            if (!user.followers.some(id => id.equals(followerId))) {
+              user.followers.push(followerId);
+              console.log(`➡️ Added follower: ${followerUser.username} (${followerId})`);
+            }
+          } else {
+            console.warn(`⚠️ Skipping follower: User not found for ID: ${follower._id}`);
           }
         }
       }
 
       // **Process Following**
-      for (const following of item.following || []) {
-        const followingUser = await User.findOne({ _id: following.userid });
+      if (Array.isArray(item.following)) {
+        for (const following of item.following) {
+          if (!following.user_id || typeof following.user_id !== "string") {
+            console.warn(`⚠️ Skipping invalid following entry for user: ${user.username}`);
+            continue;
+          }
 
-        if (followingUser) {
-          const followingId = followingUser._id.toString();
-          if (!user.following.includes(followingId)) {
-            user.following.push(followingId);
-            console.log(`➡️ Added following: ${followingUser.username} (${followingId})`);
+          const followingUser = await User.findOne({ _id: following.user_id });
+
+          if (followingUser) {
+            const followingId = new mongoose.Types.ObjectId(); // Generate ObjectId
+            if (!user.following.some(id => id.equals(followingId))) {
+              user.following.push(followingId);
+              console.log(`➡️ Added following: ${followingUser.username} (${followingId})`);
+            }
+          } else {
+            console.warn(`⚠️ Skipping following: User not found for ID: ${following.user_id}`);
           }
         }
       }
 
       // **Process UserData (Image Generations)**
       const userImages = [];
-      for (const image of item.userData || []) {
-        let createdAt = new Date();
-        if (image.timestamp && typeof image.timestamp._seconds !== "undefined") {
-          createdAt = new Date(image.timestamp._seconds * 1000);
+      if (Array.isArray(item.userData)) {
+        for (const image of item.userData) {
+          if (!image.imageUrl || typeof image.imageUrl !== "string") {
+            console.warn(`⚠️ Skipping image with missing URL for user: ${user.username}`);
+            continue;
+          }
+
+          let createdAt = new Date();
+          if (image.timestamp && typeof image.timestamp._seconds !== "undefined") {
+            createdAt = new Date(image.timestamp._seconds * 1000);
+          }
+
+          const newImage = new Image({
+            userId: user._id, // Link to User
+            username: user.username,
+            imageUrl: image.imageUrl.trim(),
+            createdAt,
+            modelName: image.model_name || "Unknown",
+            prompt: image.prompt || "No prompt provided",
+          });
+
+          userImages.push(newImage);
         }
-
-        const newImage = new Image({
-          userId: user._id, // Link to User
-          username: user.username,
-          imageUrl: image.imageUrl,
-          createdAt,
-          modelName: image.model_name || "Unknown",
-          prompt: image.prompt || "No prompt provided",
-        });
-
-        userImages.push(newImage);
       }
 
       // **Bulk Insert Images**
