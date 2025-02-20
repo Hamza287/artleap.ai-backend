@@ -34,16 +34,21 @@ const importData = async () => {
 
       // **Convert timestamp**
       let createdAt = new Date();
-      if (item.timestamp && typeof item.timestamp._seconds !== "undefined") {
-        createdAt = new Date(item.timestamp._seconds * 1000);
+      if (item.timestamp && typeof item.timestamp.seconds !== "undefined") {
+        createdAt = new Date(item.timestamp.seconds * 1000);
       }
 
       // **Find user by Firestore ID (_id is a STRING, not ObjectId)**
       const user = await User.findOne({ _id: item.userId });
 
+      if (!user) {
+        console.warn(`⚠️ Skipping image because user not found: ${item.userId}`);
+        continue; // 🚀 Skip the image if the user doesn't exist
+      }
+
       // **Create new Image document**
       const newImage = new Image({
-        userId: user ? user._id : null, // Store user ID if found
+        userId: user._id, // ✅ Store user ID correctly
         username: item.username || "Unknown User",
         imageUrl: item.imageUrl || "",
         createdAt,
@@ -54,13 +59,9 @@ const importData = async () => {
       const savedImage = await newImage.save();
 
       // **Attach image to user if user exists**
-      if (user) {
-        user.images.push(savedImage._id);
-        await user.save();
-        console.log(`✅ Added Image for ${user.username}`);
-      } else {
-        console.warn(`⚠️ Image saved but user not found: ${item.userId}`);
-      }
+      user.images.push(savedImage._id);
+      await user.save();
+      console.log(`✅ Added Image for ${user.username}`);
     }
 
     console.log("✅ Community Creations imported successfully!");
