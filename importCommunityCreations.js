@@ -3,10 +3,10 @@ const fs = require("fs");
 const Image = require("./models/image_model");
 const User = require("./models/user");
 
-// **MongoDB Connection (Update for EC2)**
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/user-auth"; 
+// **MongoDB Connection (Use ENV for EC2)**
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/user-auth";
 mongoose
-  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => {
     console.error("❌ MongoDB Connection Error:", err);
@@ -38,12 +38,12 @@ const importData = async () => {
         createdAt = new Date(item.timestamp._seconds * 1000);
       }
 
-      // **Find user by Firestore ID (which is a string)**
-      const user = await User.findOne({ _id: String(item.userId) });
+      // **Find user by Firestore ID (_id is a STRING, not ObjectId)**
+      const user = await User.findOne({ _id: item.userId });
 
       // **Create new Image document**
       const newImage = new Image({
-        userId: user ? user._id : null,
+        userId: user ? user._id : null, // Store user ID if found
         username: item.username || "Unknown User",
         imageUrl: item.imageUrl || "",
         createdAt,
