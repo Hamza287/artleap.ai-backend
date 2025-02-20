@@ -3,25 +3,40 @@ const fs = require("fs");
 const Image = require("./models/image_model");
 const User = require("./models/user");
 
-mongoose.connect("mongodb://localhost:27017/");
+mongoose.connect("mongodb://localhost:27017/user-auth");
 
 const rawData = fs.readFileSync("CommunityCreations.json");
 const jsonData = JSON.parse(rawData);
 
 const importData = async () => {
   try {
-    for (let item of jsonData) {
-      // Find the user by Firestore user ID
-      const user = await User.findOne({ _id: item.userid });
+    for (let item of jsonData[0].userData || []) {  // ✅ Access userData inside array
+      // Ensure required fields exist
+      if (!item.userId || !item.username || !item.imageUrl) {
+        console.warn(`⚠️ Skipping entry due to missing required fields:`, item);
+        continue; // Skip the invalid entry
+      }
 
-      // If user exists, associate the image with the user
+      // Convert timestamp to Date object
+      let createdAt = new Date();
+      if (item.timestamp && typeof item.timestamp.seconds !== "undefined") {
+        createdAt = new Date(item.timestamp.seconds * 1000);
+      }
+
+      // Find user by Firestore ID (string)
+      const user = await User.findOne({ _id: item.userId });
+
+      // If user exists, use their ID; otherwise, set it to `null`
+      const userId = user ? user._id.toString() : null;
+
+      // Create new Image document
       const newImage = new Image({
-        userId: user ? user._id : null,
-        username: item.username,
-        imageUrl: item.imageUrl,
-        createdAt: new Date(item.timestamp._seconds * 1000),
-        modelName: item.model_name,
-        prompt: item.prompt,
+        userId,
+        username: item.username || "Unknown User",
+        imageUrl: item.imageUrl || "",
+        createdAt,
+        modelName: item.model_name || "Unknown",
+        prompt: item.prompt || "No prompt provided",
       });
 
       const savedImage = await newImage.save();
@@ -30,6 +45,7 @@ const importData = async () => {
       if (user) {
         user.images.push(savedImage._id);
         await user.save();
+        console.log(`✅ Added Image for ${user.username}`);
       }
     }
 

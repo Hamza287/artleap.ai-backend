@@ -1,0 +1,830 @@
+[
+  {
+    "_id": "093z9fBhkwb7xtk5qM9vTqBGsn93",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1731668350657.png?alt=media&token=a742e8ba-1dc9-47b6-8ae9-48b247c512a5",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "fighter jet in peshawar in black background "
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1733224081542.png?alt=media&token=e506a0c5-7809-493e-9afb-8cf57d7277cb",
+        "creator_name": "Ihsan Qureshi",
+        "userid": "KnYTJVHdl2VI9SXHbeAAIcXoZvt2",
+        "prompt": "Astronaut sitting on the halo of a planet which is soaked in water, some other planetary models soaked in water around, in the style of sparkling water reflections, clemens ascher, exotic landscapes, hyper-realistic water, furaffinity, paul signac,cinematic scenes, realistic human figures, dusty piles, ultra hd, hyper detailed, Ultra-w_ide angle, Remote shooting, 16K, magnificent, epic, HD"
+       }
+    ]
+  },
+  {
+    "_id": "2pohrMgrTuST28s6Ftnwk3MtDtx1",
+    "favourites": [
+      {
+        "model_name": "sketch",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736573272976.png?alt=media&token=ff469fd8-05a4-4130-bb3d-8a8ad827c9ac",
+        "creator_name": "Mr Beast",
+        "userid": "2pohrMgrTuST28s6Ftnwk3MtDtx1",
+        "prompt": " Library"
+      }
+    ]
+  },
+  {
+    "_id": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+    "favourites": [
+      {
+        "model_name": "AI generated",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1729596062057.png?alt=media&token=c63ece3e-83a5-4829-a59d-ea2de51e4a8b",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "old money style "
+      },
+      {
+        "model_name": "Ai generated",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1729598613140.png?alt=media&token=ab95d2bb-e52d-47f4-90a9-ae74c1aeaef9",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "cyberpunk girl with machines guns having blue background hyper detail, cinematic lighting, magic neon, dark red city, Canon EOS R3, nikon, f/1.4, ISO 200, 1/160s, 8K, RAW, unedited, symmetrical balance, in-frame, 8K,Full image,full screen image"
+      },
+      {
+        "model_name": "AI generated",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1729578565799.png?alt=media&token=fcac6b31-3b04-463c-a2dd-34cfd676f6cc",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "dog in soace"
+      },
+      {
+        "model_name": "watercolor",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730114029964.png?alt=media&token=96fe00e1-eb00-4e8c-8e54-dd8bcc9066d0",
+        "creator_name": "MimAR Studios",
+        "prompt": "Saudi arabia desert",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2"
+      },
+      {
+        "model_name": "surreal",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730716183624.png?alt=media&token=ef695c64-d733-4cb8-b88a-661a75848de3",
+        "creator_name": "Hamza Ibrahim",
+        "prompt": "man",
+        "userid": null
+      },
+      {
+        "model_name": "fantasy",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730456303373.png?alt=media&token=997c444b-a2af-45a6-a4d3-cba626d7fab9",
+        "creator_name": "Hamza Ibrahim",
+        "prompt": "unicorn with immense wings",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2"
+      },
+      {
+        "model_name": "painting",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730442201955.png?alt=media&token=e4845ed2-7ce8-483c-bf15-34d59b0e61f7",
+        "creator_name": "MimAR Studios",
+        "userid": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+        "prompt": "\npainting of bird infront of forest with water color texture, painting \n"
+      },
+      {
+        "model_name": "anime",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1729683140135.png?alt=media&token=42585699-4005-406b-b81c-20bc3b0754a7",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "car"
+      },
+      {
+        "model_name": "dark",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730286600154.png?alt=media&token=1bbbc990-3e2b-45da-b593-3f8dabb16170",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "forest with deers\n"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732273298367.png?alt=media&token=66db37b3-0f14-4f8c-b632-685462755f69",
+        "creator_name": "MimAR Studios",
+        "userid": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+        "prompt": "hello world"
+      },
+      {
+        "model_name": "cartoon",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732268690115.png?alt=media&token=5ca40113-eef8-4ab1-bb85-047301d18f1e",
+        "creator_name": "Sahar ",
+        "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+        "prompt": "cartoon with snow "
+      },
+      {
+        "model_name": "watercolor",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732274642008.png?alt=media&token=938e044f-0fb6-4035-a8cc-b4dbd6542a3c",
+        "creator_name": "Sahar ",
+        "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+        "prompt": "create best car\n"
+      },
+      {
+        "model_name": "studio-shot",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735828383041.png?alt=media&token=a36bec0c-7fb8-49e4-80f7-e3b43fa87ad0",
+        "creator_name": "Yeap Jun Wei Edwin",
+        "userid": "vcp6edlSKRaoyVQuMuaJ9dSRXse2",
+        "prompt": "Purple lion dance"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1737448029946.png?alt=media&token=e594f336-d345-45f2-ac01-28f111748e16",
+        "creator_name": "Jane Doe",
+        "userid": "gzFITLPhMzSqlQFAQP6KdpvA1Bu2",
+        "prompt": "a giraffe standing bes_ide the Eiffel tower "
+      },
+      {
+        "model_name": "digital-art",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736827768969.png?alt=media&token=24e1c78c-72ac-452b-bc4b-130e90021ecc",
+        "creator_name": "Kaleb Cash",
+        "userid": "FvZgoasGzNclCo5YCzImsKlrBBx1",
+        "prompt": "a demonpunk futuristic  inspired painting of a large muscular beautiful woman whose wearing oversized battle armor wielding large magical weapons whose fighting a variety of monsters that's been done in a Where's Waldo art style, augmented , highly artistically detailed, neon glow, bold colors, volumetric lighting, magical effects, overcrowded."
+      }
+    ]
+  },
+  {
+    "_id": "88701KqdXYwv15iyfPYU",
+    "favourites": [
+      {
+        "model_name": "m_idjourney",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-1cfe00b9-394e-43ff-b751-63d56fb5b93e.png",
+        "creator_name": null,
+        "_id": "4311c6d0-70fd-11ef-a598-bd2bdcdf9e5e",
+        "userid": null,
+        "prompt": "arcane style horse flying in galaxy hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K",
+        "timestamp": {
+          "_seconds": 1726141852,
+          "_nanoseconds": 609000000
+        }
+      }
+    ]
+  },
+  {
+    "_id": "B77A0SbdgdX93pwViIlyaRVPdv62",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736138017138.png?alt=media&token=5bd31770-4249-43fa-9957-f4dc243972ab",
+        "creator_name": "Mayur Odedara",
+        "userid": "B77A0SbdgdX93pwViIlyaRVPdv62",
+        "prompt": "a "
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739242113250.png?alt=media&token=79d5cadc-4b44-4446-895a-16fe182de474",
+        "creator_name": "ATOMIC FOX",
+        "userid": "B77A0SbdgdX93pwViIlyaRVPdv62",
+        "prompt": "belly"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739240141146.png?alt=media&token=565ffad8-5b07-46e8-a258-e5e7ddcb302c",
+        "creator_name": "ATOMIC FOX",
+        "userid": "B77A0SbdgdX93pwViIlyaRVPdv62",
+        "prompt": "extremely wrinkled horse "
+      }
+    ]
+  },
+  {
+    "_id": "D969589ZBTW43TegRJcXMHp0b4h2",
+    "favourites": []
+  },
+  {
+    "_id": "Hj3xqVZe8gQM8gN7WZCeiL3fcQH3",
+    "favourites": [
+      {
+        "model_name": "m_idjourney",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-df6d9114-f81c-40c5-ba5c-092b38616542.png",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "Hj3xqVZe8gQM8gN7WZCeiL3fcQH3",
+        "prompt": "mdjrny-v4 style tom and jerry hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K"
+      }
+    ]
+  },
+  {
+    "_id": "KQHd6VoHJ6UMSsAje4cxqK7xeeq2",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736425234392.png?alt=media&token=d36906c0-22de-4f4b-b320-1e90bc1bb4da",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "futuristic sky scrapper"
+      }
+    ]
+  },
+  {
+    "_id": "Kd258ocUaUPaBu3PapljFhnBZ8C2",
+    "favourites": []
+  },
+  {
+    "_id": "KnYTJVHdl2VI9SXHbeAAIcXoZvt2",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1731516795737.png?alt=media&token=d5b1c894-8f24-4a76-84fb-e7689f30cb4d",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "bugatti tourbillion "
+      },
+      {
+        "model_name": "dark",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732347162894.png?alt=media&token=a44574f3-8536-46d2-afad-bfac75708353",
+        "creator_name": "Sahar ",
+        "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+        "prompt": "generate br_ids in the forest "
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1731516760226.png?alt=media&token=5c4bc81e-1664-44a1-9db2-c92eee8e99de",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "modern house "
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1731516591268.png?alt=media&token=7824e63a-b24a-49fb-81c4-5eec4e1cda73",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "doremon "
+      },
+      {
+        "model_name": "comic",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1731001451812.png?alt=media&token=d737ad5b-aa3c-44e0-893e-53bd35a8d575",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "hulk"
+      },
+      {
+        "model_name": "sketch",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730889491480.png?alt=media&token=79a0864a-0bba-44c9-83be-bd1624ef485c",
+        "creator_name": "MimAR Studios",
+        "userid": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+        "prompt": "sketch of a girl pencil sketch\n"
+      },
+      {
+        "model_name": "mockup",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730889955577.png?alt=media&token=f863be80-13c0-40fe-a8b8-7c0934132583",
+        "creator_name": "MimAR Studios",
+        "userid": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+        "prompt": "mockup of a bottle"
+      },
+      {
+        "model_name": "studio-shot",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730877826341.png?alt=media&token=683ddf02-0820-43f0-9d98-eb1304803cb9",
+        "creator_name": "MimAR Studios",
+        "userid": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+        "prompt": "studio shot cinematic "
+      },
+      {
+        "model_name": "watercolor",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732274642008.png?alt=media&token=938e044f-0fb6-4035-a8cc-b4dbd6542a3c",
+        "creator_name": "Sahar ",
+        "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+        "prompt": "create best car\n"
+      },
+      {
+        "model_name": "digital-art",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739528579552.png?alt=media&token=a25145ac-75fc-4717-b552-a7a0c1dec5c5",
+        "creator_name": "Ihsan Qureshi",
+        "userid": "KnYTJVHdl2VI9SXHbeAAIcXoZvt2",
+        "prompt": "shark"
+      }
+    ]
+  },
+  {
+    "_id": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+    "favourites": [
+      {
+        "model_name": "studio-shot",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735945334594.png?alt=media&token=6a9c9a1c-4536-485b-bea5-3a26935b6198",
+        "creator_name": "Bryce Herring",
+        "userid": "EyPlCXORhYdwPxia0dy5liKERI72",
+        "prompt": "\n girl bending over \nshowing bum\n"
+      },
+      {
+        "model_name": "studio-shot",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735945352082.png?alt=media&token=62ce4239-f93e-4a82-9bbe-ede4d12f5fd0",
+        "creator_name": "Bryce Herring",
+        "userid": "EyPlCXORhYdwPxia0dy5liKERI72",
+        "prompt": "\n girl bending over \nshowing bum\n"
+      },
+      {
+        "model_name": "studio-shot",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735945315542.png?alt=media&token=0e807bdf-4a3d-4b56-a080-dc876869b43d",
+        "creator_name": "Bryce Herring",
+        "userid": "EyPlCXORhYdwPxia0dy5liKERI72",
+        "prompt": "\n girl bending over \n"
+      },
+      {
+        "model_name": "anime",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735945275521.png?alt=media&token=91475ade-04b0-4b1f-a289-6b287ac3b795",
+        "creator_name": "Bryce Herring",
+        "userid": "EyPlCXORhYdwPxia0dy5liKERI72",
+        "prompt": "\n girl bending over \n"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735951835510.png?alt=media&token=b98a64cb-cb6d-43d7-a659-2bbc50b1b1dc",
+        "creator_name": "William Calito",
+        "userid": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+        "prompt": "\n girl bending over, showing big bum, sfw"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735951756044.png?alt=media&token=b00e65a3-fdb4-4c9d-8675-14c68ff97697",
+        "creator_name": "William Calito",
+        "userid": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+        "prompt": "\n girl bending over, showing bum, sfw"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735951409692.png?alt=media&token=cc9a4be4-5647-4d92-942d-9177498d1316",
+        "creator_name": "William Calito",
+        "userid": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+        "prompt": "\n girl bending over, showing bum, sfw"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735951404939.png?alt=media&token=88bcbfed-1198-4f18-9b8e-7d2ff799dea3",
+        "creator_name": "William Calito",
+        "userid": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+        "prompt": "\n girl bending over, showing bum, sfw"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735951391748.png?alt=media&token=a2d99e54-2d99-4e5a-a4c2-77b477c164df",
+        "creator_name": "William Calito",
+        "userid": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+        "prompt": "\n girl bending over, showing bum, sfw"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735951385264.png?alt=media&token=01c0ac6f-dc79-4b22-a738-06e5b2502197",
+        "creator_name": "William Calito",
+        "userid": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+        "prompt": "\n girl bending over, showing bum, sfw"
+      },
+      {
+        "model_name": "3d",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735951317749.png?alt=media&token=dafc7dfc-372b-4bbe-ab82-204ab2357b11",
+        "creator_name": "William Calito",
+        "userid": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+        "prompt": "\n girl bending over, showing bum, sfw"
+      },
+      {
+        "model_name": "vintage",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732874339732.png?alt=media&token=87594988-f766-4d1e-9a81-7c43a4f53965",
+        "creator_name": "Najamus_ Sahar",
+        "userid": "Kd258ocUaUPaBu3PapljFhnBZ8C2",
+        "prompt": "hello"
+      }
+    ]
+  },
+  {
+    "_id": "PHgHifBPXtP9z63KVE86DkFnURl2",
+    "favourites": []
+  },
+  {
+    "_id": "RrfFw2Fklhej0yz66s4Y6pigQ562",
+    "favourites": [
+      {
+        "model_name": "cyberpunk",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736231718563.png?alt=media&token=b7bbd37f-cfbb-4df2-8401-03467bfce870",
+        "creator_name": "Nicky Starks",
+        "userid": "BAytly93zOO1t7Vw6ll95qQU3Bp2",
+        "prompt": "Imagine An (Adorable) (White) (Fluffy), Baby (Bunny) With (Insanely) (Detailed), Super  (Trippy, Cool)Big (Mischievous) Grin) (Amazingly) (Stunning) (Baby )Blue) (Piercing Eyes), a (Trippy Cool) (Multicolored) (Mohawk) and (Awesome (Leather, Black) (Jacket) and (Stylish )Jeans with (Nike Shoes), in an (Insanely) (Trippy, Cool), (Magical) and (Vibrant) (Big), (Towering), (Phycadelic), (Mushroom) (Rainforest) up  (In the Sky) and (Trippy ) (Multicolored) (Fluffy Clouds) (Insanely Cool), (Wildly growing) (Maryjane Plants), In a Semi-abstract Wavy( (Swirls of Colors, (Trippy Cool) (Phycadelic), (Beautiful) (Landscape), (Epic) (Award-winning) Photo of a (Rare )Legendary), (Gangster, Baby) (Bunny), NFT, HD 4K 8K wallpaper for phone  (Art Deco:1.3), concept art illustration, geometric shapes, luxurious, decorative, "
+      }
+    ]
+  },
+  {
+    "_id": "ZByeMN5nKHifk5D2Mpr9",
+    "favourites": [
+      {
+        "model_name": "wifu-diffusion",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-d108afb4-91c2-44dc-9ef5-b5ce054900cd.png",
+        "creator_name": null,
+        "_id": "017e4030-70fe-11ef-a442-41d15014462e",
+        "userid": null,
+        "prompt": "trnlgcy ninja warrior hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K",
+        "timestamp": {
+          "_seconds": 1726142172,
+          "_nanoseconds": 84000000
+        }
+      }
+    ]
+  },
+  {
+    "_id": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+    "favourites": [
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267709110.png?alt=media&token=b3e73a7a-e730-4454-9fd8-02ee4e594c47",
+        "creator_name": "Sahar ",
+        "prompt": "generate skinny costumes ",
+        "userid": null
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267711542.png?alt=media&token=55f33e21-d38b-4c61-a41d-fd39dafd2195",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267714006.png?alt=media&token=4e8aaf01-44f1-4cba-a594-e80f42520b15",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267716713.png?alt=media&token=408a8c76-4283-491e-9695-be74784c5d98",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267731322.png?alt=media&token=fe61ffa6-e0ef-4edf-b657-dfc8b4a66687",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267731373.png?alt=media&token=cb2d376a-8592-4ee2-92a3-44fd79ce1859",
+        "creator_name": "Sahar ",
+        "prompt": "generate skinny costumes ",
+        "userid": null
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": null,
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267734999.png?alt=media&token=01393571-47cf-4542-811a-9b756ac758f5",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267738308.png?alt=media&token=0986a453-9035-4c50-96c7-546edaac267d",
+        "creator_name": "Sahar ",
+        "prompt": "generate skinny costumes ",
+        "userid": null
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267775262.png?alt=media&token=73c82b94-e33d-4f39-b3a9-17880e1c8c65",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267846092.png?alt=media&token=fbae0d4b-916c-4823-a7e0-ee23353f98f1",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267847591.png?alt=media&token=0c5169bd-1c64-44df-89a3-b1fc2fcbeba2",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267856756.png?alt=media&token=c6ef8252-099f-43b7-a14a-90aa25b11b18",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267860613.png?alt=media&token=53c71415-d172-4b63-9b75-f5bbf72054ba",
+        "creator_name": "Sahar ",
+        "prompt": "generate skinny costumes ",
+        "userid": null
+      },
+      {
+        "model_name": "art-nouveau",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732268008637.png?alt=media&token=d7cf0305-9a61-4cdf-8667-46787c2fafec",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "generate skinny costumes "
+      },
+      {
+        "model_name": "cartoon",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732268736325.png?alt=media&token=9c158e0e-d183-45b7-8dd7-e50a4570c92f",
+        "creator_name": "Sahar ",
+        "prompt": "cartoon with snow ",
+        "userid": null
+      },
+      {
+        "model_name": "70s-vibe",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732274068054.png?alt=media&token=5c37285f-78fe-4957-9bec-0f127fb36d50",
+        "creator_name": "Sahar ",
+        "prompt": "create best car",
+        "userid": null
+      },
+      {
+        "model_name": "70s-vibe",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732274071240.png?alt=media&token=523f03aa-f2d1-4b3b-958b-1fa2f65e79a5",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "create best car"
+      },
+      {
+        "model_name": "70s-vibe",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732274071526.png?alt=media&token=288731ab-624d-4361-9a83-03687c0ca59c",
+        "creator_name": "Sahar ",
+        "prompt": "create best car",
+        "userid": null
+      },
+      {
+        "model_name": "watercolor",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732274657504.png?alt=media&token=7a76f31f-9904-4b68-a49a-a92a95dd00ab",
+        "creator_name": "Sahar ",
+        "userid": null,
+        "prompt": "create best car\n"
+      },
+      {
+        "model_name": "cartoon",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732268690115.png?alt=media&token=5ca40113-eef8-4ab1-bb85-047301d18f1e",
+        "creator_name": "Sahar ",
+        "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+        "prompt": "cartoon with snow "
+      }
+    ]
+  },
+  {
+    "_id": "fc5Pyk65iINdUDMchOT65owENJH2",
+    "favourites": [
+      {
+        "model_name": "m_idjourney",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-c1a8b1d1-338c-4673-b86d-4f0bc2d40f0d.png",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "fc5Pyk65iINdUDMchOT65owENJH2",
+        "prompt": "mdjrny-v4 style dresses for girls hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K"
+      }
+    ]
+  },
+  {
+    "_id": "g3ewcNAxC8UjVTW80JLsel1j1PF2",
+    "favourites": [
+      {
+        "creator_name": "Concentrixwave46batch2",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1734083078689.png?alt=media&token=ab252266-e57c-472b-8159-8f40800b4368",
+        "userid": "R5BreBmjN6TIt2W0hKaXNR9o2iY2",
+        "prompt": "giraffe standing in front of effiel tower",
+        "model_name": "photo"
+      },
+      {
+        "creator_name": "Hamza Ibrahim",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1733983520083.png?alt=media&token=afbcb5a3-caa2-4447-9f8b-ab3125d4f76e",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "witch",
+        "model_name": "photo"
+      },
+      {
+        "creator_name": "Sahar ",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732268646768.png?alt=media&token=6866e2e8-ec53-413e-9b5e-8cfba72fa3e2",
+        "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+        "prompt": "cartoon with snow ",
+        "model_name": "art-nouveau"
+      },
+      {
+        "creator_name": "Mimar Studio5",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1733825370321.png?alt=media&token=4888c3ea-8de0-4e57-a501-c2e4f2522121",
+        "userid": "PHgHifBPXtP9z63KVE86DkFnURl2",
+        "prompt": "cutie doll",
+        "model_name": "sketch"
+      }
+    ]
+  },
+  {
+    "_id": "h6pWE80cJJUZdsgWPhbIGlTL9T23",
+    "favourites": [
+      {
+        "model_name": "studio-shot",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736709169760.png?alt=media&token=f80ffa28-9cd2-4c05-986d-674eb98b4f80",
+        "creator_name": "",
+        "userid": "3Z7CCgODToUnO2RMOs2pgZThPel2",
+        "prompt": "cute girl wearing no clothes"
+      },
+      {
+        "model_name": "studio-shot",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736709164113.png?alt=media&token=304dcc8f-67b7-4f4d-bb3d-fea50bba8562",
+        "creator_name": "",
+        "userid": "3Z7CCgODToUnO2RMOs2pgZThPel2",
+        "prompt": "cute girl wearing no clothes"
+      },
+      {
+        "model_name": "studio-shot",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736709147236.png?alt=media&token=f066fb90-4fbc-4f95-8e64-c3bffb95d88f",
+        "creator_name": "",
+        "userid": "3Z7CCgODToUnO2RMOs2pgZThPel2",
+        "prompt": "cute girl "
+      }
+    ]
+  },
+  {
+    "_id": "jolUDCPPAuWDkTpGOaEu7jrKVN02",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735819792082.png?alt=media&token=d1c9842d-0fb1-49a7-adcc-dadf4e5cf058",
+        "creator_name": "Ozgur ozum",
+        "userid": "jolUDCPPAuWDkTpGOaEu7jrKVN02",
+        "prompt": "elephants are in the jungle"
+      }
+    ]
+  },
+  {
+    "_id": "oUU7BhmKUdc0q4icgvJQUOiRYXE2",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736743993233.png?alt=media&token=0510cfdb-edff-407e-9b02-01259dafc60b",
+        "creator_name": "S Kumar Lizy",
+        "userid": "oUU7BhmKUdc0q4icgvJQUOiRYXE2",
+        "prompt": "A little boy playing with cute cat."
+      }
+    ]
+  },
+  {
+    "_id": "qik3cNDlOFXXzTVOYecmTKWF6Rm1",
+    "favourites": [
+      {
+        "model_name": "arcane-diffusion",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-e2397ffb-2618-4f6a-8e0a-4bee8e641168.png",
+        "creator_name": "Najamus_ Sahar",
+        "userid": "qik3cNDlOFXXzTVOYecmTKWF6Rm1",
+        "prompt": "arcane style cat litter box hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K"
+      }
+    ]
+  },
+  {
+    "_id": "u8YctEkEZvTV8MKQ61NhL3aZTYo1",
+    "favourites": [
+      {
+        "model_name": "m_idjourney",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-6b89ed2d-b475-4dfe-a3b4-8545d2ca4743.png",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "u8YctEkEZvTV8MKQ61NhL3aZTYo1",
+        "prompt": "mdjrny-v4 style galaxies hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K"
+      },
+      {
+        "model_name": "arcane-diffusion",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-baa8fffa-1afd-4f89-9422-1bb958008173.png",
+        "creator_name": "MimAR Studios",
+        "userid": "u8YctEkEZvTV8MKQ61NhL3aZTYo1",
+        "prompt": "arcane style fire is galaxy hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K"
+      },
+      {
+        "model_name": "Ai generated",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1728640376392.png?alt=media&token=b78b3201-db10-43bc-864f-6a4e08e15e37",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "u8YctEkEZvTV8MKQ61NhL3aZTYo1",
+        "prompt": "create ultra hd dragon with fire in mouth hyper detail, cinematic lighting, magic neon, dark red city, Canon EOS R3, nikon, f/1.4, ISO 200, 1/160s, 8K, RAW, unedited, symmetrical balance, in-frame, 8K,Full image,full screen image"
+      },
+      {
+        "model_name": "arcane-diffusion",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-13e8f6e5-4832-4256-b2af-11bda2b0b57b.png",
+        "creator_name": "Hamza Ibrahim",
+        "prompt": "arcane style horses in galaxy hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K",
+        "userid": "u8YctEkEZvTV8MKQ61NhL3aZTYo1"
+      }
+    ]
+  },
+  {
+    "_id": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+    "favourites": [
+      {
+        "model_name": "watercolor",
+        "userid": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+        "prompt": "Saudi arabia desert",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730114029964.png?alt=media&token=96fe00e1-eb00-4e8c-8e54-dd8bcc9066d0",
+        "creator_name": "MimAR Studios"
+      },
+      {
+        "userid": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+        "prompt": "Saudi arabia",
+        "creator_name": "MimAR Studios",
+        "model_name": "vintage",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730114002146.png?alt=media&token=a798b6f2-1a06-48fc-adec-04b7c8d93b08"
+      },
+      {
+        "model_name": "photo",
+        "creator_name": "MimAR Studios",
+        "prompt": "hello world",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732273304126.png?alt=media&token=00574af2-8c31-45c7-93fe-9fa36089f620",
+        "userid": null
+      },
+      {
+        "model_name": "cartoon",
+        "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+        "creator_name": "Sahar ",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732268690115.png?alt=media&token=5ca40113-eef8-4ab1-bb85-047301d18f1e",
+        "prompt": "cartoon with snow "
+      },
+      {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732268998880.png?alt=media&token=4f01c35d-3965-44a6-8d96-eeb14a512464",
+        "creator_name": "Sahar ",
+        "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+        "model_name": "vector",
+        "prompt": "create airoplan with a pilot "
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732541361254.png?alt=media&token=4f2ea795-efb3-4485-8c27-8c76b2b3f186",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "prompt": "make a sports car",
+        "creator_name": "Hamza Ibrahim"
+      },
+      {
+        "model_name": "photo",
+        "prompt": "hello world",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732273298367.png?alt=media&token=66db37b3-0f14-4f8c-b632-685462755f69",
+        "userid": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+        "creator_name": "MimAR Studios"
+      },
+      {
+        "creator_name": "Sahar ",
+        "prompt": "generate containers",
+        "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732267443102.png?alt=media&token=5f0192dc-64bf-4441-8757-88d7eef83992",
+        "model_name": "sketch"
+      },
+      {
+        "prompt": "bugatti tourbillion ",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1731516795737.png?alt=media&token=d5b1c894-8f24-4a76-84fb-e7689f30cb4d"
+      }
+    ]
+  },
+  {
+    "_id": "vmMPbpbQgENS3nDHNBhOVWOd1mJ2",
+    "favourites": [
+      {
+        "model_name": "tron-legacy-diffusion",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-273eace0-9a51-41af-8532-c2f8ed90366f.png",
+        "userid": "vmMPbpbQgENS3nDHNBhOVWOd1mJ2",
+        "prompt": "trnlgcy star wars hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K"
+      },
+      {
+        "model_name": "arcane-diffusion",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-baa8fffa-1afd-4f89-9422-1bb958008173.png",
+        "userid": "vmMPbpbQgENS3nDHNBhOVWOd1mJ2",
+        "prompt": "arcane style fire is galaxy hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K"
+      },
+      {
+        "model_name": "arcane-diffusion",
+        "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-13e8f6e5-4832-4256-b2af-11bda2b0b57b.png",
+        "creator_name": "Hamza Ibrahim",
+        "userid": "vmMPbpbQgENS3nDHNBhOVWOd1mJ2",
+        "prompt": "arcane style horses in galaxy hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K"
+      }
+    ]
+  },
+  {
+    "_id": "yNUHB3pK6iMrs8aBLJEgxBBypU42",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739450289742.png?alt=media&token=09985642-03ca-4600-809f-79adb98a413d",
+        "creator_name": "OSLOOSLI",
+        "userid": "PiZ0KuCudfSdKLjA5yTkjUjixh43",
+        "prompt": "A GIRL BLINKING HER EYES"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739240156931.png?alt=media&token=7765f9bd-15c7-4c3b-b319-7b3a52ef830a",
+        "creator_name": "ATOMIC FOX",
+        "userid": "X27g7aSr7zNH4uqrNr0qNctB5Xf1",
+        "prompt": "sperm whale "
+      }
+    ]
+  },
+  {
+    "_id": "yRZIv62JueZAzCbyiIHxfuQI56D2",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1735951835510.png?alt=media&token=b98a64cb-cb6d-43d7-a659-2bbc50b1b1dc",
+        "creator_name": "William Calito",
+        "userid": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+        "prompt": "\n girl bending over, showing big bum, sfw"
+      }
+    ]
+  }
+]
