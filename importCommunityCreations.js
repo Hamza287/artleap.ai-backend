@@ -3,35 +3,47 @@ const fs = require("fs");
 const Image = require("./models/image_model");
 const User = require("./models/user");
 
-mongoose.connect("mongodb://localhost:27017/user-auth");
+// **MongoDB Connection (Update for EC2)**
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/user-auth"; 
+mongoose
+  .connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Error:", err);
+    process.exit(1);
+  });
 
-const rawData = fs.readFileSync("CommunityCreations.json");
+// **Check if JSON file exists**
+const filePath = "CommunityCreations.json";
+if (!fs.existsSync(filePath)) {
+  console.error(`❌ Error: File "${filePath}" not found!`);
+  process.exit(1);
+}
+
+// **Read & Parse JSON File**
+const rawData = fs.readFileSync(filePath);
 const jsonData = JSON.parse(rawData);
 
 const importData = async () => {
   try {
-    for (let item of jsonData[0].userData || []) {  // ✅ Access userData inside array
-      // Ensure required fields exist
+    for (const item of jsonData[0].userData || []) {
       if (!item.userId || !item.username || !item.imageUrl) {
         console.warn(`⚠️ Skipping entry due to missing required fields:`, item);
-        continue; // Skip the invalid entry
+        continue;
       }
 
-      // Convert timestamp to Date object
+      // **Convert timestamp**
       let createdAt = new Date();
-      if (item.timestamp && typeof item.timestamp.seconds !== "undefined") {
-        createdAt = new Date(item.timestamp.seconds * 1000);
+      if (item.timestamp && typeof item.timestamp._seconds !== "undefined") {
+        createdAt = new Date(item.timestamp._seconds * 1000);
       }
 
-      // Find user by Firestore ID (string)
-      const user = await User.findOne({ _id: item.userId });
+      // **Find user by Firestore ID (which is a string)**
+      const user = await User.findOne({ _id: String(item.userId) });
 
-      // If user exists, use their ID; otherwise, set it to `null`
-      const userId = user ? user._id.toString() : null;
-
-      // Create new Image document
+      // **Create new Image document**
       const newImage = new Image({
-        userId,
+        userId: user ? user._id : null,
         username: item.username || "Unknown User",
         imageUrl: item.imageUrl || "",
         createdAt,
@@ -41,11 +53,13 @@ const importData = async () => {
 
       const savedImage = await newImage.save();
 
-      // If user exists, add image to their profile
+      // **Attach image to user if user exists**
       if (user) {
         user.images.push(savedImage._id);
         await user.save();
         console.log(`✅ Added Image for ${user.username}`);
+      } else {
+        console.warn(`⚠️ Image saved but user not found: ${item.userId}`);
       }
     }
 
@@ -57,4 +71,5 @@ const importData = async () => {
   }
 };
 
+// **Run Import Function**
 importData();
