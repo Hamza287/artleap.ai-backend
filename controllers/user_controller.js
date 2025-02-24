@@ -6,6 +6,27 @@ const mongoose = require("mongoose");
  * Get User Profile with Images
  * @route GET /api/user/:userId
  */
+
+const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password"); // Exclude passwords for security
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ success: false, message: "No users found" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Users fetched successfully",
+      users,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching all users:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+
 const getUserProfile = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -74,4 +95,4 @@ const getUserProfileWithImages = async (req, res) => {
   }
 };
 
-module.exports = { getUserProfile, getUserProfileWithImages };
+module.exports = { getAllUsers, getUserProfile, getUserProfileWithImages };
