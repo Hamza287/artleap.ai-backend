@@ -1,6 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../models/user");
-
+const { v4: uuidv4 } = require("uuid");
 
 // **🔹 Signup (Email/Password)**
 const signup = async (req, res) => {
@@ -13,7 +13,14 @@ const signup = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({ username, email, password: hashedPassword });
+        
+        // ✅ Explicitly setting `_id` since it's required in your schema
+        const newUser = new User({ 
+            _id: uuidv4(),  // 🔹 Generate a unique string-based ID
+            username, 
+            email, 
+            password: hashedPassword 
+        });
 
         await newUser.save();
 
@@ -90,18 +97,18 @@ const googleLogin = async (req, res) => {
         if (!user) {
             // **Create a new user if they don’t exist**
             user = new User({
+                _id: uuidv4(),  // ✅ Generate a unique `_id`
                 username,
                 email,
                 profilePic,
-                googleId, // 🔹 Store Google ID for reference (not separate userId)
-                password: "", // No password for Google users
+                googleId, // 🔹 Store Google ID for reference
+                password: "" // No password for Google users
             });
 
             await user.save();
             console.log("🆕 New user created via Google:", user.email);
         }
 
-        // **Return the same `userId` regardless of login method**
         return res.status(200).json({
             message: "Google login successful",
             user: {
