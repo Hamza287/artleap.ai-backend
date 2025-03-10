@@ -56,7 +56,7 @@ const importData = async () => {
         prompt: item.prompt || "No prompt provided",
       });
 
-      const savedImage = await newImage.save();
+      const savedImage = await newImage.save(); 
 
       // **Attach image to user if user exists**
       user.images.push(savedImage._id);

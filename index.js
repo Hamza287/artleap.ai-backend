@@ -16,9 +16,9 @@ app.use(express.json());
 app.use(cors());
 
 // Routes
-app.use("/auth", authrouter);
+app.use("/api", authrouter);
 app.use("/api", generateRouter);
-app.use("/images", imageRoutes);
+app.use("/api", imageRoutes);
 app.use("/api", favoriteRouter);
 app.use("/api", followRouter);
 app.use("/api", userRoutes);
