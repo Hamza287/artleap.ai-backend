@@ -13,13 +13,13 @@ const signup = async (req, res) => {
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         // ✅ Explicitly setting `_id` since it's required in your schema
-        const newUser = new User({ 
+        const newUser = new User({
             _id: uuidv4(),  // 🔹 Generate a unique string-based ID
-            username, 
-            email, 
-            password: hashedPassword 
+            username,
+            email,
+            password: hashedPassword
         });
 
         await newUser.save();
@@ -40,40 +40,25 @@ const signup = async (req, res) => {
 };
 
 
-// **🔹 Login (Email/Password & Firebase Migrated Users Support)**
+
+
 const login = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email } = req.body;
+
+        // 🔹 Check if the user exists
         const user = await User.findOne({ email });
 
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // **Allow login for users with empty password (Firebase Migrated Users)**
-        if (!user.password || user.password.trim() === "") {
-            console.log(`🟢 User ${user.email} logged in without password check.`);
-            return res.status(200).json({
-                message: "Login successful (password not required)",
-                user: {
-                    userId: user._id, // 🔹 Using single `userId`
-                    username: user.username,
-                    email: user.email,
-                    profilePic: user.profilePic || null
-                }
-            });
-        }
-
-        // **If user has a password, validate it**
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
+        console.log(`🟢 User ${user.email} logged in without password check.`);
 
         return res.status(200).json({
             message: "Login successful",
             user: {
-                userId: user._id, // 🔹 Consistent `userId`
+                userId: user._id, // 🔹 Return unique user ID
                 username: user.username,
                 email: user.email,
                 profilePic: user.profilePic || null
@@ -85,6 +70,9 @@ const login = async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
+
+
 
 
 // **🔹 Google Login (If user exists, login; else, create account)**
