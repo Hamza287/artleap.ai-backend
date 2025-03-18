@@ -51,12 +51,13 @@ const importData = async () => {
         userId: user._id, // ✅ Store user ID correctly
         username: item.username || "Unknown User",
         imageUrl: item.imageUrl || "",
+        creatorEmail: item.creator_email || "",
         createdAt,
         modelName: item.model_name || "Unknown",
         prompt: item.prompt || "No prompt provided",
       });
 
-      const savedImage = await newImage.save(); 
+      const savedImage = await newImage.save();
 
       // **Attach image to user if user exists**
       user.images.push(savedImage._id);
