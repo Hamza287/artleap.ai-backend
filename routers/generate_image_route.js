@@ -5,6 +5,6 @@ const { authenticateUser } = require("../middleware/auth_middleware");
 const generateRouter = express.Router();
 
 // Apply authentication middleware if user info is needed
-generateRouter.post('/generateImage', authenticateUser, generateImage);
+generateRouter.post('/generateImage', generateImage);
 
 module.exports = { generateRouter }; // ✅ Export properly
