@@ -61,7 +61,7 @@ const uploadImageToS3 = async (base64Data, userId) => {
  * @param {string} base64Data - The Base64 image string.
  * @returns {Promise<Object>} - The saved image object.
  */
-const saveImageToDatabase = async (userId, base64Data) => {
+const saveImageToDatabase = async (userId, base64Data, email, prompt) => {
   if (!base64Data) {
     throw new Error("❌ Base64 Image data missing.");
   }
@@ -76,13 +76,15 @@ const saveImageToDatabase = async (userId, base64Data) => {
   const imageUrl = await uploadImageToS3(base64Data, userId);
 
   // Save the image reference in MongoDB
-  const newImage = new Image({
-    userId: user._id,
-    username: user.username,
-    imageUrl,
-    createdAt: new Date(),
-  });
-
+ const newImage = new Image({
+  userId: user._id,  
+  username: user.username,
+  creatorEmail:email || user.email|| "unknown@example.com",  // ✅ Save email (fallback to user's email if not provided)
+  prompt: prompt || "No prompt provided", // ✅ Save prompt
+  imageUrl,
+  createdAt: new Date(),
+});
+console.log(newImage)
   const savedImage = await newImage.save();
 
   // Update user's images array
