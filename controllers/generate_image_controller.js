@@ -11,13 +11,12 @@ const FREEPIK_API_KEY = process.env.FREEPIK_API_KEY;
  */
 const generateImage = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId, email, prompt } = req.body;
 
     if (!userId) {
       return res.status(400).json({ error: "❌ Missing user ID" });
     }
 
-    // Call Freepik API
     const response = await axios.post(FREEPIK_API_URL, req.body, {
       headers: {
         "Content-Type": "application/json",
@@ -25,9 +24,6 @@ const generateImage = async (req, res) => {
       },
     });
 
-    console.log("🔍 API Response:", JSON.stringify(response.data, null, 2));
-
-    // Extract base64 image from the response
     const base64Image = response?.data?.data?.[0]?.base64 || null;
     if (!base64Image) {
       return res.status(500).json({
@@ -36,26 +32,23 @@ const generateImage = async (req, res) => {
       });
     }
 
-    // Save image to S3 & MongoDB
     try {
-      const savedImage = await saveImageToDatabase(userId, base64Image);
+      const savedImage = await saveImageToDatabase(userId, base64Image, email, prompt);
       console.log("✅ Image saved to DB");
 
       return res.json({
         success: true,
         message: "✅ Image generated and saved successfully",
-        imageUrl: savedImage.imageUrl, // Return S3 URL
+        imageUrl: savedImage.imageUrl,
         savedImage,
       });
     } catch (dbError) {
-      console.error("❌ Database save error:", dbError);
       return res.status(500).json({
         error: "❌ Failed to save image to database",
         details: dbError.message,
       });
     }
   } catch (error) {
-    console.error("❌ Freepik API Error:", error.response ? error.response.data : error.message);
     return res.status(error.response?.status || 500).json({
       error: "Failed to generate image",
       details: error.message,
