@@ -6,178 +6,178 @@ const leonardoStyleMap = {
     "strengthType": "High"
   },
   "BOKEH": {
-    "preprocessorId": 101,
+    "preprocessorId": 67,
     "promptBoost": "bokeh, enhanced detail, professional lighting",
     "influence": 0.5,
-    "strengthType": "Mid"
+    "strengthType": "High"
   },
   "CINEMATIC": {
-    "preprocessorId": 20,
+    "preprocessorId": 67,
     "promptBoost": "cinematic, enhanced detail, professional lighting",
     "influence": 0.55,
     "weight": 1
   },
   "CINEMATIC_CLOSEUP": {
-    "preprocessorId": 133,
+    "preprocessorId": 67,
     "promptBoost": "cinematic closeup, enhanced detail, professional lighting",
     "influence": 0.6,
     "strengthType": "High"
   },
   "CREATIVE": {
-    "preprocessorId": 104,
+    "preprocessorId": 67,
     "promptBoost": "creative, enhanced detail, professional lighting",
     "influence": 0.65,
-    "strengthType": "Mid"
+    "strengthType": "High"
   },
   "DYNAMIC": {
-    "preprocessorId": 105,
+    "preprocessorId": 67,
     "promptBoost": "dynamic, enhanced detail, professional lighting",
     "influence": 0.45,
-    "strengthType": "Low"
+    "strengthType": "High"
   },
   "ENVIRONMENT": {
-    "preprocessorId": 106,
+    "preprocessorId": 67,
     "promptBoost": "environment, enhanced detail, professional lighting",
     "influence": 0.55,
     "strengthType": "High"
   },
   "FASHION": {
-    "preprocessorId": 133,
+    "preprocessorId": 67,
     "promptBoost": "fashion, enhanced detail, professional lighting",
     "influence": 0.55,
     "weight":1
   },
   "FILM": {
-    "preprocessorId": 108,
+    "preprocessorId": 67,
     "promptBoost": "film, enhanced detail, professional lighting",
     "influence": 0.6,
-    "strengthType": "Low"
+    "strengthType": "High"
   },
   "FOOD": {
-    "preprocessorId": 109,
+    "preprocessorId": 67,
     "promptBoost": "food, enhanced detail, professional lighting",
     "influence": 0.65,
     "strengthType": "High"
   },
   "GENERAL": {
-    "preprocessorId": 100,
+    "preprocessorId": 67,
     "promptBoost": "general, enhanced detail, professional lighting",
     "influence": 0.45,
-    "strengthType": "Mid"
+    "strengthType": "High"
   },
   "HDR": {
-    "preprocessorId": 133,
+    "preprocessorId": 67,
     "promptBoost": "hdr, enhanced detail, professional lighting",
     "influence": 0.5,
-    "strengthType": "Low"
+    "strengthType": "High"
   },
   "ILLUSTRATION": {
-    "preprocessorId": 102,
+    "preprocessorId": 67,
     "promptBoost": "illustration, enhanced detail, professional lighting",
     "influence": 0.55,
     "strengthType": "High"
   },
   "LEONARDO": {
-    "preprocessorId": 103,
+    "preprocessorId": 67,
     "promptBoost": "leonardo, enhanced detail, professional lighting",
     "influence": 0.6,
-    "strengthType": "Mid"
+    "strengthType": "High"
   },
   "LONG_EXPOSURE": {
-    "preprocessorId": 104,
+    "preprocessorId": 67,
     "promptBoost": "long exposure, enhanced detail, professional lighting",
     "influence": 0.65,
-    "strengthType": "Low"
+    "strengthType": "High"
   },
   "MACRO": {
-    "preprocessorId": 105,
+    "preprocessorId": 67,
     "promptBoost": "macro, enhanced detail, professional lighting",
     "influence": 0.45,
     "strengthType": "High"
   },
   "MINIMALISTIC": {
-    "preprocessorId": 106,
+    "preprocessorId": 67,
     "promptBoost": "minimalistic, enhanced detail, professional lighting",
     "influence": 0.5,
-    "strengthType": "Mid"
+    "strengthType": "High"
   },
   "MONOCHROME": {
-    "preprocessorId": 107,
+    "preprocessorId": 67,
     "promptBoost": "monochrome, enhanced detail, professional lighting",
     "influence": 0.55,
-    "strengthType": "Low"
+    "strengthType": "High"
   },
   "MOODY": {
-    "preprocessorId": 108,
+    "preprocessorId": 67,
     "promptBoost": "moody, enhanced detail, professional lighting",
     "influence": 0.6,
     "strengthType": "High"
   },
   "NONE": {
-    "preprocessorId": 109,
+    "preprocessorId": 67,
     "promptBoost": "none, enhanced detail, professional lighting",
     "influence": 0.65,
-    "strengthType": "Mid"
+    "strengthType": "High"
   },
   "NEUTRAL": {
-    "preprocessorId": 100,
+    "preprocessorId": 67,
     "promptBoost": "neutral, enhanced detail, professional lighting",
     "influence": 0.45,
-    "strengthType": "Low"
+    "strengthType": "High"
   },
   "PHOTOGRAPHY": {
-    "preprocessorId": 101,
+    "preprocessorId": 67,
     "promptBoost": "photography, enhanced detail, professional lighting",
     "influence": 0.5,
     "strengthType": "High"
   },
   "PORTRAIT": {
-    "preprocessorId": 102,
+    "preprocessorId": 67,
     "promptBoost": "portrait, enhanced detail, professional lighting",
     "influence": 0.55,
-    "strengthType": "Mid"
+    "strengthType": "High"
   },
   "RAYTRACED": {
-    "preprocessorId": 103,
+    "preprocessorId": 67,
     "promptBoost": "raytraced, enhanced detail, professional lighting",
     "influence": 0.6,
-    "strengthType": "Low"
+    "strengthType": "High"
   },
   "RENDER_3D": {
-    "preprocessorId": 104,
+    "preprocessorId": 67,
     "promptBoost": "render 3d, enhanced detail, professional lighting",
     "influence": 0.65,
     "strengthType": "High"
   },
   "RETRO": {
-    "preprocessorId": 105,
+    "preprocessorId": 67,
     "promptBoost": "retro, enhanced detail, professional lighting",
     "influence": 0.45,
-    "strengthType": "Mid"
+    "strengthType": "High"
   },
   "SKETCH_BW": {
-    "preprocessorId": 106,
+    "preprocessorId": 67,
     "promptBoost": "sketch bw, enhanced detail, professional lighting",
     "influence": 0.5,
-    "strengthType": "Low"
+    "strengthType": "High"
   },
   "STOCK_PHOTO": {
-    "preprocessorId": 107,
+    "preprocessorId": 67,
     "promptBoost": "stock photo, enhanced detail, professional lighting",
     "influence": 0.55,
     "strengthType": "High"
   },
   "VIBRANT": {
-    "preprocessorId": 108,
+    "preprocessorId": 67,
     "promptBoost": "vibrant, enhanced detail, professional lighting",
     "influence": 0.6,
-    "strengthType": "Mid"
+    "strengthType": "High"
   },
   "UNPROCESSED": {
-    "preprocessorId": 109,
+    "preprocessorId": 67,
     "promptBoost": "unprocessed, enhanced detail, professional lighting",
     "influence": 0.65,
-    "strengthType": "Low"
+    "strengthType": "High"
   }
 };
 

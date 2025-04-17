@@ -96,7 +96,10 @@ const generateTextToImage = async (req, res) => {
 
       uploadedImageDocs.push({
         _id: savedImage._id,
-        imageUrl: s3Url
+        imageUrl: s3Url,
+        creatorEmail,
+        username,
+        createdAt: new Date().toISOString()
       });
     }
 
@@ -173,7 +176,7 @@ const generateImagetoImage = async (req, res) => {
       prompt: finalPrompt,
       presetStyle, // ✅ add this line
       num_images: parseInt(num_images),
-      negative_prompt: "opposite gender, cross-gender, gender swap, genderbent, feminine, masculine, long hair, short hair, beard, breasts, lipstick, makeup, earrings, jewelry",
+      negative_prompt: "b&w, earth, cartoon, ugly,mutated hands,mutated foots, not recognizing the prompt,opposite gender, cross-gender, gender swap, genderbent, feminine, masculine, long hair, short hair, beard, breasts, lipstick, makeup, earrings, jewelry",
       alchemy: true,
       "init_image_id": initImageId ,
       "init_strength": 0.5,
