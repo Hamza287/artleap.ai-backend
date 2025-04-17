@@ -99,6 +99,8 @@ const generateTextToImage = async (req, res) => {
         imageUrl: s3Url,
         creatorEmail,
         username,
+        presetStyle,
+        prompt,
         createdAt: new Date().toISOString()
       });
     }
@@ -254,6 +256,8 @@ console.log(controlPayload)
         imageUrl: s3Url,
         creatorEmail,
         username,
+        presetStyle,
+        prompt,
         createdAt: new Date().toISOString()
       });
     }
