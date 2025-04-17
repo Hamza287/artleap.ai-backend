@@ -250,7 +250,11 @@ console.log(controlPayload)
 
       uploadedImageDocs.push({
         _id: savedImage._id,
-        imageUrl: s3Url
+        userId,
+        imageUrl: s3Url,
+        creatorEmail,
+        username,
+        createdAt: new Date().toISOString()
       });
     }
 
