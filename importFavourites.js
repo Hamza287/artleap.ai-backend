@@ -28,14 +28,14 @@ const jsonData = JSON.parse(rawData);
 const importFavorites = async () => {
   try {
     for (const item of jsonData) {
-      const user = await User.findOne({ _id: item._id });
+      const user = await User.findOne({ _id: item.id });
 
       if (!user) {
-        console.log(`⚠️ Skipping: User not found for ID: ${item._id}`);
+        console.log(`⚠️ Skipping: User not found for ID: ${item.id}`);
         continue;
       }
 
-      console.log(`✅ Found User: ${user.username} (${user._id})`);
+      console.log(`✅ Found User: ${user.username} (${user.id})`);
 
       if (!item.favourites || item.favourites.length === 0) {
         console.log(`⚠️ User ${user.username} has no favorites, skipping...`);
