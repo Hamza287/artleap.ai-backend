@@ -1,6 +1,6 @@
 [
   {
-    "_id": "093z9fBhkwb7xtk5qM9vTqBGsn93",
+    "id": "093z9fBhkwb7xtk5qM9vTqBGsn93",
     "favourites": [
       {
         "model_name": "photo",
@@ -14,12 +14,24 @@
         "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1733224081542.png?alt=media&token=e506a0c5-7809-493e-9afb-8cf57d7277cb",
         "creator_name": "Ihsan Qureshi",
         "userid": "KnYTJVHdl2VI9SXHbeAAIcXoZvt2",
-        "prompt": "Astronaut sitting on the halo of a planet which is soaked in water, some other planetary models soaked in water around, in the style of sparkling water reflections, clemens ascher, exotic landscapes, hyper-realistic water, furaffinity, paul signac,cinematic scenes, realistic human figures, dusty piles, ultra hd, hyper detailed, Ultra-w_ide angle, Remote shooting, 16K, magnificent, epic, HD"
-       }
+        "prompt": "Astronaut sitting on the halo of a planet which is soaked in water, some other planetary models soaked in water around, in the style of sparkling water reflections, clemens ascher, exotic landscapes, hyper-realistic water, furaffinity, paul signac,cinematic scenes, realistic human figures, dusty piles, ultra hd, hyper detailed, Ultra-wide angle, Remote shooting, 16K, magnificent, epic, HD"
+      }
     ]
   },
   {
-    "_id": "2pohrMgrTuST28s6Ftnwk3MtDtx1",
+    "id": "1OuUeO3uIAYEkQ6N4anUQIRMAg73",
+    "favourites": [
+      {
+        "model_name": "anime",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1740452394307.png?alt=media&token=1c83c343-8566-4045-a91e-1ef8d0636715",
+        "creator_name": "Pallavi Jain",
+        "userid": "FsfxLarvUchI3hCC0oauUxy8LNn2",
+        "prompt": "beautiful busty girl in red dress, 8K, "
+      }
+    ]
+  },
+  {
+    "id": "2pohrMgrTuST28s6Ftnwk3MtDtx1",
     "favourites": [
       {
         "model_name": "sketch",
@@ -31,7 +43,7 @@
     ]
   },
   {
-    "_id": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
+    "id": "3xkY4KTPvjVisS5Oh0gWieyGlLU2",
     "favourites": [
       {
         "model_name": "AI generated",
@@ -129,7 +141,7 @@
         "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1737448029946.png?alt=media&token=e594f336-d345-45f2-ac01-28f111748e16",
         "creator_name": "Jane Doe",
         "userid": "gzFITLPhMzSqlQFAQP6KdpvA1Bu2",
-        "prompt": "a giraffe standing bes_ide the Eiffel tower "
+        "prompt": "a giraffe standing beside the Eiffel tower "
       },
       {
         "model_name": "digital-art",
@@ -137,17 +149,28 @@
         "creator_name": "Kaleb Cash",
         "userid": "FvZgoasGzNclCo5YCzImsKlrBBx1",
         "prompt": "a demonpunk futuristic  inspired painting of a large muscular beautiful woman whose wearing oversized battle armor wielding large magical weapons whose fighting a variety of monsters that's been done in a Where's Waldo art style, augmented , highly artistically detailed, neon glow, bold colors, volumetric lighting, magical effects, overcrowded."
+      },
+      {
+        "model_name": "vintage",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1730437968301.png?alt=media&token=f2861a00-cd48-44b2-b330-8617e5c28249",
+        "creator_name": "MimAR Studios",
+        "userid": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+        "prompt": "man"
       }
     ]
   },
   {
-    "_id": "88701KqdXYwv15iyfPYU",
+    "id": "5Gev5swOCoURv91OtcqsXSW00Xq1",
+    "favourites": []
+  },
+  {
+    "id": "88701KqdXYwv15iyfPYU",
     "favourites": [
       {
-        "model_name": "m_idjourney",
+        "model_name": "midjourney",
         "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-1cfe00b9-394e-43ff-b751-63d56fb5b93e.png",
         "creator_name": null,
-        "_id": "4311c6d0-70fd-11ef-a598-bd2bdcdf9e5e",
+        "id": "4311c6d0-70fd-11ef-a598-bd2bdcdf9e5e",
         "userid": null,
         "prompt": "arcane style horse flying in galaxy hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K",
         "timestamp": {
@@ -158,40 +181,70 @@
     ]
   },
   {
-    "_id": "B77A0SbdgdX93pwViIlyaRVPdv62",
+    "id": "AXfVDnWzCag8H4mMOan3qWZiGoJ2",
     "favourites": [
       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1743183470079.png?alt=media&token=f7447cc5-e1d4-49cf-8ec7-ac615ccee1a6",
+        "creator_name": "Myst",
+        "prompt": "dynamic php language robot",
         "model_name": "photo",
-        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736138017138.png?alt=media&token=5bd31770-4249-43fa-9957-f4dc243972ab",
-        "creator_name": "Mayur Odedara",
-        "userid": "B77A0SbdgdX93pwViIlyaRVPdv62",
-        "prompt": "a "
+        "userid": "DuyUWoyv5BgxNsBba2EhUDLbUyg1"
       },
       {
-        "model_name": "photo",
-        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739242113250.png?alt=media&token=79d5cadc-4b44-4446-895a-16fe182de474",
-        "creator_name": "ATOMIC FOX",
-        "userid": "B77A0SbdgdX93pwViIlyaRVPdv62",
-        "prompt": "belly"
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1742837698807.png?alt=media&token=4164d411-9537-42df-8cd7-cc83539ab917",
+        "creator_name": "KRUSHNA PRIYA Nayak",
+        "prompt": "fantasy baterflay flower beautiful girl ",
+        "model_name": "fantasy",
+        "userid": "4PUwIWegnzdf9Qqq25VC1rPHpFF2"
       },
       {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1742269333300.png?alt=media&token=82da1974-a071-43fa-aec0-a8fe0beeac57",
+        "creator_name": "Fir",
+        "prompt": "una mujer bailando en la playa ",
         "model_name": "photo",
-        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739240141146.png?alt=media&token=565ffad8-5b07-46e8-a258-e5e7ddcb302c",
-        "creator_name": "ATOMIC FOX",
-        "userid": "B77A0SbdgdX93pwViIlyaRVPdv62",
-        "prompt": "extremely wrinkled horse "
+        "userid": "rjuzxxsqmth1ATzyv6NFCwZjkPd2"
+      },
+      {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741957032624.png?alt=media&token=89b158a2-5917-483d-b7ef-d4aa52f51074",
+        "creator_name": "syner11",
+        "prompt": "nami in bekini from one piece ",
+        "model_name": "3d",
+        "userid": "4i3wCKbpz0dzNi0n0UznQRvDdEt1"
       }
     ]
   },
   {
-    "_id": "D969589ZBTW43TegRJcXMHp0b4h2",
+    "id": "AoYQKo0UFvYOtL8qJX0cxz1xf093",
     "favourites": []
   },
   {
-    "_id": "Hj3xqVZe8gQM8gN7WZCeiL3fcQH3",
+    "id": "B77A0SbdgdX93pwViIlyaRVPdv62",
     "favourites": [
       {
-        "model_name": "m_idjourney",
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739240141146.png?alt=media&token=565ffad8-5b07-46e8-a258-e5e7ddcb302c",
+        "creator_name": "ATOMIC FOX",
+        "prompt": "extremely wrinkled horse ",
+        "userid": "B77A0SbdgdX93pwViIlyaRVPdv62"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1743618832297.png?alt=media&token=10bf162d-3295-4fd6-b386-478bdb383a78",
+        "creator_name": "",
+        "userid": "B77A0SbdgdX93pwViIlyaRVPdv62",
+        "prompt": "beautiful woman"
+      }
+    ]
+  },
+  {
+    "id": "D969589ZBTW43TegRJcXMHp0b4h2",
+    "favourites": []
+  },
+  {
+    "id": "Hj3xqVZe8gQM8gN7WZCeiL3fcQH3",
+    "favourites": [
+      {
+        "model_name": "midjourney",
         "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-df6d9114-f81c-40c5-ba5c-092b38616542.png",
         "creator_name": "Hamza Ibrahim",
         "userid": "Hj3xqVZe8gQM8gN7WZCeiL3fcQH3",
@@ -200,7 +253,80 @@
     ]
   },
   {
-    "_id": "KQHd6VoHJ6UMSsAje4cxqK7xeeq2",
+    "id": "IerrOpGvA5d5WpfsbUULGkczM3z2",
+    "favourites": [
+      {
+        "model_name": "pixel-art",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1742222765767.png?alt=media&token=ed21d5c0-5e96-4c3e-a8f2-93c56b2697d8",
+        "creator_name": "pórtate ",
+        "userid": "Q2brkZS5mvg8bTaYvJv7j6CUScv2",
+        "prompt": "mujer bailando desnuda"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1742221926274.png?alt=media&token=7710c385-a1a4-44ce-92a5-030a06512cc1",
+        "creator_name": "pórtate ",
+        "userid": "Q2brkZS5mvg8bTaYvJv7j6CUScv2",
+        "prompt": "mujer bailando dednuda"
+      },
+      {
+        "model_name": "cartoon",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1742344746451.png?alt=media&token=718f4ac0-9313-4c96-b3b2-e3273a389bb6",
+        "creator_name": "limon",
+        "userid": "1Uyz3FKbr2aovRLP7fdvqw0A2n62",
+        "prompt": "The air shimmered with golden light, fireflies danced around, and enormous glowing mushrooms stood tall"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1742281516846.png?alt=media&token=0e84661a-76ea-4e3a-a93a-d28f61c2f5fc",
+        "creator_name": "ken",
+        "userid": "1V5iIUy3UDTdJpoB4ki0uZ9fEbA2",
+        "prompt": "mature Indian woman dancing,desnuda, "
+      },
+      {
+        "model_name": "3d",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1742345153613.png?alt=media&token=5186c681-e2d4-4fa4-a5f4-e5c3faf1f2d7",
+        "creator_name": "limon",
+        "userid": "1Uyz3FKbr2aovRLP7fdvqw0A2n62",
+        "prompt": "A graceful and beautiful cat dancing joyfully on a stage, wearing a small elegant outfit. The cat has soft, fluffy fur, expressive eyes, and a happy expression. It is standing on its hind legs, gracefully moving like a ballet dancer, with one paw lifted and a flowing ribbon around it. The background is a well-lit stage with a spotlight shining on the cat, and the atmosphere feels magical and lively."
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736626374004.png?alt=media&token=bfc9a5c8-9516-43b7-aa25-b729d85c8b30",
+        "creator_name": "Jiku Shill",
+        "userid": "TA7fON867jO2EC913tEBZQw1gym2",
+        "prompt": "a Indian Hindu god mohadev"
+      }
+    ]
+  },
+  {
+    "id": "IzPjT1uQsRcwcvsOVyjRuuHlAjx2",
+    "favourites": [
+      {
+        "model_name": "cyberpunk",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741574584525.png?alt=media&token=8e42cee3-140e-499d-b87d-5a4e5265ebc4",
+        "creator_name": "Loillo Huan",
+        "userid": "RBTje5g1DHWH5b8scu6MMH84rie2",
+        "prompt": "a wizard woman firing fireball in fire background "
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741574600201.png?alt=media&token=6828a3ed-1d90-4b0a-9a63-0419766ec11a",
+        "creator_name": "phs20",
+        "userid": "6RQN9AjuTvYN4PmDd1aOBUQvrNk1",
+        "prompt": "blonde women in black tights "
+      },
+      {
+        "model_name": "anime",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741534984143.png?alt=media&token=a305a4aa-6cc2-45e0-88eb-5a7f275012bc",
+        "creator_name": "",
+        "userid": "IzPjT1uQsRcwcvsOVyjRuuHlAjx2",
+        "prompt": "girl cute beautiful "
+      }
+    ]
+  },
+  {
+    "id": "KQHd6VoHJ6UMSsAje4cxqK7xeeq2",
     "favourites": [
       {
         "model_name": "photo",
@@ -212,11 +338,11 @@
     ]
   },
   {
-    "_id": "Kd258ocUaUPaBu3PapljFhnBZ8C2",
+    "id": "Kd258ocUaUPaBu3PapljFhnBZ8C2",
     "favourites": []
   },
   {
-    "_id": "KnYTJVHdl2VI9SXHbeAAIcXoZvt2",
+    "id": "KnYTJVHdl2VI9SXHbeAAIcXoZvt2",
     "favourites": [
       {
         "model_name": "photo",
@@ -230,7 +356,7 @@
         "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1732347162894.png?alt=media&token=a44574f3-8536-46d2-afad-bfac75708353",
         "creator_name": "Sahar ",
         "userid": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
-        "prompt": "generate br_ids in the forest "
+        "prompt": "generate brids in the forest "
       },
       {
         "model_name": "photo",
@@ -291,7 +417,19 @@
     ]
   },
   {
-    "_id": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
+    "id": "M3TFDA05Sscb7P3ylpIBzF6nKw53",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739785592768.png?alt=media&token=457721de-d459-4a20-bd0e-de7fe86d123d",
+        "creator_name": "ATOMIC FOX",
+        "userid": "X27g7aSr7zNH4uqrNr0qNctB5Xf1",
+        "prompt": "Huge gigantic monstrous close up six pack abs wolf Looking like a bubbling of mountain colossus of 1 ton of muscles Robustly Leaning forward 90° downwards touching the belly to the edge of the table with both hands on the table aside close up All at the same time first screen front, second Screen On the back, In split screen Himself Photo book Double-sided photo Himself"
+      }
+    ]
+  },
+  {
+    "id": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
     "favourites": [
       {
         "model_name": "studio-shot",
@@ -380,11 +518,71 @@
     ]
   },
   {
-    "_id": "PHgHifBPXtP9z63KVE86DkFnURl2",
+    "id": "O7vjTGYEFybaULYnjnU0rNZEKF32",
     "favourites": []
   },
   {
-    "_id": "RrfFw2Fklhej0yz66s4Y6pigQ562",
+    "id": "OCsjQfyrTqQ0iGKlLAKxOg50qlB3",
+    "favourites": [
+      {
+        "model_name": "fantasy",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741449628482.png?alt=media&token=afc83d72-226c-4fc0-bd43-80183695d87b",
+        "creator_name": "김정애",
+        "userid": "UlNyI39nH6e3AkNOOEPAlDReLKG3",
+        "prompt": "the silver-haired mermaid with a transparent tail in the deep sea"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1740452451403.png?alt=media&token=d31288ea-6431-4d87-9d3c-3ee5ea2c705a",
+        "creator_name": "Pallavi Jain",
+        "userid": "FsfxLarvUchI3hCC0oauUxy8LNn2",
+        "prompt": "beautiful busty girl in red dress, 8K, "
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736861721834.png?alt=media&token=157f95e1-c872-4814-afa3-ec743e61d13e",
+        "creator_name": "Enall 234",
+        "userid": "YavO8QilNIeLsWeYhU3wmh1Zji42",
+        "prompt": "Generate an image of Seorang remaja pria dengan gaya modern dan edgy, mengenakan hoodie hitam dengan desain wajah tersenyum berwarna kuning. Rambutnya dicat dua warna, hitam dan pirang, memakai topi hitam terbalik. Dia juga mengenakan kacamata hitam besar, jam tangan hitam, dan rantai emas di lehernya. Gaya santainya terlihat saat dia duduk di luar rumah modern dengan latar belakang pintu kayu kaca dan tanaman hijau. Nuansa cerah dengan pencahayaan alami, menunjukkan suasana yang santai dan stylish.\".In the style of Movie stills, with 3:4 aspect ratio."
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741689314563.png?alt=media&token=ae2d15b4-3155-47c9-8793-5fb5ae3870f7",
+        "creator_name": "hum",
+        "userid": "cdYEc0c9ebY3w9d6bZYvwEOsOOt1",
+        "prompt": "Main Focus: Leena Singh in a bold, glamorous pose (high-quality image).\n🔹 Background: Dark gradient (black & red) for a dramatic look.\n🔹 Text: \"Leena Singh’s Hottest 40! 🔥\" (Big, bold & minimal).\n🔹 Highlights: Fire effect around text, shocked emoji (😱), and OTT logos (Ullu, PrimeShots).\n🔹 Extra Hook: \"Full List Inside! 👀\" in a small, eye-catching banner.\n"
+      }
+    ]
+  },
+  {
+    "id": "OTOncSdL2UMDgN8Ii8Fhf9mpsnE3",
+    "favourites": []
+  },
+  {
+    "id": "PHgHifBPXtP9z63KVE86DkFnURl2",
+    "favourites": []
+  },
+  {
+    "id": "PiEO5w1NbZWqfyF6E5D4PREqMn33",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741537585367.png?alt=media&token=bf93ed2b-636e-47dd-8604-e401e45982e0",
+        "creator_name": "taiga",
+        "userid": "5ZGhyQIhpMdKqeuntAr9KDEYqWv1",
+        "prompt": "samurai cat fight ninja dog"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741968315295.png?alt=media&token=d789677f-881c-459e-bff8-5024d3110829",
+        "creator_name": "",
+        "userid": "PiEO5w1NbZWqfyF6E5D4PREqMn33",
+        "prompt": "perro "
+      }
+    ]
+  },
+  {
+    "id": "RrfFw2Fklhej0yz66s4Y6pigQ562",
     "favourites": [
       {
         "model_name": "cyberpunk",
@@ -396,13 +594,60 @@
     ]
   },
   {
-    "_id": "ZByeMN5nKHifk5D2Mpr9",
+    "id": "TQbxL687PPMGypKQIu6hCbUwkUd2",
+    "favourites": [
+      {
+        "model_name": "cyberpunk",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741574584525.png?alt=media&token=8e42cee3-140e-499d-b87d-5a4e5265ebc4",
+        "creator_name": "Loillo Huan",
+        "userid": "RBTje5g1DHWH5b8scu6MMH84rie2",
+        "prompt": "a wizard woman firing fireball in fire background "
+      },
+      {
+        "model_name": "dark",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741535085176.png?alt=media&token=eb590f65-038a-4350-86a0-4cbafba6c1b9",
+        "creator_name": "",
+        "userid": "0yxiNc3VugXuXzdhlQeVE8PMQYm1",
+        "prompt": "girl cute beautiful ,wearing a black jacket"
+      },
+      {
+        "model_name": "fantasy",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741449628482.png?alt=media&token=afc83d72-226c-4fc0-bd43-80183695d87b",
+        "creator_name": "김정애",
+        "userid": "UlNyI39nH6e3AkNOOEPAlDReLKG3",
+        "prompt": "the silver-haired mermaid with a transparent tail in the deep sea"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1739612329708.png?alt=media&token=a1c1a06c-014a-4f72-be23-d4733f19dcd4",
+        "creator_name": "madi misstak",
+        "userid": "h6pWE80cJJUZdsgWPhbIGlTL9T23",
+        "prompt": "a girl"
+      },
+      {
+        "model_name": "fantasy",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1737122942477.png?alt=media&token=649aef5c-8e0c-4379-ac9b-a664e41a694d",
+        "creator_name": "Worawit Siri",
+        "userid": "5yBvIgBCnYQO9pJOOP8wuyyTvXw2",
+        "prompt": "Pastel background\nWatercolor painting\nHigh definition\nCute cartoon style\nFour-leaf clover\nSoft white tones\nSpring flowers\nIllustration design\nGreen flower field\nSmall flowers in the foreground\nSpring feeling/mood\nThis image is suitable for iPhone wallpaper\nAnd soft sweet colors in Nene Thomas' style\nDelicate lines\nHand drawn\nTexture details\nSoft tones\nAnd simple rhythm\nPastel colors\nSoft light and shadows\nWhite cat"
+      },
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736878365132.png?alt=media&token=267cf3da-b518-4f1f-8d7d-1c280fa86f9b",
+        "creator_name": "Richard Klein",
+        "userid": "J2L2sjalFTSyW31PtPRUGDvy6Qw1",
+        "prompt": "flowers on a white background "
+      }
+    ]
+  },
+  {
+    "id": "ZByeMN5nKHifk5D2Mpr9",
     "favourites": [
       {
         "model_name": "wifu-diffusion",
         "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-d108afb4-91c2-44dc-9ef5-b5ce054900cd.png",
         "creator_name": null,
-        "_id": "017e4030-70fe-11ef-a442-41d15014462e",
+        "id": "017e4030-70fe-11ef-a442-41d15014462e",
         "userid": null,
         "prompt": "trnlgcy ninja warrior hyperrealistic, full body, detailed clothing, highly detailed, cinematic lighting, stunningly beautiful, intricate, sharp focus, f/1. 8, 85mm, (centered image composition), (professionally color graded), ((bright soft diffused light)), volumetric fog, trending on instagram, trending on tumblr, HDR 4K, 8K",
         "timestamp": {
@@ -413,7 +658,26 @@
     ]
   },
   {
-    "_id": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
+    "id": "b6IDaTpaEYa4Q2oQOLWhjKpybXX2",
+    "favourites": [
+      {
+        "model_name": "anime",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1740452394307.png?alt=media&token=1c83c343-8566-4045-a91e-1ef8d0636715",
+        "creator_name": "Pallavi Jain",
+        "userid": "FsfxLarvUchI3hCC0oauUxy8LNn2",
+        "prompt": "beautiful busty girl in red dress, 8K, "
+      },
+      {
+        "model_name": "3d",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1743911715601.png?alt=media&token=72e09bbf-82b2-4a81-9868-652dc41007c1",
+        "creator_name": "krishnapal ",
+        "userid": "xKNai6YrueS7f4SP0E9qhJugo3S2",
+        "prompt": "cortoon Village tree motion background "
+      }
+    ]
+  },
+  {
+    "id": "b8qHoBL3xAf6FWrwpXBFAH58Dqg2",
     "favourites": [
       {
         "model_name": "art-nouveau",
@@ -565,10 +829,10 @@
     ]
   },
   {
-    "_id": "fc5Pyk65iINdUDMchOT65owENJH2",
+    "id": "fc5Pyk65iINdUDMchOT65owENJH2",
     "favourites": [
       {
-        "model_name": "m_idjourney",
+        "model_name": "midjourney",
         "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-c1a8b1d1-338c-4673-b86d-4f0bc2d40f0d.png",
         "creator_name": "Hamza Ibrahim",
         "userid": "fc5Pyk65iINdUDMchOT65owENJH2",
@@ -577,7 +841,19 @@
     ]
   },
   {
-    "_id": "g3ewcNAxC8UjVTW80JLsel1j1PF2",
+    "id": "fgYDV6iJRbPTWAuegdJ7ppWL6i42",
+    "favourites": [
+      {
+        "model_name": "anime",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1736600981675.png?alt=media&token=826f37ea-ebbc-486c-8e90-01f71560c62c",
+        "creator_name": "Arash",
+        "userid": "fgYDV6iJRbPTWAuegdJ7ppWL6i42",
+        "prompt": "Produce a line art illustration of a humanoid cat sporting a tailored suit and a top hat.\""
+      }
+    ]
+  },
+  {
+    "id": "g3ewcNAxC8UjVTW80JLsel1j1PF2",
     "favourites": [
       {
         "creator_name": "Concentrixwave46batch2",
@@ -610,7 +886,7 @@
     ]
   },
   {
-    "_id": "h6pWE80cJJUZdsgWPhbIGlTL9T23",
+    "id": "h6pWE80cJJUZdsgWPhbIGlTL9T23",
     "favourites": [
       {
         "model_name": "studio-shot",
@@ -636,7 +912,7 @@
     ]
   },
   {
-    "_id": "jolUDCPPAuWDkTpGOaEu7jrKVN02",
+    "id": "jolUDCPPAuWDkTpGOaEu7jrKVN02",
     "favourites": [
       {
         "model_name": "photo",
@@ -648,7 +924,19 @@
     ]
   },
   {
-    "_id": "oUU7BhmKUdc0q4icgvJQUOiRYXE2",
+    "id": "mz2oIV3HWLUtlJHL85M71mQcOyd2",
+    "favourites": [
+      {
+        "model_name": "70s-vibe",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741970720464.png?alt=media&token=b1cf8e75-5d94-4ff5-a4e4-0ae15b6a0fcf",
+        "creator_name": "serge",
+        "userid": "Ouz6WG6Z6EXZYHi84AqQuW4NCyI3",
+        "prompt": "girls with cats"
+      }
+    ]
+  },
+  {
+    "id": "oUU7BhmKUdc0q4icgvJQUOiRYXE2",
     "favourites": [
       {
         "model_name": "photo",
@@ -660,7 +948,19 @@
     ]
   },
   {
-    "_id": "qik3cNDlOFXXzTVOYecmTKWF6Rm1",
+    "id": "pyVvZlhVRHd2UIXnifP1c7wUYbz2",
+    "favourites": [
+      {
+        "model_name": "vintage",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1744619445032.png?alt=media&token=020022f6-b9fe-4c9f-8a5f-a46f2d4017f1",
+        "creator_name": "Sudhakar",
+        "userid": "pyVvZlhVRHd2UIXnifP1c7wUYbz2",
+        "prompt": "A man and woman shouting towards each other in home "
+      }
+    ]
+  },
+  {
+    "id": "qik3cNDlOFXXzTVOYecmTKWF6Rm1",
     "favourites": [
       {
         "model_name": "arcane-diffusion",
@@ -672,10 +972,22 @@
     ]
   },
   {
-    "_id": "u8YctEkEZvTV8MKQ61NhL3aZTYo1",
+    "id": "tNY2Php3SGeI4BII1AwRrFCXBfx2",
     "favourites": [
       {
-        "model_name": "m_idjourney",
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741696220934.png?alt=media&token=848eb51b-b853-4b79-9c1d-61b91a33508b",
+        "creator_name": "shahidjp",
+        "userid": "X9tdog74Qbb7OfEPxM8CfoCF32p2",
+        "prompt": "Mecca and madina "
+      }
+    ]
+  },
+  {
+    "id": "u8YctEkEZvTV8MKQ61NhL3aZTYo1",
+    "favourites": [
+      {
+        "model_name": "midjourney",
         "imageUrl": "https://d9jy2smsrdjcq.cloudfront.net/generations/0-6b89ed2d-b475-4dfe-a3b4-8545d2ca4743.png",
         "creator_name": "Hamza Ibrahim",
         "userid": "u8YctEkEZvTV8MKQ61NhL3aZTYo1",
@@ -705,7 +1017,7 @@
     ]
   },
   {
-    "_id": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
+    "id": "vPf5x4DclTRL5qDOuxjUjDWNcsf2",
     "favourites": [
       {
         "model_name": "watercolor",
@@ -773,7 +1085,7 @@
     ]
   },
   {
-    "_id": "vmMPbpbQgENS3nDHNBhOVWOd1mJ2",
+    "id": "vmMPbpbQgENS3nDHNBhOVWOd1mJ2",
     "favourites": [
       {
         "model_name": "tron-legacy-diffusion",
@@ -797,7 +1109,7 @@
     ]
   },
   {
-    "_id": "yNUHB3pK6iMrs8aBLJEgxBBypU42",
+    "id": "yNUHB3pK6iMrs8aBLJEgxBBypU42",
     "favourites": [
       {
         "model_name": "photo",
@@ -816,7 +1128,7 @@
     ]
   },
   {
-    "_id": "yRZIv62JueZAzCbyiIHxfuQI56D2",
+    "id": "yRZIv62JueZAzCbyiIHxfuQI56D2",
     "favourites": [
       {
         "model_name": "photo",
@@ -824,6 +1136,49 @@
         "creator_name": "William Calito",
         "userid": "MhYSiXjkIfT1u03WiqcvXuq2BiS2",
         "prompt": "\n girl bending over, showing big bum, sfw"
+      }
+    ]
+  },
+  {
+    "id": "yaIuiRCRnjV0q8h61o1CLAA9XfC2",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1741847148000.png?alt=media&token=281ae3e7-40de-4b96-92db-f4620a6e7e31",
+        "creator_name": "shahidjp",
+        "userid": "X9tdog74Qbb7OfEPxM8CfoCF32p2",
+        "prompt": "Give me an image of Rohit Sharma 45 which looks the hottest Cricketer"
+      }
+    ]
+  },
+  {
+    "id": "zXf2bNfiCyNlOcL8LGoKt4NlhqX2",
+    "favourites": [
+      {
+        "model_name": "photo",
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1743764652638.png?alt=media&token=a1788797-5ab9-4a80-8aca-3b349f401ba9",
+        "creator_name": "lany lascano",
+        "userid": "zXf2bNfiCyNlOcL8LGoKt4NlhqX2",
+        "prompt": "CC. C. Bamako, MaliCC"
+      }
+    ]
+  },
+  {
+    "id": "zdaRAffwFoYQOgkxe0V7dFTLQAB3",
+    "favourites": [
+      {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1742343571312.png?alt=media&token=fa03f890-a980-46cd-9975-6ff67f0841f7",
+        "creator_name": "limon",
+        "prompt": "cat playing guitar",
+        "model_name": "3d",
+        "userid": "zdaRAffwFoYQOgkxe0V7dFTLQAB3"
+      },
+      {
+        "imageUrl": "https://firebasestorage.googleapis.com/v0/b/imaginary-verse.appspot.com/o/images%2F1742345193895.png?alt=media&token=121e5f7a-bdb2-428d-bc63-d67014bc2e9b",
+        "creator_name": "limon",
+        "prompt": "Payer ",
+        "model_name": "dark",
+        "userid": "1Uyz3FKbr2aovRLP7fdvqw0A2n62"
       }
     ]
   }

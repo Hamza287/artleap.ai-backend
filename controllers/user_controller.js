@@ -26,34 +26,35 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-
 const getUserProfile = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Validate user ID format
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: "Invalid user ID" });
-    }
-
-    // Fetch user and populate images
-    const user = await User.findById(userId).populate("images");
+    // Fetch the user and populate images
+    const user = await User.findOne({ _id: userId }).populate('images');
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: 'User not found' });
     }
+
+    // Fetch followers and following user documents
+    const followersUsers = await User.find({ _id: { $in: user.followers } });
+    const followingUsers = await User.find({ _id: { $in: user.following } });
 
     return res.status(200).json({
       success: true,
-      message: "User profile fetched successfully",
-      user,
+      message: 'User profile fetched successfully',
+      user: {
+        ...user.toObject(),
+        followers: followersUsers,
+        following: followingUsers,
+      },
     });
   } catch (error) {
-    console.error("❌ Error fetching user profile:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    console.error('❌ Error fetching user profile:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
 /**
  * Get User Profile with Images using Aggregation (Alternative)
  * @route GET /api/user/profile/:userId
@@ -62,17 +63,20 @@ const getUserProfileWithImages = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ error: "Invalid user ID" });
-    }
+    // Determine if the userId is a valid ObjectId
+    const isObjectId = mongoose.Types.ObjectId.isValid(userId);
 
+    // Construct the match condition based on the ID type
+    const matchCondition = isObjectId
+      ? { _id: new mongoose.Types.ObjectId(userId) }
+      : { _id: userId };
+
+    // Perform the aggregation to fetch user data along with images
     const userData = await User.aggregate([
-      {
-        $match: { _id: new mongoose.Types.ObjectId(userId) },
-      },
+      { $match: matchCondition },
       {
         $lookup: {
-          from: "images", // Ensure collection name is correct
+          from: "images", // Ensure this matches your actual collection name
           localField: "_id",
           foreignField: "userId",
           as: "userImages",
@@ -80,10 +84,12 @@ const getUserProfileWithImages = async (req, res) => {
       },
     ]);
 
+    // Check if user data was found
     if (!userData || userData.length === 0) {
       return res.status(404).json({ error: "User not found" });
     }
 
+    // Respond with the user data
     return res.status(200).json({
       success: true,
       message: "User profile with images fetched successfully",
