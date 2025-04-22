@@ -16,7 +16,7 @@ const transformedData = jsonData.map((user) => {
   let email = user.email || `unknown_${Math.floor(Math.random() * 10000)}@noemail.com`; // ✅ Ensure unique emails
 
   return {
-    _id: user._id, // Preserve Firestore user ID
+    _id: user.id, // Preserve Firestore user ID
     username,
     email,
     password: user.password || "",
