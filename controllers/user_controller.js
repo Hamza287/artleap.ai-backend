@@ -28,16 +28,20 @@ const getAllUsers = async (req, res) => {
 
 const getUserProfile = async (req, res) => {
   try {
-    const { userId } = req.params;
+    let { userId } = req.params;
 
-    // Fetch the user and populate images
-    const user = await User.findOne({ _id: userId }).populate('images');
+    // Try both String and ObjectId
+    const isObjectId = mongoose.Types.ObjectId.isValid(userId);
+    const query = isObjectId
+      ? { $or: [{ _id: userId }, { _id: new mongoose.Types.ObjectId(userId) }] }
+      : { _id: userId };
+
+    const user = await User.findOne(query).populate('images');
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Fetch followers and following user documents
     const followersUsers = await User.find({ _id: { $in: user.followers } });
     const followingUsers = await User.find({ _id: { $in: user.following } });
 
