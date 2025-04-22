@@ -53,7 +53,7 @@ const importFavorites = async () => {
 
         // **Create Image Document**
         const newImage = new Image({
-          userId: user._id, // ✅ Store user ID as `String`
+          userId: user.id, // ✅ Store user ID as `String`
           username: fav.creator_name || "Unknown",
           imageUrl: fav.imageUrl.trim(), // Ensure valid URL
           createdAt,

@@ -106,7 +106,7 @@ const importData = async () => {
           }
 
           const newImage = new Image({
-            userId: user._id, // Link to User
+            userId: user.id, // Link to User
             username: user.username,
             imageUrl: image.imageUrl.trim(),
             createdAt,
