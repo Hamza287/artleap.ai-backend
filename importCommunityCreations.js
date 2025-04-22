@@ -27,7 +27,7 @@ const jsonData = JSON.parse(rawData);
 const importData = async () => {
   try {
     for (const item of jsonData[0].userData || []) {
-      if (!item.userId || !item.creator_name || !item.imageUrl) {
+      if (!item.userid || !item.creator_name || !item.imageUrl) {
         console.warn(`⚠️ Skipping entry due to missing required fields:`, item);
         continue;
       }
