@@ -10,8 +10,8 @@ const UserSchema = new mongoose.Schema({
   dailyCredits: { type: Number, default: 10 },
   isSubscribed: { type: Boolean, default: false },
   images: [{ type: mongoose.Schema.Types.ObjectId, ref: "Image" }],
-  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  following: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+   followers: [{ type: mongoose.Schema.Types.Mixed }],
+  following: [{ type: mongoose.Schema.Types.Mixed }],
   createdAt: { type: Date, default: Date.now }
 });
 
