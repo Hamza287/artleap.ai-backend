@@ -5,6 +5,8 @@ const User = require("./models/user");
 
 // **MongoDB Connection (Use ENV for EC2)**
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/user-auth";
+console.log(process.env.MONGO_URI)
+console.log("dddddddddddddddddddddddddddddddddddddddd")
 mongoose
   .connect(MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
@@ -38,8 +40,8 @@ const importData = async () => {
         createdAt = new Date(item.timestamp.seconds * 1000);
       }
 
-      // **Find user by Firestore ID (_id is a STRING, not ObjectId)**
-      const user = await User.findOne({ _id: item.userId });
+   
+      const user = await User.findOne({ _id: item.userid });
 
       if (!user) {
         console.warn(`⚠️ Skipping image because user not found: ${item.userId}`);
