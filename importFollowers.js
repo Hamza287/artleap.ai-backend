@@ -28,19 +28,19 @@ const jsonData = JSON.parse(rawData);
 const importData = async () => {
   try {
     for (const item of jsonData) {
-      if (!item._id || typeof item._id !== "string") {
+      if (!item.id || typeof item.id !== "string") {
         console.warn(`⚠️ Skipping entry due to missing or invalid user ID:`, item);
         continue;
       }
 
-      const user = await User.findOne({ _id: item._id });
+      const user = await User.findOne({ _id: item.id });
 
       if (!user) {
-        console.warn(`⚠️ Skipping: User not found for ID: ${item._id}`);
+        console.warn(`⚠️ Skipping: User not found for ID: ${item.id}`);
         continue;
       }
 
-      console.log(`✅ Found User: ${user.username} (${user._id})`);
+      console.log(`✅ Found User: ${user.username} (${user.id})`);
 
       // **Ensure user.followers, user.following, and user.images exist as arrays**
       if (!Array.isArray(user.followers)) user.followers = [];
@@ -50,12 +50,12 @@ const importData = async () => {
       // **Process Followers**
       if (Array.isArray(item.followers)) {
         for (const follower of item.followers) {
-          if (!follower._id || typeof follower._id !== "string") {
+          if (!follower.id || typeof follower.id !== "string") {
             console.warn(`⚠️ Skipping invalid follower entry for user: ${user.username}`);
             continue;
           }
 
-          const followerUser = await User.findOne({ _id: follower._id });
+          const followerUser = await User.findOne({ _id: follower.id });
 
           if (followerUser) {
             const followerId = new mongoose.Types.ObjectId(); // Generate ObjectId
@@ -72,7 +72,7 @@ const importData = async () => {
       // **Process Following**
       if (Array.isArray(item.following)) {
         for (const following of item.following) {
-          if (!following.user_id || typeof following.user_id !== "string") {
+          if (!following.userid || typeof following.userid !== "string") {
             console.warn(`⚠️ Skipping invalid following entry for user: ${user.username}`);
             continue;
           }
