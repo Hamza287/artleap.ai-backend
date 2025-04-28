@@ -1,44 +1,41 @@
 const Image = require("../models/image_model");
 
-// Get All Images with Dynamic Pagination
+// Get All Images with Dynamic Pagination (Latest Images First)
 const getAllImages = async (req, res) => {
-    try {
-        // Get the requested page number (default = 1)
-        let page = parseInt(req.query.page) || 1;
+  try {
+    // Get the requested page number (default = 1)
+    let page = parseInt(req.query.page) || 1;
+    if (page < 1) page = 1; // Ensure page is always at least 1
 
-        // Get total number of images
-        const totalImages = await Image.countDocuments();
+    // Define limit per page
+    const limit = 100;
 
-        // Define limit per page
-        const limit = 100;
-        const totalPages = Math.ceil(totalImages / limit);
+    // Get total number of images
+    const totalImages = await Image.countDocuments();
+    const totalPages = Math.ceil(totalImages / limit);
 
-        let images;
+    // Calculate how many documents to skip
+    const skip = (page - 1) * limit;
 
-        // If requested page exceeds total pages, return ALL images
-        if (page > totalPages) {
-            images = await Image.find(); // Fetch all images
-            page = 1; // Reset page to 1
-        } else {
-            const skip = (page - 1) * limit;
-            images = await Image.find().skip(skip).limit(limit);
-        }
+    // Fetch latest images first (newest first), then paginate
+    const images = await Image.find()
+      .sort({ createdAt: -1 }) // Latest images first
+      .skip(skip)
+      .limit(limit);
 
-        res.json({
-            success: true,
-            message: page > totalPages
-                ? "Requested page exceeded limit, returning all images."
-                : "Images fetched successfully",
-            currentPage: page,
-            totalPages: totalPages,
-            totalImages: totalImages,
-            images: images, // Either paginated or full list
-        });
+    res.json({
+      success: true,
+      message: "Images fetched successfully",
+      currentPage: page,
+      totalPages: totalPages,
+      totalImages: totalImages,
+      images: images, // Only the correct page's images
+    });
 
-    } catch (error) {
-        console.error("❌ Error fetching images:", error);
-        res.status(500).json({ error: "Internal server error", details: error.message });
-    }
+  } catch (error) {
+    console.error("❌ Error fetching images:", error);
+    res.status(500).json({ error: "Internal server error", details: error.message });
+  }
 };
 
 module.exports = { getAllImages };
