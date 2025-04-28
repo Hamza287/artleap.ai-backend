@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-
+const moment = require('moment');
 /**
  * Ensure Upload Directory Exists
  */
@@ -93,4 +93,141 @@ const updateUserProfile = async (req, res) => {
   }
 };
 
-module.exports = { updateUserProfile, upload };
+const updateUserCredits = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: "❌ userId is required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "❌ User not found" });
+    }
+
+    if (user.isSubscribed) {
+      // ✅ Subscribed user: DO NOT reset anything
+      return res.json({
+        success: true,
+        message: `ℹ️ User ${user.username} is subscribed. No daily reset needed.`,
+        dailyCredits: user.dailyCredits,
+      });
+    }
+
+    const today = moment().startOf('day');
+    const lastReset = moment(user.lastCreditReset).startOf('day');
+
+    if (user.dailyCredits < 25 && !today.isSame(lastReset)) {
+      // ✅ Free user and needs reset
+      user.dailyCredits = 25;
+      user.lastCreditReset = new Date();
+      await user.save();
+
+      return res.json({
+        success: true,
+        message: `✅ Daily credits reset to 25 for ${user.username}.`,
+        dailyCredits: user.dailyCredits,
+      });
+    } else {
+      return res.json({
+        success: true,
+        message: `ℹ️ No reset needed. Either already reset today or credits are fine.`,
+        dailyCredits: user.dailyCredits,
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error resetting daily credits:', error);
+    res.status(500).json({ error: "Failed to reset daily credits" });
+  }
+};
+
+const deductCredits = async (req, res) => {
+  try {
+    const { userId, creditsToDeduct } = req.body;
+
+    if (!userId || typeof creditsToDeduct !== 'number') {
+      return res.status(400).json({ error: "❌ userId and creditsToDeduct are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "❌ User not found" });
+    }
+
+    if (user.dailyCredits < creditsToDeduct) {
+      return res.status(400).json({ error: "❌ Not enough credits" });
+    }
+
+    user.dailyCredits -= creditsToDeduct;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `✅ Deducted ${creditsToDeduct} credits from ${user.username}.`,
+      dailyCredits: user.dailyCredits,
+    });
+  } catch (error) {
+    console.error('❌ Error deducting credits:', error);
+    res.status(500).json({ error: "Failed to deduct credits" });
+  }
+};
+
+const userSubscription = async (req, res) => {
+  try {
+    const { userId, customCredits } = req.body;
+
+    if (!userId || typeof customCredits !== 'number') {
+      return res.status(400).json({ error: "❌ userId and customCredits are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "❌ User not found" });
+    }
+
+    user.isSubscribed = true;
+    user.dailyCredits = customCredits;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `✅ ${user.username} is now subscribed with ${customCredits} credits.`,
+      dailyCredits: user.dailyCredits,
+    });
+  } catch (error) {
+    console.error('❌ Error subscribing user:', error);
+    res.status(500).json({ error: "Failed to subscribe user" });
+  }
+};
+
+const unSubscribeUser = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: "❌ userId is required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "❌ User not found" });
+    }
+
+    user.isSubscribed = false;
+    user.dailyCredits = 10;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `✅ ${user.username} unsubscribed and dailyCredits set to 10.`,
+      dailyCredits: user.dailyCredits,
+    });
+  } catch (error) {
+    console.error('❌ Error unsubscribing user:', error);
+    res.status(500).json({ error: "Failed to unsubscribe user" });
+  }
+};
+
+module.exports = { updateUserProfile, upload, updateUserCredits, deductCredits, userSubscription, unSubscribeUser };

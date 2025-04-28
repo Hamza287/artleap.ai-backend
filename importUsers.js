@@ -21,7 +21,7 @@ const transformedData = jsonData.map((user) => {
     email,
     password: user.password || "",
     profilePic: user.profile_image || "",
-    dailyCredits: user.credits?.remaining || 10,
+    dailyCredits: user.credits?.remaining || 25,
     createdAt,
   };
 });
