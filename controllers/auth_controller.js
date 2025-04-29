@@ -2,7 +2,7 @@ const bcrypt = require("bcrypt");
 const User = require("../models/user");
 const { v4: uuidv4 } = require("uuid");
 
-// **🔹 Signup (Email/Password)**
+// 🔹 Signup (Email/Password)
 const signup = async (req, res) => {
     try {
         const { username, email, password } = req.body;
@@ -14,9 +14,8 @@ const signup = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // ✅ Explicitly setting `_id` since it's required in your schema
         const newUser = new User({
-            _id: uuidv4(),  // 🔹 Generate a unique string-based ID
+            _id: uuidv4(), // 🔹 Generate a unique string-based ID
             username,
             email,
             password: hashedPassword
@@ -27,7 +26,7 @@ const signup = async (req, res) => {
         res.status(201).json({
             message: "Signup successful",
             user: {
-                userId: newUser._id, // 🔹 Use the same `userId` for all auth methods
+                userId: newUser._id, // 🔹 Your MongoDB _id to use everywhere
                 username: newUser.username,
                 email: newUser.email,
                 profilePic: newUser.profilePic || null
@@ -39,26 +38,36 @@ const signup = async (req, res) => {
     }
 };
 
-
-
-
+// 🔹 Email/Password or Firebase Email Login (without password check)
 const login = async (req, res) => {
     try {
-        const { email } = req.body;
+        const { email, username, profilePic } = req.body;
 
-        // 🔹 Check if the user exists
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
+        if (!email) {
+            return res.status(400).json({ error: "Email is required" });
         }
 
-        console.log(`🟢 User ${user.email} logged in without password check.`);
+        let user = await User.findOne({ email });
+
+        if (!user) {
+            // First-time login → create user
+            user = new User({
+                _id: uuidv4(),
+                username: username || "Guest",
+                email,
+                profilePic: profilePic || "",
+                password: "" // 🔹 Empty password since Firebase handled auth
+            });
+            await user.save();
+            console.log("🆕 New user created via Email login:", user.email);
+        }
+
+        console.log(`🟢 User ${user.email} logged in.`);
 
         return res.status(200).json({
             message: "Login successful",
             user: {
-                userId: user._id, // 🔹 Return unique user ID
+                userId: user._id, // 🔹 MongoDB _id (correct id for app use)
                 username: user.username,
                 email: user.email,
                 profilePic: user.profilePic || null
@@ -71,26 +80,26 @@ const login = async (req, res) => {
     }
 };
 
-
-
-
-
-// **🔹 Google Login (If user exists, login; else, create account)**
+// 🔹 Google Login (If user exists, login; else, create account)
 const googleLogin = async (req, res) => {
     try {
         const { email, username, profilePic, googleId } = req.body;
 
+        if (!email) {
+            return res.status(400).json({ error: "Email is required" });
+        }
+
         let user = await User.findOne({ email });
 
         if (!user) {
-            // **Create a new user if they don’t exist**
+            // First-time Google login → create user
             user = new User({
-                _id: uuidv4(),  // ✅ Generate a unique `_id`
+                _id: uuidv4(),
                 username,
                 email,
                 profilePic,
-                googleId, // 🔹 Store Google ID for reference
-                password: "" // No password for Google users
+                googleId,
+                password: "" // 🔹 No password needed for Google users
             });
 
             await user.save();
@@ -100,7 +109,7 @@ const googleLogin = async (req, res) => {
         return res.status(200).json({
             message: "Google login successful",
             user: {
-                userId: user._id, // 🔹 Unified ID
+                userId: user._id, // 🔹 MongoDB _id
                 username: user.username,
                 email: user.email,
                 profilePic: user.profilePic || null
@@ -112,6 +121,5 @@ const googleLogin = async (req, res) => {
         res.status(500).json({ error: "Internal server error", details: error.message });
     }
 };
-
 
 module.exports = { signup, login, googleLogin };
