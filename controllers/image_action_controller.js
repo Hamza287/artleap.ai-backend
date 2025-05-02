@@ -38,7 +38,7 @@ const reportImage = async (req, res) => {
 
     await newReport.save();
 
-    res.status(201).json({ message: "Report submitted successfully" });
+    res.status(200).json({ message: "Report submitted successfully" });
   } catch (err) {
     console.error("❌ Report Error:", err.message);
     res.status(500).json({ message: "Server error" });
