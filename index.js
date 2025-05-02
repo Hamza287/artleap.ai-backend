@@ -10,6 +10,8 @@ const followRouter = require("./routers/follow_router");
 const userRoutes = require("./routers/user_router");
 const starryAiRouter = require("./routers/starry_ai_routes")
 const leonardoRoutes = require("./routers/leonardoRoutes")
+const imageActionRouter = require("./routers/image_action_router")
+
 
 const app = express();
 const PORT = 8000;
@@ -27,6 +29,8 @@ app.use("/api", followRouter);
 app.use("/api", userRoutes);
 app.use("/api", starryAiRouter);
 app.use('/api', leonardoRoutes); 
+app.use('/api', imageActionRouter); 
+
 
 
 // Database Connection
