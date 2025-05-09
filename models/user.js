@@ -8,7 +8,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: false }, // ✅ Make password optional
   favorites: { type: [mongoose.Schema.Types.ObjectId], ref: "Image", default: [] }, 
   profilePic: { type: String, default: "" },
-  dailyCredits: { type: Number, default: 10 },
+  dailyCredits: { type: Number, default: 75 },
   isSubscribed: { type: Boolean, default: false },
   images: [{ type: mongoose.Schema.Types.ObjectId, ref: "Image" }],
    followers: [{ type: mongoose.Schema.Types.Mixed }],
