@@ -86,7 +86,7 @@ const generateTextToImage = async (req, res) => {
         username,
         creatorEmail,
         imageUrl: s3Url,
-        modelName: modelId,
+        modelName: presetStyle,
         prompt
       });
 

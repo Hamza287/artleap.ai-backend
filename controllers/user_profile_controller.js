@@ -96,18 +96,14 @@ const updateUserProfile = async (req, res) => {
 const updateUserCredits = async (req, res) => {
   try {
     const { userId } = req.body;
-
     if (!userId) {
       return res.status(400).json({ error: "❌ userId is required" });
     }
-
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "❌ User not found" });
     }
-
     if (user.isSubscribed) {
-      // ✅ Subscribed user: DO NOT reset anything
       return res.json({
         success: true,
         message: `ℹ️ User ${user.username} is subscribed. No daily reset needed.`,
@@ -123,7 +119,6 @@ const updateUserCredits = async (req, res) => {
       user.dailyCredits = 75;
       user.lastCreditReset = new Date();
       await user.save();
-
       return res.json({
         success: true,
         message: `✅ Daily credits reset to 25 for ${user.username}.`,
