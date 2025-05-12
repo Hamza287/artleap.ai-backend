@@ -180,9 +180,9 @@ const generateImagetoImage = async (req, res) => {
       num_images: parseInt(num_images),
       negative_prompt: "b&w, earth, cartoon, ugly,mutated hands,mutated foots, not recognizing the prompt,opposite gender, cross-gender, gender swap, genderbent, feminine, masculine, long hair, short hair, beard, breasts, lipstick, makeup, earrings, jewelry",
       alchemy: true,
-      "init_image_id": initImageId ,
+      "init_image_id": initImageId,
       "init_strength": 0.5,
-      "controlNetType": "DEPTH" ,
+      "controlNetType": "DEPTH",
       controlnets: [
         {
           initImageId,
@@ -192,10 +192,10 @@ const generateImagetoImage = async (req, res) => {
           influence: styleConfig.influence,
           weight: styleConfig.weight
         },
-       
+
       ]
     };
-console.log(controlPayload)
+    console.log(controlPayload)
     const controlGen = await axios.post(`${LEONARDO_BASE_URL}/generations`, controlPayload, {
       headers: {
         Authorization: `Bearer ${LEONARDO_API_KEY}`,

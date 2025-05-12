@@ -112,9 +112,10 @@ const updateUserCredits = async (req, res) => {
     }
 
     const today = moment().startOf('day');
-    const lastReset = moment(user.lastCreditReset).startOf('day');
+    const lastReset = user.lastCreditReset ? moment(user.lastCreditReset).startOf('day') : null;
 
     if (user.dailyCredits < 75 && !today.isSame(lastReset)) {
+
       // ✅ Free user and needs reset
       user.dailyCredits = 75;
       user.lastCreditReset = new Date();
@@ -125,7 +126,14 @@ const updateUserCredits = async (req, res) => {
         dailyCredits: user.dailyCredits,
       });
     } else {
+      console.log({
+        today: today.format('YYYY-MM-DD'),
+        lastReset: lastReset ? lastReset.format('YYYY-MM-DD') : 'none',
+        dailyCredits: user.dailyCredits,
+        isSubscribed: user.isSubscribed,
+      });
       return res.json({
+
         success: true,
         message: `ℹ️ No reset needed. Either already reset today or credits are fine.`,
         dailyCredits: user.dailyCredits,
