@@ -1,4 +1,3 @@
-
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -6,7 +5,7 @@ const FormData = require('form-data');
 const ImageModel = require('../models/image_model');
 const User = require('../models/user');
 const { uploadImageFromUrl } = require('../utils/s3Uploader');
-const styleMap = require('../utils/leonardoStyleMap'); // 🔥 STYLE MAP INTEGRATION
+const styleMap = require('../utils/leonardoStyleMap');
 
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
 const LEONARDO_BASE_URL = process.env.LEONARDO_BASE_URL || 'https://cloud.leonardo.ai/api/rest/v1';
@@ -77,32 +76,38 @@ const generateTextToImage = async (req, res) => {
     }
 
     const uploadedImageDocs = [];
+    let savedImage = null;
 
-    for (const image of finalImages) {
+    for (let i = 0; i < finalImages.length; i++) {
+      const image = finalImages[i];
       const s3Url = await uploadImageFromUrl(image.url, BUCKET);
 
-      const savedImage = await ImageModel.create({
-        userId,
-        username,
-        creatorEmail,
-        imageUrl: s3Url,
-        modelName: presetStyle,
-        prompt
-      });
-
-      await User.findByIdAndUpdate(userId, {
-        $push: { images: savedImage._id }
-      });
-
-      uploadedImageDocs.push({
-        _id: savedImage._id,
+      const imageDoc = {
         imageUrl: s3Url,
         creatorEmail,
         username,
         presetStyle,
         prompt,
         createdAt: new Date().toISOString()
-      });
+      };
+
+      if (i === 0) {
+        savedImage = await ImageModel.create({
+          userId,
+          ...imageDoc
+        });
+
+        await User.findByIdAndUpdate(userId, {
+          $push: { images: savedImage._id }
+        });
+
+        uploadedImageDocs.push({
+          ...imageDoc,
+          _id: savedImage._id
+        });
+      } else {
+        uploadedImageDocs.push(imageDoc);
+      }
     }
 
     return res.status(200).json({
@@ -145,9 +150,7 @@ const generateImagetoImage = async (req, res) => {
     const imagePath = path.join(__dirname, '..', 'uploads', image.filename);
     const imageBuffer = fs.readFileSync(imagePath);
 
-    const initImageRes = await axios.post(`${LEONARDO_BASE_URL}/init-image`, {
-      extension: 'png',
-    }, {
+    const initImageRes = await axios.post(`${LEONARDO_BASE_URL}/init-image`, { extension: 'png' }, {
       headers: {
         Authorization: `Bearer ${LEONARDO_API_KEY}`,
         Accept: 'application/json',
@@ -160,10 +163,7 @@ const generateImagetoImage = async (req, res) => {
     const form = new FormData();
     const parsedFields = typeof fields === 'string' ? JSON.parse(fields) : fields;
     Object.entries(parsedFields).forEach(([key, val]) => form.append(key, val));
-    form.append('file', imageBuffer, {
-      filename: 'input.png',
-      contentType: 'image/png',
-    });
+    form.append('file', imageBuffer, { filename: 'input.png', contentType: 'image/png' });
 
     await axios.post(url, form, {
       headers: form.getHeaders(),
@@ -176,26 +176,23 @@ const generateImagetoImage = async (req, res) => {
       width: 1024,
       modelId: 'b24e16ff-06e3-43eb-8d33-4416c2d75876',
       prompt: finalPrompt,
-      presetStyle, // ✅ add this line
+      presetStyle,
       num_images: parseInt(num_images),
       negative_prompt: "b&w, earth, cartoon, ugly,mutated hands,mutated foots, not recognizing the prompt,opposite gender, cross-gender, gender swap, genderbent, feminine, masculine, long hair, short hair, beard, breasts, lipstick, makeup, earrings, jewelry",
       alchemy: true,
-      "init_image_id": initImageId,
-      "init_strength": 0.5,
-      "controlNetType": "DEPTH",
-      controlnets: [
-        {
-          initImageId,
-          initImageType: 'UPLOADED',
-          preprocessorId: 67,
-          strengthType: styleConfig.strengthType || 'High',
-          influence: styleConfig.influence,
-          weight: styleConfig.weight
-        },
-
-      ]
+      init_image_id: initImageId,
+      init_strength: 0.5,
+      controlNetType: "DEPTH",
+      controlnets: [{
+        initImageId,
+        initImageType: 'UPLOADED',
+        preprocessorId: 67,
+        strengthType: styleConfig.strengthType || 'High',
+        influence: styleConfig.influence,
+        weight: styleConfig.weight
+      }]
     };
-    console.log(controlPayload)
+
     const controlGen = await axios.post(`${LEONARDO_BASE_URL}/generations`, controlPayload, {
       headers: {
         Authorization: `Bearer ${LEONARDO_API_KEY}`,
@@ -232,34 +229,38 @@ const generateImagetoImage = async (req, res) => {
     }
 
     const uploadedImageDocs = [];
+    let savedImage = null;
 
-    for (const image of finalImages) {
+    for (let i = 0; i < finalImages.length; i++) {
+      const image = finalImages[i];
       const s3Url = await uploadImageFromUrl(image.url, BUCKET);
 
-      const savedImage = await ImageModel.create({
-        userId,
-        username,
-        creatorEmail,
-        imageUrl: s3Url,
-        modelName: 'b24e16ff-06e3-43eb-8d33-4416c2d75876',
-        prompt,
-        presetStyle
-      });
-
-      await User.findByIdAndUpdate(userId, {
-        $push: { images: savedImage._id }
-      });
-
-      uploadedImageDocs.push({
-        _id: savedImage._id,
-        userId,
+      const imageDoc = {
         imageUrl: s3Url,
         creatorEmail,
         username,
         presetStyle,
         prompt,
         createdAt: new Date().toISOString()
-      });
+      };
+
+      if (i === 0) {
+        savedImage = await ImageModel.create({
+          userId,
+          ...imageDoc
+        });
+
+        await User.findByIdAndUpdate(userId, {
+          $push: { images: savedImage._id }
+        });
+
+        uploadedImageDocs.push({
+          ...imageDoc,
+          _id: savedImage._id
+        });
+      } else {
+        uploadedImageDocs.push(imageDoc);
+      }
     }
 
     fs.unlinkSync(imagePath);

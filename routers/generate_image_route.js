@@ -1,10 +1,10 @@
 const express = require("express");
-const { generateImage } = require("../controllers/generate_image_controller");
+const { generateTextToImage } = require("../controllers/generate_image_controller");
 const { authenticateUser } = require("../middleware/auth_middleware");
 
-const generateRouter = express.Router();
+const freePikTxtToImg = express.Router();
 
 // Apply authentication middleware if user info is needed
-generateRouter.post('/generateImage', generateImage);
+freePikTxtToImg.post('/freepikTxtToImg', generateTextToImage);
 
-module.exports = { generateRouter }; // ✅ Export properly
+module.exports = { freePikTxtToImg }; // ✅ Export properly
