@@ -1,6 +1,7 @@
 const axios = require("axios");
 const User = require("../models/user");
-const { saveImageToDatabase } = require("../utils/image_utils");
+const ImageModel = require("../models/image_model");
+const { uploadImageFromUrl, uploadBase64ToS3 } = require("../utils/s3Uploader");
 require("dotenv").config();
 
 const FREEPIK_API_URL = process.env.FREEPIK_API_URL;
@@ -62,33 +63,53 @@ const generateTextToImage = async (req, res) => {
       });
     }
 
-    const generationId = response?.data?.generation_id || require("uuid").v4(); // fallback if not provided
-    const savedImages = [];
+    const generationId = response?.data?.generation_id || require("uuid").v4();
 
-    for (const image of imageDataArray) {
-      const base64Image = image.base64;
+    const uploadedImageDocs = [];
+    let savedImage = null;
+
+    for (let i = 0; i < imageDataArray.length; i++) {
+      const base64Image = imageDataArray[i].base64;
       if (!base64Image) continue;
 
-      const savedImage = await saveImageToDatabase(userId, base64Image, creatorEmail, prompt);
+      const s3Url = await uploadBase64ToS3(base64Image, `freepik_${Date.now()}_${i}.png`);
 
-      savedImages.push({
-        _id: savedImage._id,
-        imageUrl: savedImage.imageUrl,
+      const imageDoc = {
+        imageUrl: s3Url,
         creatorEmail: creatorEmail || user.email || "unknown@example.com",
-        username: username,
+        username,
         presetStyle,
         prompt,
-        createdAt: savedImage.createdAt
-      });
+        createdAt: new Date().toISOString()
+      };
+
+      if (i === 0) {
+        savedImage = await ImageModel.create({
+          userId,
+          ...imageDoc
+        });
+
+        await User.findByIdAndUpdate(userId, {
+          $push: { images: savedImage._id }
+        });
+
+        uploadedImageDocs.push({
+          ...imageDoc,
+          _id: savedImage._id
+        });
+      } else {
+        uploadedImageDocs.push(imageDoc);
+      }
     }
 
     return res.json({
       generationId,
       prompt,
       presetStyle,
-      images: savedImages
+      images: uploadedImageDocs
     });
   } catch (error) {
+    console.error("❌ Freepik Image Generation Error:", error?.response?.data || error.message);
     return res.status(error.response?.status || 500).json({
       error: "Failed to generate image",
       details: error.message
