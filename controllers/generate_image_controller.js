@@ -1,7 +1,6 @@
 const axios = require("axios");
 const User = require("../models/user");
-const ImageModel = require("../models/image_model");
-const { uploadImageFromUrl, uploadBase64ToS3 } = require("../utils/s3Uploader");
+const { saveImageToDatabase } = require("../utils/image_utils");
 require("dotenv").config();
 
 const FREEPIK_API_URL = process.env.FREEPIK_API_URL;
@@ -14,8 +13,8 @@ const generateTextToImage = async (req, res) => {
       username,
       creatorEmail,
       prompt,
-      presetStyle = "photo",       // default Freepik style
-      aspectRatio = "square_1_1",  // default aspect ratio
+      presetStyle = "photo",
+      aspectRatio = "square_1_1",
       num_images = 1
     } = req.body;
 
@@ -30,9 +29,7 @@ const generateTextToImage = async (req, res) => {
 
     const freepikRequestBody = {
       guidance_scale: 1,
-      image: {
-        size: aspectRatio
-      },
+      image: { size: aspectRatio },
       num_images,
       prompt,
       negative_prompt: "bad quality,b&w, earth, cartoon, ugly, lowres, blurry, out of focus",
@@ -64,41 +61,41 @@ const generateTextToImage = async (req, res) => {
     }
 
     const generationId = response?.data?.generation_id || require("uuid").v4();
-
-    const uploadedImageDocs = [];
-    let savedImage = null;
+    const savedImages = [];
 
     for (let i = 0; i < imageDataArray.length; i++) {
       const base64Image = imageDataArray[i].base64;
       if (!base64Image) continue;
 
-      const s3Url = await uploadBase64ToS3(base64Image, `freepik_${Date.now()}_${i}.png`);
-
-      const imageDoc = {
-        imageUrl: s3Url,
-        creatorEmail: creatorEmail || user.email || "unknown@example.com",
-        username,
-        presetStyle,
-        prompt,
-        createdAt: new Date().toISOString()
-      };
-
+      // Only save first image to DB
       if (i === 0) {
-        savedImage = await ImageModel.create({
-          userId,
-          ...imageDoc
-        });
+        const savedImage = await saveImageToDatabase(userId, base64Image, creatorEmail, prompt);
 
+        // Push only first image to user doc
         await User.findByIdAndUpdate(userId, {
           $push: { images: savedImage._id }
         });
 
-        uploadedImageDocs.push({
-          ...imageDoc,
-          _id: savedImage._id
+        savedImages.push({
+          _id: savedImage._id,
+          imageUrl: savedImage.imageUrl,
+          creatorEmail: creatorEmail || user.email || "unknown@example.com",
+          username,
+          presetStyle,
+          prompt,
+          createdAt: savedImage.createdAt
         });
       } else {
-        uploadedImageDocs.push(imageDoc);
+        // For all other images, just upload without saving to DB
+        const tempImage = await saveImageToDatabase(null, base64Image, creatorEmail, prompt, true); // mark as temporary or skip DB
+        savedImages.push({
+          imageUrl: tempImage.imageUrl,
+          creatorEmail: creatorEmail || user.email || "unknown@example.com",
+          username,
+          presetStyle,
+          prompt,
+          createdAt: new Date().toISOString()
+        });
       }
     }
 
@@ -106,10 +103,11 @@ const generateTextToImage = async (req, res) => {
       generationId,
       prompt,
       presetStyle,
-      images: uploadedImageDocs
+      images: savedImages
     });
+
   } catch (error) {
-    console.error("❌ Freepik Image Generation Error:", error?.response?.data || error.message);
+    console.error("❌ Freepik API Error:", error?.response?.data || error.message);
     return res.status(error.response?.status || 500).json({
       error: "Failed to generate image",
       details: error.message
