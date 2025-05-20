@@ -122,7 +122,7 @@ const updateUserCredits = async (req, res) => {
       await user.save();
       return res.json({
         success: true,
-        message: `✅ Daily credits reset to 25 for ${user.username}.`,
+        message: `✅ Daily credits reset to 75 for ${user.username}.`,
         dailyCredits: user.dailyCredits,
       });
     } else {

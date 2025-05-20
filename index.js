@@ -3,7 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const { authrouter } = require("./routers/auth_router");
-const { generateRouter } = require("./routers/generate_image_route");
+const { freePikTxtToImg } = require("./routers/generate_image_route");
 const imageRoutes = require("./routers/get_images_route");
 const favoriteRouter = require("./routers/favourites_router");
 const followRouter = require("./routers/follow_router");
@@ -22,13 +22,13 @@ app.use(cors());
 
 // Routes
 app.use("/api", authrouter);
-app.use("/api", generateRouter);
 app.use("/api", imageRoutes);
 app.use("/api", favoriteRouter);
 app.use("/api", followRouter);
 app.use("/api", userRoutes);
 app.use("/api", starryAiRouter);
-app.use('/api', leonardoRoutes); 
+app.use('/api', leonardoRoutes);
+app.use('/api', freePikTxtToImg); 
 app.use('/api', imageActionRouter); 
 
 
