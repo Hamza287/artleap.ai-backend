@@ -1,7 +1,8 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
 const User = require("../models/user");
-const { saveImageToDatabase } = require("../utils/image_utils");
+const ImageModel = require("../models/image_model");
+const { uploadBase64ToS3 } = require("../utils/s3Uploader");
 require("dotenv").config();
 
 const FREEPIK_API_URL = process.env.FREEPIK_API_URL;
@@ -25,19 +26,10 @@ const generateTextToImage = async (req, res) => {
 
     console.log("👉 Received userId:", userId);
 
-    let user;
-    try {
-      user = await User.findOne({ _id: userId });
-      console.log("✅ User found:", user ? user.username : "NOT FOUND");
-    } catch (lookupError) {
-      console.error("❌ Mongo lookup threw error:", lookupError);
-    }
-    
+    let user = await User.findOne({ _id: userId });
     if (!user) {
       console.error("❌ FINAL: No user found with _id:", userId);
-      return res.status(404).json({
-        error: "❌ User not found."
-      });
+      return res.status(404).json({ error: "❌ User not found." });
     }
 
     const freepikRequestBody = {
@@ -67,46 +59,44 @@ const generateTextToImage = async (req, res) => {
 
     const imageDataArray = response?.data?.data || [];
     if (imageDataArray.length === 0) {
-      return res.status(500).json({
-        error: "❌ No image data received from Freepik API",
-        fullResponse: response.data
-      });
+      return res.status(500).json({ error: "❌ No image data received from Freepik API" });
     }
 
     const generationId = response?.data?.generation_id || require("uuid").v4();
-    const savedImages = [];
+    const uploadedImageDocs = [];
+    let savedImage = null;
 
     for (let i = 0; i < imageDataArray.length; i++) {
       const base64Image = imageDataArray[i].base64;
       if (!base64Image) continue;
 
-      if (i === 0) {
-        const savedImage = await saveImageToDatabase(user, base64Image, creatorEmail, prompt);
+      const s3Url = await uploadBase64ToS3(base64Image, `freepik_${Date.now()}_${i}.png`);
 
-        // Push only first image to user doc
-        await User.findByIdAndUpdate(user._id, {
+      const imageDoc = {
+        imageUrl: s3Url,
+        creatorEmail,
+        username,
+        presetStyle,
+        prompt,
+        createdAt: new Date().toISOString()
+      };
+
+      if (i === 0) {
+        savedImage = await ImageModel.create({
+          userId,
+          ...imageDoc
+        });
+
+        await User.findByIdAndUpdate(userId, {
           $push: { images: savedImage._id }
         });
 
-        savedImages.push({
-          _id: savedImage._id,
-          imageUrl: savedImage.imageUrl,
-          creatorEmail: creatorEmail || user.email || "unknown@example.com",
-          username,
-          presetStyle,
-          prompt,
-          createdAt: savedImage.createdAt
+        uploadedImageDocs.push({
+          ...imageDoc,
+          _id: savedImage._id
         });
       } else {
-        const tempImage = await saveImageToDatabase(null, base64Image, creatorEmail, prompt, true);
-        savedImages.push({
-          imageUrl: tempImage.imageUrl,
-          creatorEmail: creatorEmail || user.email || "unknown@example.com",
-          username,
-          presetStyle,
-          prompt,
-          createdAt: new Date().toISOString()
-        });
+        uploadedImageDocs.push(imageDoc);
       }
     }
 
@@ -114,18 +104,14 @@ const generateTextToImage = async (req, res) => {
       generationId,
       prompt,
       presetStyle,
-      images: savedImages
+      images: uploadedImageDocs
     });
 
   } catch (error) {
-    console.error("❌ Freepik API Error:", error);
-
-    const status = error?.status || error?.response?.status || 500;
-    const message = error?.message || "Unexpected server error";
-
-    return res.status(status).json({
+    console.error("❌ Freepik API Error:", error?.response?.data || error.message);
+    return res.status(500).json({
       error: "Failed to generate image",
-      details: message
+      details: error?.message || "Unexpected server error"
     });
   }
 };
