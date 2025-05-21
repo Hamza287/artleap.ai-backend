@@ -1,5 +1,5 @@
 const express = require("express");
-const { generateTextToImage } = require("../controllers/generate_image_controller");
+const { generateTextToImage } = require("../controllers/freepik_controller");
 const { authenticateUser } = require("../middleware/auth_middleware");
 
 const freePikTxtToImg = express.Router();
