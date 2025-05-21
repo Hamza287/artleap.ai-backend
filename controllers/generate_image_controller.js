@@ -1,4 +1,5 @@
 const axios = require("axios");
+const mongoose = require("mongoose");
 const User = require("../models/user");
 const { saveImageToDatabase } = require("../utils/image_utils");
 require("dotenv").config();
@@ -22,9 +23,21 @@ const generateTextToImage = async (req, res) => {
       return res.status(400).json({ error: "❌ Missing required fields (userId, prompt, username)." });
     }
 
-    const user = await User.findById(userId);
+    console.log("👉 Received userId:", userId);
+
+    let user;
+    try {
+      user = await User.findOne({ _id: userId });
+      console.log("✅ User found:", user ? user.username : "NOT FOUND");
+    } catch (lookupError) {
+      console.error("❌ Mongo lookup threw error:", lookupError);
+    }
+    
     if (!user) {
-      return res.status(404).json({ error: "❌ User not found" });
+      console.error("❌ FINAL: No user found with _id:", userId);
+      return res.status(404).json({
+        error: "❌ User not found."
+      });
     }
 
     const freepikRequestBody = {
@@ -67,12 +80,11 @@ const generateTextToImage = async (req, res) => {
       const base64Image = imageDataArray[i].base64;
       if (!base64Image) continue;
 
-      // Only save first image to DB
       if (i === 0) {
-        const savedImage = await saveImageToDatabase(userId, base64Image, creatorEmail, prompt);
+        const savedImage = await saveImageToDatabase(user, base64Image, creatorEmail, prompt);
 
         // Push only first image to user doc
-        await User.findByIdAndUpdate(userId, {
+        await User.findByIdAndUpdate(user._id, {
           $push: { images: savedImage._id }
         });
 
@@ -86,8 +98,7 @@ const generateTextToImage = async (req, res) => {
           createdAt: savedImage.createdAt
         });
       } else {
-        // For all other images, just upload without saving to DB
-        const tempImage = await saveImageToDatabase(null, base64Image, creatorEmail, prompt, true); // mark as temporary or skip DB
+        const tempImage = await saveImageToDatabase(null, base64Image, creatorEmail, prompt, true);
         savedImages.push({
           imageUrl: tempImage.imageUrl,
           creatorEmail: creatorEmail || user.email || "unknown@example.com",
@@ -99,7 +110,7 @@ const generateTextToImage = async (req, res) => {
       }
     }
 
-    return res.json({
+    return res.status(200).json({
       generationId,
       prompt,
       presetStyle,
@@ -107,10 +118,14 @@ const generateTextToImage = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("❌ Freepik API Error:", error?.response?.data || error.message);
-    return res.status(error.response?.status || 500).json({
+    console.error("❌ Freepik API Error:", error);
+
+    const status = error?.status || error?.response?.status || 500;
+    const message = error?.message || "Unexpected server error";
+
+    return res.status(status).json({
       error: "Failed to generate image",
-      details: error.message
+      details: message
     });
   }
 };

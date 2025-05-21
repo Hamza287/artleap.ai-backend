@@ -1,6 +1,7 @@
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { v4: uuidv4 } = require("uuid");
 const Image = require("../models/image_model");
+const mongoose = require("mongoose");
 const User = require("../models/user");
 require("dotenv").config();
 
@@ -61,34 +62,37 @@ const uploadImageToS3 = async (base64Data, userId) => {
  * @param {string} base64Data - The Base64 image string.
  * @returns {Promise<Object>} - The saved image object.
  */
-const saveImageToDatabase = async (userId, base64Data, email, prompt) => {
+const saveImageToDatabase = async (user, base64Data, email, prompt, skipUserCheck = false) => {
   if (!base64Data) {
     throw new Error("❌ Base64 Image data missing.");
   }
 
-  // Fetch user
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new Error("❌ User not found.");
+  // ⛔ No user expected if skipUserCheck is true
+  if (!skipUserCheck && !user) {
+    throw new Error("❌ User not provided.");
   }
 
-  // Upload to S3 first
-  const imageUrl = await uploadImageToS3(base64Data, userId);
+  const imageUrl = await uploadImageToS3(base64Data, user?._id || "anonymous");
 
-  // Save the image reference in MongoDB
- const newImage = new Image({
-  userId: user._id,  
-  username: user.username,
-  creatorEmail:email || user.email|| "unknown@example.com",  // ✅ Save email (fallback to user's email if not provided)
-  prompt: prompt || "No prompt provided", // ✅ Save prompt
-  imageUrl,
-  createdAt: new Date(),
-});
-console.log(newImage)
+  if (skipUserCheck) {
+    return {
+      imageUrl,
+      createdAt: new Date()
+    };
+  }
+
+  const newImage = new Image({
+    userId: user._id,
+    username: user.username,
+    creatorEmail: email || user.email || "unknown@example.com",
+    prompt: prompt || "No prompt provided",
+    imageUrl,
+    createdAt: new Date(),
+  });
+
   const savedImage = await newImage.save();
 
-  // Update user's images array
-  await User.findByIdAndUpdate(userId, { $push: { images: savedImage._id } });
+  await User.updateOne({ _id: user._id }, { $push: { images: savedImage._id } });
 
   return savedImage;
 };
