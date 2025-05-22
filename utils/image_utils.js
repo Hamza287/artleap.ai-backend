@@ -87,7 +87,7 @@ const saveImageToDatabase = async (user, base64Data, email, presetStyle ,prompt,
     creatorEmail: email || user.email || "unknown@example.com",
     prompt: prompt || "No prompt provided",
     imageUrl,
-    presetStyle: presetStyle || "Ai generated",
+    modelName: presetStyle || "Ai generated",
     createdAt: new Date(),
   });
 
