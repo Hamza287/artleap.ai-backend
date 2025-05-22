@@ -62,7 +62,7 @@ const uploadImageToS3 = async (base64Data, userId) => {
  * @param {string} base64Data - The Base64 image string.
  * @returns {Promise<Object>} - The saved image object.
  */
-const saveImageToDatabase = async (user, base64Data, email, prompt, skipUserCheck = false) => {
+const saveImageToDatabase = async (user, base64Data, email, presetStyle ,prompt, skipUserCheck = false) => {
   if (!base64Data) {
     throw new Error("❌ Base64 Image data missing.");
   }
@@ -87,7 +87,7 @@ const saveImageToDatabase = async (user, base64Data, email, prompt, skipUserChec
     creatorEmail: email || user.email || "unknown@example.com",
     prompt: prompt || "No prompt provided",
     imageUrl,
-    presetStyle: user?.presetStyle || "Ai generated",
+    presetStyle: presetStyle || "Ai generated",
     createdAt: new Date(),
   });
 

@@ -82,7 +82,7 @@ const generateTextToImage = async (req, res) => {
 
       // Only first image goes into DB + user.images
       if (i === 0) {
-        const savedImage = await saveImageToDatabase(user, base64Image, creatorEmail, prompt);
+        const savedImage = await saveImageToDatabase(user, base64Image,creatorEmail,presetStyle , prompt);
 
         savedImages.push({
           _id: savedImage._id,
