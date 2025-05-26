@@ -94,7 +94,7 @@ const generateTextToImage = async (req, res) => {
           createdAt: savedImage.createdAt
         });
       } else {
-        const tempImage = await saveImageToDatabase(null, base64Image, creatorEmail, prompt, true);
+        const tempImage = await saveImageToDatabase(user, base64Image, creatorEmail, prompt, true);
         savedImages.push({
           imageUrl: tempImage.imageUrl,
           creatorEmail: creatorEmail || user.email || "unknown@example.com",
