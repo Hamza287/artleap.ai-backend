@@ -77,10 +77,12 @@ const saveImageToDatabase = async (user, base64Data, email, presetStyle ,prompt,
   if (skipUserCheck) {
     return {
       imageUrl,
+      modelName: presetStyle || "Ai generated",
+      creatorEmail: email || "unknown@example.com",
+      prompt: prompt || "No prompt provided",
       createdAt: new Date()
     };
   }
-
   const newImage = new Image({
     userId: user._id,
     username: user.username,
