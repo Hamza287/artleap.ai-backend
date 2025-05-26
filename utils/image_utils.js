@@ -98,4 +98,4 @@ const saveImageToDatabase = async (user, base64Data, email, presetStyle ,prompt,
   return savedImage;
 };
 
-module.exports = { saveImageToDatabase };
+module.exports = { saveImageToDatabase,uploadImageToS3 };
