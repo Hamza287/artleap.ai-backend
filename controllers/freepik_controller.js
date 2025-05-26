@@ -1,7 +1,7 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
 const User = require("../models/user");
-const { saveImageToDatabase } = require("../utils/image_utils");
+const { uploadImageToS3, saveImageToDatabase } = require("../utils/image_utils");
 require("dotenv").config();
 
 const FREEPIK_API_URL = process.env.FREEPIK_API_URL;
@@ -79,32 +79,33 @@ const generateTextToImage = async (req, res) => {
     for (let i = 0; i < imageDataArray.length; i++) {
       const base64Image = imageDataArray[i].base64;
       if (!base64Image) continue;
-
-      // Only first image goes into DB + user.images
+    
       if (i === 0) {
-        const savedImage = await saveImageToDatabase(user, base64Image,creatorEmail,presetStyle , prompt);
-
+        // ✅ Save to DB and user profile
+        const savedImage = await saveImageToDatabase(user, base64Image, creatorEmail, presetStyle, prompt);
         savedImages.push({
           _id: savedImage._id,
           imageUrl: savedImage.imageUrl,
           creatorEmail: creatorEmail || user.email || "unknown@example.com",
           username,
-          presetStyle,
+          modelName: presetStyle,
           prompt,
           createdAt: savedImage.createdAt
         });
       } else {
-        const tempImage = await saveImageToDatabase(user, base64Image, creatorEmail, prompt, true);
+        // ✅ Upload to S3 only
+        const imageUrl = await uploadImageToS3(base64Image, user._id);
         savedImages.push({
-          imageUrl: tempImage.imageUrl,
+          imageUrl,
           creatorEmail: creatorEmail || user.email || "unknown@example.com",
           username,
-          presetStyle,
+          modelName: presetStyle,
           prompt,
           createdAt: new Date().toISOString()
         });
       }
     }
+    
 
     return res.status(200).json({
       generationId,
