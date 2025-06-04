@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4543a32ee135dd648f896cb7826674e162889348
 const mongoose = require("mongoose");
 
 const UserSchema = new mongoose.Schema({
