@@ -169,16 +169,35 @@ const deleteAccount = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        await Image.deleteMany({ userId });
+        // Step 1: Get the user's image IDs from both Image collection and user.images array
+        const userImagesFromCollection = await Image.find({ userId });
+        const imageIds = [
+            ...new Set([
+                ...userImagesFromCollection.map(img => img._id.toString()),
+                ...(user.images?.map(id => id.toString()) || [])
+            ])
+        ];
 
+        // Step 2: Delete those images from the Image collection
+        await Image.deleteMany({ _id: { $in: imageIds } });
+
+        // Step 3: Remove those image IDs from other users' favorites
         await User.updateMany(
-            { favorites: { $in: user.images } },
-            { $pull: { favorites: { $in: user.images } } }
+            { favorites: { $in: imageIds } },
+            { $pull: { favorites: { $in: imageIds } } }
         );
 
-        await User.updateMany({ followers: userId }, { $pull: { followers: userId } });
-        await User.updateMany({ following: userId }, { $pull: { following: userId } });
+        // Step 4: Remove this user from others' followers and following
+        await User.updateMany(
+            { followers: userId },
+            { $pull: { followers: userId } }
+        );
+        await User.updateMany(
+            { following: userId },
+            { $pull: { following: userId } }
+        );
 
+        // Step 5: Delete the user profile
         await User.findByIdAndDelete(userId);
 
         return res.status(200).json({ message: "Account and all related data deleted successfully." });
@@ -188,6 +207,7 @@ const deleteAccount = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
+
 
 module.exports = {
     signup,
