@@ -2,8 +2,42 @@ const User = require("../models/user");
 const { v4: uuidv4 } = require("uuid");
 const Image = require("../models/image_model");
 
-// 🔹 Email/Firebase Login (no password check)
-const loginOrCreate = async (req, res) => {
+// 🔹 Signup (for Firebase-authenticated email users)
+const signup = async (req, res) => {
+    try {
+        const { username, email, profilePic } = req.body;
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: "User already exists" });
+        }
+
+        const newUser = new User({
+            _id: uuidv4(),
+            username,
+            email,
+            profilePic: profilePic || ""
+        });
+
+        await newUser.save();
+
+        res.status(201).json({
+            message: "Signup successful",
+            user: {
+                userId: newUser._id,
+                username: newUser.username,
+                email: newUser.email,
+                profilePic: newUser.profilePic || null
+            }
+        });
+    } catch (error) {
+        console.error("❌ Signup Error:", error);
+        res.status(500).json({ error: "Internal server error", details: error.message });
+    }
+};
+
+// 🔹 Firebase Email Login
+const login = async (req, res) => {
     try {
         const { email, username, profilePic } = req.body;
 
@@ -22,7 +56,7 @@ const loginOrCreate = async (req, res) => {
             });
 
             await user.save();
-            console.log("🆕 New user created via Firebase email:", email);
+            console.log("🆕 New user created via Email login:", user.email);
         }
 
         return res.status(200).json({
@@ -36,12 +70,12 @@ const loginOrCreate = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("❌ Email login error:", error);
+        console.error("❌ Login error:", error);
         res.status(500).json({ error: "Internal server error" });
     }
 };
 
-// 🔹 Google Login (Firebase-authenticated)
+// 🔹 Google Login
 const googleLogin = async (req, res) => {
     try {
         const { email, username, profilePic, googleId } = req.body;
@@ -62,7 +96,7 @@ const googleLogin = async (req, res) => {
             });
 
             await user.save();
-            console.log("🆕 New user created via Google:", email);
+            console.log("🆕 New user created via Google:", user.email);
         }
 
         return res.status(200).json({
@@ -81,7 +115,7 @@ const googleLogin = async (req, res) => {
     }
 };
 
-// 🔹 Apple Login (Firebase-authenticated)
+// 🔹 Apple Login
 const appleLogin = async (req, res) => {
     try {
         const { email, username, profilePic, appleId } = req.body;
@@ -102,7 +136,7 @@ const appleLogin = async (req, res) => {
             });
 
             await user.save();
-            console.log("🆕 New user created via Apple:", email);
+            console.log("🆕 New user created via Apple:", user.email);
         }
 
         return res.status(200).json({
@@ -121,7 +155,7 @@ const appleLogin = async (req, res) => {
     }
 };
 
-// 🔹 Delete User Account + Related Data
+// 🔹 Delete Account + Data
 const deleteAccount = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -135,20 +169,16 @@ const deleteAccount = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Step 1: Delete user's images
         await Image.deleteMany({ userId });
 
-        // Step 2: Remove from others' favorites
         await User.updateMany(
             { favorites: { $in: user.images } },
             { $pull: { favorites: { $in: user.images } } }
         );
 
-        // Step 3: Remove followers/following
         await User.updateMany({ followers: userId }, { $pull: { followers: userId } });
         await User.updateMany({ following: userId }, { $pull: { following: userId } });
 
-        // Step 4: Delete user
         await User.findByIdAndDelete(userId);
 
         return res.status(200).json({ message: "Account and all related data deleted successfully." });
@@ -160,7 +190,8 @@ const deleteAccount = async (req, res) => {
 };
 
 module.exports = {
-    loginOrCreate,
+    signup,
+    login,
     googleLogin,
     appleLogin,
     deleteAccount
