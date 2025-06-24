@@ -11,11 +11,9 @@ const userRoutes = require("./routers/user_router");
 const starryAiRouter = require("./routers/starry_ai_routes")
 const leonardoRoutes = require("./routers/leonardoRoutes")
 const imageActionRouter = require("./routers/image_action_router")
-
-
+const watermarkRoutes = require('./routers/watermarkRoutes')
 const app = express();
 const PORT = 8000;
-
 // Middleware
 app.use(express.json());
 app.use(cors());
@@ -30,14 +28,11 @@ app.use("/api", starryAiRouter);
 app.use('/api', leonardoRoutes);
 app.use('/api', freePikTxtToImg); 
 app.use('/api', imageActionRouter); 
-
+app.use('/api/watermark', watermarkRoutes);
 
 
 // Database Connection
-mongoose
-  .connect(
-    "mongodb://localhost:27017/user-auth"
-  )
+mongoose.connect("mongodb://127.0.0.1:27017/user-auth")
   .then(() => {
     console.log("✅ Connected to MongoDB");
   })

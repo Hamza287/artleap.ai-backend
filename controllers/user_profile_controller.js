@@ -114,15 +114,15 @@ const updateUserCredits = async (req, res) => {
     const today = moment().startOf('day');
     const lastReset = user.lastCreditReset ? moment(user.lastCreditReset).startOf('day') : null;
 
-    if (user.dailyCredits < 75 && !today.isSame(lastReset)) {
+    if (user.dailyCredits < 150 && !today.isSame(lastReset)) {
 
       // ✅ Free user and needs reset
-      user.dailyCredits = 75;
+      user.dailyCredits = 150;
       user.lastCreditReset = new Date();
       await user.save();
       return res.json({
         success: true,
-        message: `✅ Daily credits reset to 75 for ${user.username}.`,
+        message: `✅ Daily credits reset to 150 for ${user.username}.`,
         dailyCredits: user.dailyCredits,
       });
     } else {
