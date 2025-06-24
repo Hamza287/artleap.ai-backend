@@ -12,7 +12,6 @@ const starryAiRouter = require("./routers/starry_ai_routes")
 const leonardoRoutes = require("./routers/leonardoRoutes")
 const imageActionRouter = require("./routers/image_action_router")
 
-
 const app = express();
 const PORT = 8000;
 
