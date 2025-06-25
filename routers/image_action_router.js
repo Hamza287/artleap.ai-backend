@@ -3,7 +3,7 @@ const { deleteImage, reportImage } = require("../controllers/image_action_contro
 
 const imageActionRouter = express.Router();
 
-imageActionRouter.delete("/delete/:imageId", deleteImage);
+imageActionRouter.delete("/images/delete/:imageId", deleteImage);
 imageActionRouter.post("/images/:imageId/report", reportImage);
 
 module.exports = imageActionRouter;
