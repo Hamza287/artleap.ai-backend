@@ -14,7 +14,7 @@ const generateTextToImage = async (req, res) => {
       username,
       creatorEmail,
       prompt,
-      presetStyle = "default",
+      presetStyle = "photo",
       aspectRatio = "square_1_1",
       num_images = 1
     } = req.body;
