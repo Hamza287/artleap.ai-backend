@@ -11,7 +11,11 @@ const userRoutes = require("./routers/user_router");
 const starryAiRouter = require("./routers/starry_ai_routes")
 const leonardoRoutes = require("./routers/leonardoRoutes")
 const imageActionRouter = require("./routers/image_action_router")
+const notificationRouter = require('./routers/notification_routes');
+const { initializeFirebase } = require('./service/firebaseService');
 
+// Initialize Firebase
+initializeFirebase();
 const app = express();
 const PORT = 8000;
 
@@ -29,7 +33,7 @@ app.use("/api", starryAiRouter);
 app.use('/api', leonardoRoutes);
 app.use('/api', freePikTxtToImg); 
 app.use('/api', imageActionRouter); 
-
+app.use('/api', notificationRouter);
 
 
 // Database Connection

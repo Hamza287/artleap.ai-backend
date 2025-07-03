@@ -13,7 +13,8 @@ const UserSchema = new mongoose.Schema({
   lastCreditReset: { type: Date, default: null },
    followers: [{ type: mongoose.Schema.Types.Mixed }],
   following: [{ type: mongoose.Schema.Types.Mixed }],
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  hiddenNotifications: {type: [String],default: []},
 });
 
 module.exports = mongoose.model("User", UserSchema);
