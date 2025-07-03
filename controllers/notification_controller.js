@@ -24,8 +24,14 @@ const getUserNotifications = async (req, res) => {
       });
     }
 
-    const user = await User.findById(userId); // ✅ FIXED
-    const hidden = user?.hiddenNotifications || [];
+    // Get user with hidden notifications
+    const user = await User.findById(userId).select('hiddenNotifications');
+    const hiddenNotifications = user?.hiddenNotifications || [];
+
+    // Convert hidden notification IDs to ObjectId if valid
+    const hiddenIds = hiddenNotifications.map(id => 
+      isValidObjectId(id) ? new mongoose.Types.ObjectId(id) : id
+    );
 
     const aggregate = Notification.aggregate([
       {
@@ -33,41 +39,37 @@ const getUserNotifications = async (req, res) => {
           $and: [
             {
               $or: [
-                { userId: userId },
-                { isGeneral: true } // ✅ FIXED
-              ],
+                { userId: userId },       // User-specific notifications
+                { type: 'general' }       // General notifications
+              ]
             },
-            {
-              _id: {
-                $nin: hidden.map((id) =>
-                  isValidObjectId(id) ? new mongoose.Types.ObjectId(id) : id
-                ),
-              },
-            },
-          ],
-        },
+            { 
+              _id: { $nin: hiddenIds }    // Exclude hidden notifications
+            }
+          ]
+        }
       },
       {
-        $sort: { createdAt: -1 },
+        $sort: { createdAt: -1 }
       },
       {
         $project: {
           _id: 1,
           userId: 1,
-          isGeneral: 1, // ✅ Use this instead of 'type'
+          type: 1,                        // Changed from isGeneral to type
           title: 1,
           body: 1,
           data: 1,
           isRead: 1,
-          createdAt: 1,
-        },
-      },
+          createdAt: 1
+        }
+      }
     ]);
 
     const options = {
       page: parseInt(page),
       limit: parseInt(limit),
-      sort: { createdAt: -1 },
+      sort: { createdAt: -1 }
     };
 
     const notifications = await Notification.aggregatePaginate(aggregate, options);
@@ -81,11 +83,10 @@ const getUserNotifications = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error while fetching notifications",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
-
-
 // Mark notification as read
 const markAsRead = async (req, res) => {
   try {

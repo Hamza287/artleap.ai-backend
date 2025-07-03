@@ -39,7 +39,7 @@ app.use('/api', notificationRouter);
 // Database Connection
 mongoose
   .connect(
-    "mongodb://localhost:27017/user-auth"
+    "mongodb://127.0.0.1:27017/user-auth"
   )
   .then(() => {
     console.log("✅ Connected to MongoDB");
