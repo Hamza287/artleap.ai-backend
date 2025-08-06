@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.js"
+    "start": "nodemon index.js",
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
@@ -12,20 +12,42 @@
   "description": "",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.750.0",
-    "axios": "^1.7.9",
+    "axios": "^1.11.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "firebase-admin": "^13.4.0",
+    "google-auth-library": "^10.2.0",
+    "googleapis": "^154.1.0",
     "jsonwebtoken": "^9.0.2",
     "learn-node": "file:",
     "moment": "^2.30.1",
-    "mongoose": "^8.9.5",
+    "mongoose": "^8.16.4",
     "mongoose-aggregate-paginate-v2": "^1.1.4",
     "multer": "^1.4.5-lts.2",
+    "node-cron": "^4.2.1",
     "sharp": "^0.34.2",
+    "stripe": "^18.4.0",
     "uuid": "^11.0.5"
+  },
+  "devDependencies": {
+    "jest": "^30.0.5",
+    "jest-cli": "^30.0.5",
+    "supertest": "^7.1.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": [
+      "./test/setup.js"
+    ],
+    "globalTeardown": "./test/teardown.js",
+    "testTimeout": 15000,
+    "testMatch": [
+      "**/*.test.js"
+    ],
+    "runInBand": true,
+    "verbose": true
   }
 }

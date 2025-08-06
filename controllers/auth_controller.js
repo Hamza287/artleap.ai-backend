@@ -1,6 +1,43 @@
-const User = require("../models/user");
 const { v4: uuidv4 } = require("uuid");
 const Image = require("../models/image_model");
+const User = require("../models/user");
+const SubscriptionPlan = require("../models/subscriptionPlan_model");
+const UserSubscription = require("../models/user_subscription");
+const SubscriptionService = require("../service/subscriptionService");
+const HistoryService = require('../service/userHistoryService');
+const UserHistory = require('../models/user_history_model');
+
+
+// Helper function to create free subscription
+const createFreeSubscription = async (userId) => {
+    const freePlan = await SubscriptionPlan.findOne({ type: 'free' });
+    if (!freePlan) {
+        throw new Error("Free subscription plan not found");
+    }
+
+    const freeSubscription = new UserSubscription({
+        userId: userId,
+        planId: freePlan._id,
+        startDate: new Date(),
+        endDate: new Date(8640000000000000), // Far future date
+        isActive: true,
+        isTrial: false,
+        autoRenew: true,
+        planSnapshot: {
+            name: freePlan.name,
+            type: freePlan.type,
+            price: freePlan.price,
+            totalCredits: freePlan.totalCredits,
+            imageGenerationCredits: freePlan.imageGenerationCredits,
+            promptGenerationCredits: freePlan.promptGenerationCredits,
+            features: freePlan.features,
+            version: freePlan.version
+        }
+    });
+
+    await freeSubscription.save();
+    return freeSubscription;
+};
 
 // 🔹 Signup (for Firebase-authenticated email users)
 const signup = async (req, res) => {
@@ -16,10 +53,33 @@ const signup = async (req, res) => {
             _id: uuidv4(),
             username,
             email,
-            profilePic: profilePic || ""
+            profilePic: profilePic || "",
+            isSubscribed: false,
+            subscriptionStatus: 'none'
         });
 
         await newUser.save();
+
+        // Create free subscription
+        const freeSubscription = await createFreeSubscription(newUser._id);
+        
+        // Update user with subscription reference
+        newUser.currentSubscription = freeSubscription._id;
+        newUser.subscriptionStatus = 'active';
+        newUser.planName = 'Free';
+        await newUser.save();
+
+        // Initialize user history
+        await HistoryService.initializeUserHistory(newUser._id);
+        
+        // Record free subscription in history
+        await HistoryService.recordSubscription(newUser._id, {
+            planId: freeSubscription.planId,
+            startDate: freeSubscription.startDate,
+            endDate: freeSubscription.endDate,
+            status: 'active',
+            paymentMethod: 'free'
+        });
 
         res.status(201).json({
             message: "Signup successful",
@@ -27,7 +87,9 @@ const signup = async (req, res) => {
                 userId: newUser._id,
                 username: newUser.username,
                 email: newUser.email,
-                profilePic: newUser.profilePic || null
+                profilePic: newUser.profilePic || null,
+                planName: newUser.planName,
+                isSubscribed: newUser.isSubscribed
             }
         });
     } catch (error) {
@@ -52,11 +114,31 @@ const login = async (req, res) => {
                 _id: uuidv4(),
                 username: username || "Guest",
                 email,
-                profilePic: profilePic || ""
+                profilePic: profilePic || "",
+                isSubscribed: false,
+                subscriptionStatus: 'none'
             });
 
             await user.save();
-            console.log("🆕 New user created via Email login:", user.email);
+            
+            // Create free subscription
+            const freeSubscription = await createFreeSubscription(user._id);
+            
+            // Update user with subscription reference
+            user.currentSubscription = freeSubscription._id;
+            user.subscriptionStatus = 'active';
+            user.planName = 'Free';
+            await user.save();
+
+            // Initialize history for new users
+            await HistoryService.initializeUserHistory(user._id);
+            await HistoryService.recordSubscription(user._id, {
+                planId: freeSubscription.planId,
+                startDate: freeSubscription.startDate,
+                endDate: freeSubscription.endDate,
+                status: 'active',
+                paymentMethod: 'free'
+            });
         }
 
         return res.status(200).json({
@@ -65,13 +147,15 @@ const login = async (req, res) => {
                 userId: user._id,
                 username: user.username,
                 email: user.email,
-                profilePic: user.profilePic || null
+                profilePic: user.profilePic || null,
+                planName: user.planName || "Free",
+                isSubscribed: user.isSubscribed || false
             }
         });
 
     } catch (error) {
         console.error("❌ Login error:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: "Internal server error", details: error.message });
     }
 };
 
@@ -92,11 +176,29 @@ const googleLogin = async (req, res) => {
                 username,
                 email,
                 profilePic,
-                googleId
+                googleId,
+                isSubscribed: false,
+                subscriptionStatus: 'none'
             });
 
             await user.save();
-            console.log("🆕 New user created via Google:", user.email);
+            
+            const freeSubscription = await createFreeSubscription(user._id);
+            
+            user.currentSubscription = freeSubscription._id;
+            user.subscriptionStatus = 'active';
+            user.planName = 'Free';
+            await user.save();
+
+            // Initialize history
+            await HistoryService.initializeUserHistory(user._id);
+            await HistoryService.recordSubscription(user._id, {
+                planId: freeSubscription.planId,
+                startDate: freeSubscription.startDate,
+                endDate: freeSubscription.endDate,
+                status: 'active',
+                paymentMethod: 'free'
+            });
         }
 
         return res.status(200).json({
@@ -105,7 +207,9 @@ const googleLogin = async (req, res) => {
                 userId: user._id,
                 username: user.username,
                 email: user.email,
-                profilePic: user.profilePic || null
+                profilePic: user.profilePic || null,
+                planName: user.planName || "Free",
+                isSubscribed: user.isSubscribed || false
             }
         });
 
@@ -132,11 +236,30 @@ const appleLogin = async (req, res) => {
                 username: username || "Apple User",
                 email,
                 profilePic: profilePic || "",
-                appleId
+                appleId,
+                isSubscribed: false,
+                subscriptionStatus: 'none'
             });
 
             await user.save();
-            console.log("🆕 New user created via Apple:", user.email);
+            
+            // Create free subscription
+            const freeSubscription = await createFreeSubscription(user._id);
+            
+            // Update user with subscription reference
+            user.currentSubscription = freeSubscription._id;
+            user.subscriptionStatus = 'active';
+            user.planName = 'Free';
+            await user.save();
+
+            await HistoryService.initializeUserHistory(user._id);
+            await HistoryService.recordSubscription(user._id, {
+                planId: freeSubscription.planId,
+                startDate: freeSubscription.startDate,
+                endDate: freeSubscription.endDate,
+                status: 'active',
+                paymentMethod: 'free'
+            });
         }
 
         return res.status(200).json({
@@ -145,7 +268,9 @@ const appleLogin = async (req, res) => {
                 userId: user._id,
                 username: user.username,
                 email: user.email,
-                profilePic: user.profilePic || null
+                profilePic: user.profilePic || null,
+                planName: user.planName || "Free",
+                isSubscribed: user.isSubscribed || false
             }
         });
 
@@ -169,7 +294,12 @@ const deleteAccount = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Step 1: Get the user's image IDs from both Image collection and user.images array
+        // Step 0: Delete user history
+        await UserHistory.deleteOne({ userId });
+
+        // Rest of your existing delete logic...
+        await UserSubscription.deleteMany({ userId });
+        
         const userImagesFromCollection = await Image.find({ userId });
         const imageIds = [
             ...new Set([
@@ -178,16 +308,11 @@ const deleteAccount = async (req, res) => {
             ])
         ];
 
-        // Step 2: Delete those images from the Image collection
         await Image.deleteMany({ _id: { $in: imageIds } });
-
-        // Step 3: Remove those image IDs from other users' favorites
         await User.updateMany(
             { favorites: { $in: imageIds } },
             { $pull: { favorites: { $in: imageIds } } }
         );
-
-        // Step 4: Remove this user from others' followers and following
         await User.updateMany(
             { followers: userId },
             { $pull: { followers: userId } }
@@ -197,7 +322,6 @@ const deleteAccount = async (req, res) => {
             { $pull: { following: userId } }
         );
 
-        // Step 5: Delete the user profile
         await User.findByIdAndDelete(userId);
 
         return res.status(200).json({ message: "Account and all related data deleted successfully." });
@@ -207,7 +331,6 @@ const deleteAccount = async (req, res) => {
         res.status(500).json({ message: "Internal server error", error: error.message });
     }
 };
-
 
 module.exports = {
     signup,

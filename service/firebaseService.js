@@ -89,7 +89,7 @@ const saveNotification = async (notificationData) => {
 // Send push notification with improved error handling
 const sendPushNotification = async (deviceTokens, notificationData) => {
   try {
-    if (!deviceTokens || !Array.isArray(deviceTokens) ){
+    if (!deviceTokens || !Array.isArray(deviceTokens)) {
       throw new Error('Invalid device tokens array');
     }
 
@@ -102,19 +102,28 @@ const sendPushNotification = async (deviceTokens, notificationData) => {
       throw new Error('Notification title and body are required');
     }
 
+    // Filter valid tokens
+    const validTokens = deviceTokens.filter(t => typeof t === 'string' && t.length > 0);
+    
+    if (validTokens.length === 0) {
+      console.warn('No valid device tokens found after filtering');
+      return { successCount: 0, failureCount: 0 };
+    }
+
+    // Check if sendMulticast exists
+    if (!admin.messaging().sendMulticast) {
+      console.warn('sendMulticast not available, falling back to individual sends');
+      return await sendIndividualNotifications(validTokens, notificationData);
+    }
+
     const message = {
       notification: {
         title: notificationData.title,
         body: notificationData.body
       },
       data: notificationData.data || {},
-      tokens: deviceTokens.filter(t => typeof t === 'string' && t.length > 0)
+      tokens: validTokens
     };
-
-    if (message.tokens.length === 0) {
-      console.warn('No valid device tokens found after filtering');
-      return { successCount: 0, failureCount: 0 };
-    }
 
     const response = await admin.messaging().sendMulticast(message);
     
@@ -122,7 +131,7 @@ const sendPushNotification = async (deviceTokens, notificationData) => {
     if (response.failureCount > 0) {
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
-          console.error(`Failed to send to token ${deviceTokens[idx]}:`, resp.error);
+          console.error(`Failed to send to token ${validTokens[idx]}:`, resp.error);
         }
       });
     }
@@ -133,6 +142,33 @@ const sendPushNotification = async (deviceTokens, notificationData) => {
     console.error('Error sending push notification:', error.message);
     throw error;
   }
+};
+
+// Fallback function for older Firebase versions
+const sendIndividualNotifications = async (tokens, notificationData) => {
+  let successCount = 0;
+  let failureCount = 0;
+
+  for (const token of tokens) {
+    try {
+      const message = {
+        notification: {
+          title: notificationData.title,
+          body: notificationData.body
+        },
+        data: notificationData.data || {},
+        token: token
+      };
+
+      await admin.messaging().send(message);
+      successCount++;
+    } catch (error) {
+      console.error(`Failed to send to token ${token}:`, error);
+      failureCount++;
+    }
+  }
+
+  return { successCount, failureCount };
 };
 
 // Get device tokens with improved error handling

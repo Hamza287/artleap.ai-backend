@@ -6,6 +6,8 @@ const ImageModel = require('../models/image_model');
 const User = require('../models/user');
 const { uploadImageFromUrl } = require('../utils/s3Uploader');
 const styleMap = require('../utils/leonardoStyleMap');
+const SubscriptionService = require("../service/subscriptionService");
+const HistoryService = require('./../service/userHistoryService');
 
 const LEONARDO_API_KEY = process.env.LEONARDO_API_KEY;
 const LEONARDO_BASE_URL = process.env.LEONARDO_BASE_URL || 'https://cloud.leonardo.ai/api/rest/v1';
@@ -13,7 +15,6 @@ const BUCKET = process.env.AWS_S3_BUCKET_NAME;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// TEXT TO IMAGE
 const generateTextToImage = async (req, res) => {
   try {
     const {
@@ -30,6 +31,16 @@ const generateTextToImage = async (req, res) => {
 
     if (!prompt || !userId || !username) {
       return res.status(400).json({ error: 'Missing required fields (prompt, userId, username).' });
+    }
+
+    const generationType = "image";
+    const limits = await SubscriptionService.checkGenerationLimits(userId, generationType);
+
+    if (!limits.allowed) {
+      return res.status(403).json({ 
+        error: "Generation limit reached",
+        details: limits 
+      });
     }
 
     const genRes = await axios.post(`${LEONARDO_BASE_URL}/generations`, {
@@ -110,6 +121,12 @@ const generateTextToImage = async (req, res) => {
       }
     }
 
+    await SubscriptionService.recordGenerationUsage(userId, generationType,num_images);
+
+    // Update image generation count in history
+    await HistoryService.recordImageGeneration(userId, 'byPrompt');
+    await HistoryService.updateCreditUsage(userId);
+
     return res.status(200).json({
       generationId,
       prompt,
@@ -126,7 +143,6 @@ const generateTextToImage = async (req, res) => {
   }
 };
 
-// IMAGE TO IMAGE
 const generateImagetoImage = async (req, res) => {
   try {
     const image = req.file;
@@ -143,11 +159,21 @@ const generateImagetoImage = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields (image, prompt, userId, username).' });
     }
 
+    const generationType = "image";
+    const limits = await SubscriptionService.checkGenerationLimits(userId, generationType);
+
+    if (!limits.allowed) {
+      return res.status(403).json({ 
+        error: "Generation limit reached",
+        details: limits 
+      });
+    }
+
     const styleKey = presetStyle.toUpperCase();
     const styleConfig = styleMap[styleKey] || styleMap['CINEMATIC'];
     const finalPrompt = `${prompt}, ${styleConfig.promptBoost}`;
 
-    const imagePath = path.join(__dirname, '..', 'uploads', image.filename);
+    const imagePath = path.join(__dirname, '..', 'Uploads', image.filename);
     const imageBuffer = fs.readFileSync(imagePath);
 
     const initImageRes = await axios.post(`${LEONARDO_BASE_URL}/init-image`, { extension: 'png' }, {
@@ -264,6 +290,11 @@ const generateImagetoImage = async (req, res) => {
     }
 
     fs.unlinkSync(imagePath);
+
+    await SubscriptionService.recordGenerationUsage(userId, generationType,num_images);
+
+    await HistoryService.recordImageGeneration(userId, 'byImage');
+    await HistoryService.updateCreditUsage(userId);
 
     return res.status(200).json({
       generationId,
