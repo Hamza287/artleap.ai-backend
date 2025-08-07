@@ -15,7 +15,7 @@ const paymentRecordSchema = new Schema({
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['google_pay','google_play', 'apple_pay', 'credit_card', 'other']
+    enum: ['google_pay','google_play', 'apple_pay', 'credit_card', 'other','stripe']
   },
   transactionId: {
     type: String,
@@ -34,7 +34,7 @@ const paymentRecordSchema = new Schema({
   platform: {
     type: String,
     required: true,
-    enum: ['android', 'ios', 'web']
+    enum: ['android', 'ios', 'web',,'stripe']
   },
   receiptData: {
     type: String,

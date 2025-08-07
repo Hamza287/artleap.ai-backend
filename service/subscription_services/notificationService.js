@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 
 class NotificationService {
   async sendSubscriptionNotification(userId, eventType, subscription) {
-    console.debug("[NotificationService] Starting sendSubscriptionNotification", { userId, eventType });
     try {
       const user = await User.findOne({
         _id: mongoose.Types.ObjectId.isValid(userId) ? mongoose.Types.ObjectId(userId) : userId,

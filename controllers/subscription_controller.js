@@ -3,7 +3,7 @@ const HistoryService = require("../service/userHistoryService");
 const { google } = require("googleapis");
 const androidpublisher = google.androidpublisher("v3");
 const PaymentRecord = require("../models/recordPayment_model");
-// const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 class SubscriptionController {
   async getPlans(req, res) {
@@ -35,7 +35,7 @@ class SubscriptionController {
       if (paymentMethod === "google_pay" || paymentMethod === "google_play") {
         isValid = await this.verifyGooglePurchase(verificationData);
       } else if (paymentMethod === "stripe") {
-        // isValid = await this.verifyStripePurchase(verificationData);
+        isValid = await this.verifyStripePurchase(verificationData);
       } else if (paymentMethod === 'apple') {
         isValid = await this.verifyApplePurchase(verificationData);
       }else {
@@ -57,7 +57,7 @@ class SubscriptionController {
         userId,
         planId,
         paymentMethod,
-        false
+        false,
       );
 
       // Record payment
@@ -139,41 +139,41 @@ class SubscriptionController {
     }
   }
 
-  // async verifyStripePurchase(verificationData) {
-  //   try {
-  //     const { paymentIntentId } = verificationData;
+  async verifyStripePurchase(verificationData) {
+    try {
+      const { paymentIntentId } = verificationData;
 
-  //     if (!paymentIntentId) {
-  //       console.error("[verifyStripePurchase] Missing paymentIntentId");
-  //       return false;
-  //     }
+      if (!paymentIntentId) {
+        console.error("[verifyStripePurchase] Missing paymentIntentId");
+        return false;
+      }
 
-  //     // Retrieve the Payment Intent from Stripe
-  //     const paymentIntent = await stripe.paymentIntents.retrieve(
-  //       paymentIntentId
-  //     );
+      // Retrieve the Payment Intent from Stripe
+      const paymentIntent = await stripe.paymentIntents.retrieve(
+        paymentIntentId
+      );
 
-  //     // Check if the payment is successful
-  //     if (paymentIntent.status === "succeeded") {
-  //       console.log(
-  //         `[verifyStripePurchase] Payment Intent ${paymentIntentId} verified successfully`
-  //       );
-  //       return true;
-  //     } else {
-  //       console.warn(
-  //         "[verifyStripePurchase] Payment NOT verified. Status:",
-  //         paymentIntent.status
-  //       );
-  //       return false;
-  //     }
-  //   } catch (error) {
-  //     console.error(
-  //       "[verifyStripePurchase] Stripe verification error:",
-  //       error.message || error
-  //     );
-  //     return false;
-  //   }
-  // }
+      // Check if the payment is successful
+      if (paymentIntent.status === "succeeded") {
+        console.log(
+          `[verifyStripePurchase] Payment Intent ${paymentIntentId} verified successfully`
+        );
+        return true;
+      } else {
+        console.warn(
+          "[verifyStripePurchase] Payment NOT verified. Status:",
+          paymentIntent.status
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error(
+        "[verifyStripePurchase] Stripe verification error:",
+        error.message || error
+      );
+      return false;
+    }
+  }
 
   async verifyApplePurchase(verificationData) {
     try {
@@ -248,7 +248,7 @@ class SubscriptionController {
         paymentMethod === 'stripe'
           ? verificationData.paymentIntentId
           : paymentMethod === 'apple'
-          ? verificationData.receiptData // Store App Store receipt
+          ? verificationData.receiptData
           : verificationData.purchaseToken,
       status: 'completed',
       planSnapshot: plan

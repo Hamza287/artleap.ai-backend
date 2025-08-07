@@ -7,10 +7,12 @@ const SubscriptionService = require("../service/subscriptionService");
 const connectToMongoDB = async () => {
   try {
     if (mongoose.connection.readyState === 1) {
+      console.log('[PlansCron] MongoDB already connected');
       return;
     }
 
     const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/user-auth';
+    console.log('[PlansCron] Attempting to connect to MongoDB:', mongoUri);
     
     await mongoose.connect(mongoUri, {
       bufferCommands: false,
@@ -58,6 +60,7 @@ const waitForConnection = async (maxWaitTime = 30000) => {
     
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
+  console.log('[PlansCron] MongoDB connection ready');
 };
 
 // Function to sync plans
@@ -70,13 +73,16 @@ const syncPlans = async () => {
     
     // Verify connection with a ping
     await mongoose.connection.db.admin().ping();
+    console.log('[PlansCron] MongoDB ping successful');
     
     // Now sync plans
+    console.log('[PlansCron] Starting syncPlansWithGooglePlay');
     await SubscriptionService.syncPlansWithGooglePlay();
+    console.log('[PlansCron] Starting processExpiredSubscriptions');
     await SubscriptionService.processExpiredSubscriptions();
     
     const duration = Date.now() - startTime;
-    
+    console.log('[PlansCron] Plan sync completed in', duration + 'ms');
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error('[PlansCron] Plan synchronization failed:', {
@@ -108,6 +114,7 @@ const initializeCron = async () => {
   try {
     await connectToMongoDB();
     await waitForConnection();
+    console.log('[PlansCron] Initialization complete');
   } catch (error) {
     console.error('[PlansCron] Service initialization failed:', {
       message: error.message,
@@ -118,19 +125,23 @@ const initializeCron = async () => {
   }
 };
 
-// Schedule daily sync at midnight UTC
-cron.schedule('0 0 * * *', async () => {
+// Schedule the cron job to run every 2 minutes
+console.log('[PlansCron] Script started at:', new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
+console.log('[PlansCron] Scheduling job to run every 2 minutes');
+cron.schedule('*/2 * * * *', async () => {
+  console.log('[PlansCron] Cron job triggered at:', new Date().toLocaleString('en-US', { timeZone: 'Asia/Karachi' }));
   await syncPlans();
 }, {
   scheduled: true,
-  timezone: "UTC"
+  timezone: "Asia/Karachi"
 });
+
 // Graceful shutdown handlers
 const gracefulShutdown = async (signal) => {
-  
   try {
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
+      console.log('[PlansCron] MongoDB connection closed');
     }
   } catch (error) {
     console.error('[PlansCron] Error during shutdown:', {
@@ -141,25 +152,20 @@ const gracefulShutdown = async (signal) => {
   process.exit(0);
 };
 
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-
-// Handle uncaught exceptions
+process.on('SIGINT', () => {
+  console.log('[PlansCron] Received SIGINT signal, shutting down gracefully...');
+  gracefulShutdown('SIGINT');
+});
+process.on('SIGTERM', () => {
+  console.log('[PlansCron] Received SIGTERM signal, shutting down gracefully...');
+  gracefulShutdown('SIGTERM');
+});
 process.on('uncaughtException', (error) => {
-  console.error('[PlansCron] Uncaught Exception:', {
-    message: error.message,
-    stack: error.stack,
-    timestamp: new Date().toISOString()
-  });
+  console.error('[PlansCron] Uncaught Exception:', error);
   gracefulShutdown('uncaughtException');
 });
-
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('[PlansCron] Unhandled Rejection:', {
-    reason: reason,
-    promise: promise,
-    timestamp: new Date().toISOString()
-  });
+  console.error('[PlansCron] Unhandled Rejection:', reason);
   gracefulShutdown('unhandledRejection');
 });
 
