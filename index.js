@@ -16,6 +16,7 @@ const subscriptionRouter = require("./routers/subscription_routes");
 const { initializeFirebase } = require("./service/firebaseService");
 const SubscriptionService = require("./service/subscriptionService");
 
+
 initializeFirebase();
 const app = express();
 const PORT = 8000;

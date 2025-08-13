@@ -40,15 +40,15 @@ const uploadImageToS3 = async (base64Data, userId) => {
     ContentType: "image/png",
   };
 
-  console.log("🟢 Uploading image to S3...");
-  console.log("Bucket:", params.Bucket);
-  console.log("Key:", params.Key);
-  console.log("Buffer Length:", buffer.length);
+  // console.log("🟢 Uploading image to S3...");
+  // console.log("Bucket:", params.Bucket);
+  // console.log("Key:", params.Key);
+  // console.log("Buffer Length:", buffer.length);
 
   try {
     await s3Client.send(new PutObjectCommand(params));
     const imageUrl = `https://${s3Bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-    console.log("✅ Image uploaded to S3:", imageUrl);
+    // console.log("✅ Image uploaded to S3:", imageUrl);
     return imageUrl;
   } catch (error) {
     console.error("❌ Error uploading image to S3:", error);
