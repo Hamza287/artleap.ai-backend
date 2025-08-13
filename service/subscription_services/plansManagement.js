@@ -19,6 +19,7 @@ class PlanManagement {
       {
         name: "Free",
         type: "free",
+        basePlanId: "Free",
         description: "Basic access with limited features",
         price: 0,
         totalCredits: 10,
@@ -39,6 +40,7 @@ class PlanManagement {
       {
         name: "Trial",
         type: "trial",
+        basePlanId: "Trial",
         description: "You Can Use Our Premium Features For Free on Trial After Trial End you will be charged for Weekly Subscription Automatically",
         price: 0,
         totalCredits: 480,

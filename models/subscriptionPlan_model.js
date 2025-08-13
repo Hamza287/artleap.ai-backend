@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const subscriptionPlanSchema = new mongoose.Schema({
   googleProductId: { type: String, unique: true, sparse: true },
   appleProductId: { type: String, unique: true, sparse: true },
-  basePlanId: { type: String, required: false,default: null },
+  basePlanId: { type: String, required: true },
   name: { type: String, required: true },
   type: {
     type: String,
