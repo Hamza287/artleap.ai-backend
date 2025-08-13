@@ -19,7 +19,7 @@ class PlanManagement {
       {
         name: "Free",
         type: "free",
-        basePlanId: "Free",
+       basePlanId: "Free",
         description: "Basic access with limited features",
         price: 0,
         totalCredits: 10,
