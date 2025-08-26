@@ -4,6 +4,7 @@ const { google } = require("googleapis");
 const androidpublisher = google.androidpublisher("v3");
 const PaymentRecord = require("../models/recordPayment_model");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const axios = require('axios');
 
 class SubscriptionController {
   async getPlans(req, res) {
@@ -25,13 +26,22 @@ class SubscriptionController {
     }
   }
 
+  async syncApplePlans(req, res) {
+    try {
+      await SubscriptionService.syncPlansWithAppStore();
+      res.json({ success: true, message: 'Apple plans synchronized successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
   async subscribe(req, res) {
     try {
       const { userId, planId, paymentMethod, verificationData } = req.body;
 
       // Verify the purchase
       let isValid = false;
-      console.log(`Payment method: ${paymentMethod}`);
+      console.log(`Payment method: ${userId, planId, paymentMethod, verificationData}`);
       if (paymentMethod === "google_pay" || paymentMethod === "google_play") {
         isValid = await this.verifyGooglePurchase(verificationData);
       } else if (paymentMethod === "stripe") {
@@ -94,6 +104,8 @@ class SubscriptionController {
         keyFile: process.env.GOOGLE_KEY_PATH,
         scopes: ["https://www.googleapis.com/auth/androidpublisher"],
       });
+
+      console.log(verificationData);
 
       const authClient = await auth.getClient();
       google.options({ auth: authClient });

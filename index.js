@@ -15,6 +15,7 @@ const notificationRouter = require("./routers/notification_routes");
 const subscriptionRouter = require("./routers/subscription_routes");
 const { initializeFirebase } = require("./service/firebaseService");
 const SubscriptionService = require("./service/subscriptionService");
+const subscriptionService = require("./service/subscriptionService");
 
 
 initializeFirebase();
@@ -44,10 +45,9 @@ mongoose
     "mongodb://127.0.0.1:27017/user-auth"
   )
   .then(() => {
-     console.log("✅ Connected to MongoDB");
      SubscriptionService.initializeDefaultPlans();
      SubscriptionService.syncPlansWithGooglePlay();
-     console.log("✅ Subscription plans initialized");
+     subscriptionService.syncPlansWithAppStore();
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);

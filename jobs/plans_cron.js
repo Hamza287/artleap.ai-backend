@@ -73,6 +73,7 @@ const syncPlans = async () => {
     
     // Now sync plans
     await SubscriptionService.syncPlansWithGooglePlay();
+    await SubscriptionService.syncPlansWithAppStore();
     await SubscriptionService.processExpiredSubscriptions();
     
     const duration = Date.now() - startTime;
@@ -118,8 +119,15 @@ const initializeCron = async () => {
 };
 
 // Schedule the cron job to run daily at midnight (12:00 AM)
-cron.schedule('0 0 * * *', async () => {
-  console.log('[PlansCron] Midnight plan synchronization started');
+// cron.schedule('0 0 * * *', async () => {
+//   console.log('[PlansCron] Midnight plan synchronization started');
+//   await syncPlans();
+// }, {
+//   scheduled: true,
+//   timezone: "Asia/Karachi"
+// });
+cron.schedule('*/2 * * * *', async () => {
+  console.log('[PlansCron] Running every 2 minutes');
   await syncPlans();
 }, {
   scheduled: true,

@@ -5,7 +5,8 @@ const paymentIntentController = require('./../controllers/stripe_payment_intent_
 
 // Properly bind context using arrow functions
 router.get("/plans", (req, res) => SubscriptionController.getPlans(req, res));
-router.post("/sync", (req, res) => SubscriptionController.syncPlans(req, res));
+router.post("/sync-apple-plans", (req, res) => SubscriptionController.syncPlans(req, res));
+router.post("/sync", (req, res) => SubscriptionController.syncApplePlans(req, res));
 router.post("/subscribe", (req, res) => SubscriptionController.subscribe(req, res));
 router.post("/trial", (req, res) => SubscriptionController.startTrial(req, res));
 router.post("/cancel", (req, res) => SubscriptionController.cancelSubscription(req, res));

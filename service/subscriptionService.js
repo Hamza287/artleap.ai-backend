@@ -4,10 +4,12 @@ const SubscriptionManagement = require("./subscription_services/subscriptionsMan
 const PaymentProcessing = require("./subscription_services/paymentProcessing");
 const NotificationService = require("./subscription_services/notificationService");
 const CreditManagement = require("./subscription_services/creditsManagement");
+const ApplePlanSync = require('./apple/applePlanSync');
 
 class SubscriptionService {
   constructor() {
     this.planSync = new PlanSync();
+    this.applePlanSync = new ApplePlanSync();
     this.planManagement = new PlanManagement();
     this.subscriptionManagement = new SubscriptionManagement();
     this.paymentProcessing = new PaymentProcessing();
@@ -20,6 +22,15 @@ class SubscriptionService {
       await this.planSync.syncPlansWithGooglePlay();
     } catch (error) {
       console.error("[SubscriptionService] syncPlansWithGooglePlay failed:", error);
+      throw error;
+    }
+  }
+
+   async syncPlansWithAppStore() {
+    try {
+      await this.applePlanSync.syncPlansWithAppStore();
+    } catch (error) {
+      console.error('[SubscriptionService] syncPlansWithAppStore failed:', error);
       throw error;
     }
   }

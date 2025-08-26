@@ -63,7 +63,6 @@ class PlanManagement {
     try {
       await SubscriptionPlan.deleteMany({ isDefault: true });
       const createdPlans = await SubscriptionPlan.insertMany(defaultPlans);
-      console.debug("[PlanManagement] Default plans created:", createdPlans.map((p) => p.name));
       return createdPlans;
     } catch (error) {
       console.error("[PlanManagement] Failed to create default plans:", error);
