@@ -5,7 +5,9 @@ class CreditManagement {
   async checkGenerationLimits(userId, generationType) {
     try {
       const user = await User.findOne({
-        _id: mongoose.Types.ObjectId.isValid(userId) ? mongoose.Types.ObjectId(userId) : userId,
+        _id: mongoose.Types.ObjectId.isValid(userId)
+          ? mongoose.Types.ObjectId(userId)
+          : userId,
       }).populate("currentSubscription");
 
       if (!user) {
@@ -15,13 +17,18 @@ class CreditManagement {
 
       if (!user.isSubscribed) {
         if (generationType === "image") {
-          console.error("[CreditManagement] Image generation requires premium subscription:", userId);
+          console.error(
+            "[CreditManagement] Image generation requires premium subscription:",
+            userId
+          );
           throw new Error("Image generation requires a premium subscription");
         }
 
         if (user.dailyCredits < 2) {
           console.error("[CreditManagement] Daily credits exhausted:", userId);
-          throw new Error("You've used all your daily credits. Credits reset daily.");
+          throw new Error(
+            "You've used all your daily credits. Credits reset daily."
+          );
         }
 
         return {
@@ -35,8 +42,14 @@ class CreditManagement {
       if (user.currentSubscription) {
         const plan = user.currentSubscription.planSnapshot;
         const creditsNeeded = generationType === "image" ? 24 : 2;
-        const creditsUsed = generationType === "image" ? user.usedImageCredits : user.usedPromptCredits;
-        const maxCredits = generationType === "image" ? user.imageGenerationCredits : user.promptGenerationCredits;
+        const creditsUsed =
+          generationType === "image"
+            ? user.usedImageCredits
+            : user.usedPromptCredits;
+        const maxCredits =
+          generationType === "image"
+            ? user.imageGenerationCredits
+            : user.promptGenerationCredits;
 
         if (creditsUsed + creditsNeeded > maxCredits) {
           throw new Error(
@@ -62,17 +75,18 @@ class CreditManagement {
   }
 
   async recordGenerationUsage(userId, generationType, num_images) {
-
     try {
       const user = await User.findOne({
-        _id: mongoose.Types.ObjectId.isValid(userId) ? mongoose.Types.ObjectId(userId) : userId,
+        _id: mongoose.Types.ObjectId.isValid(userId)
+          ? mongoose.Types.ObjectId(userId)
+          : userId,
       });
       if (!user) {
         console.error("[CreditManagement] User not found:", userId);
         throw new Error("User not found");
       }
 
-      if (user.isSubscribed && user.planType !== "free") {
+      if (user.isSubscribed && user.planName !== "Free") {
         if (generationType === "image") {
           user.usedImageCredits += 24 * num_images;
           user.totalCredits -= 24 * num_images;
@@ -81,10 +95,14 @@ class CreditManagement {
           user.totalCredits -= 2 * num_images;
         }
       } else {
-        user.usedPromptCredits += 2 * num_images;
-        user.dailyCredits -= 2 * num_images;
-        user.totalCredits -= 2 * num_images;
+        console.log("credits are deducted from the prompt " + num_images);
+
+        user.usedPromptCredits = (user.usedPromptCredits || 0) + 2 * num_images;
+        user.dailyCredits = (user.dailyCredits || 0) - 2 * num_images;
+        user.totalCredits = (user.totalCredits || 0) - 2 * num_images;
       }
+
+      await user.save(); // 🔑 persist changes
 
       await user.save();
     } catch (error) {
