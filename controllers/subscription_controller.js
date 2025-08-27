@@ -10,7 +10,6 @@ class SubscriptionController {
   async getPlans(req, res) {
     try {
       const plans = await SubscriptionService.getAvailablePlans();
-      console.log(plans);
       res.json({ success: true, data: plans });
     } catch (error) {
       res.status(500).json({ success: false, error: error.message });
@@ -41,7 +40,6 @@ class SubscriptionController {
 
       // Verify the purchase
       let isValid = false;
-      console.log(`Payment method: ${userId, planId, paymentMethod, verificationData}`);
       if (paymentMethod === "google_pay" || paymentMethod === "google_play") {
         isValid = await this.verifyGooglePurchase(verificationData);
       } else if (paymentMethod === "stripe") {
@@ -105,8 +103,6 @@ class SubscriptionController {
         scopes: ["https://www.googleapis.com/auth/androidpublisher"],
       });
 
-      console.log(verificationData);
-
       const authClient = await auth.getClient();
       google.options({ auth: authClient });
 
@@ -167,9 +163,6 @@ class SubscriptionController {
 
       // Check if the payment is successful
       if (paymentIntent.status === "succeeded") {
-        console.log(
-          `[verifyStripePurchase] Payment Intent ${paymentIntentId} verified successfully`
-        );
         return true;
       } else {
         console.warn(
@@ -225,9 +218,6 @@ class SubscriptionController {
       );
 
       if (activeTransaction) {
-        console.log(
-          `[verifyApplePurchase] Receipt verified for productId: ${verificationData.productId}`
-        );
         return true;
       } else {
         console.warn("[verifyApplePurchase] No active subscription found");

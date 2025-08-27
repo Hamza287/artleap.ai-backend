@@ -182,7 +182,6 @@ const deductCredits = async (req, res) => {
                   Available: ${maxCredits - user.usedPromptCredits}` 
         });
       }
-      console.log(`💰 Deducted ${totalCreditsToDeduct} credits from ${activeSub.planId.type} plan`);
     } else {
       // Free user logic
       if (user.dailyCredits < totalCreditsToDeduct) {
@@ -195,7 +194,6 @@ const deductCredits = async (req, res) => {
       
       user.dailyCredits -= totalCreditsToDeduct;
       user.totalCredits -= totalCreditsToDeduct;
-      console.log(`💰 Deducted ${totalCreditsToDeduct} credits from free plan`);
     }
 
     await user.save();

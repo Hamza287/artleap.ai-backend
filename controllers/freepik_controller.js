@@ -31,7 +31,6 @@ const generateTextToImage = async (req, res) => {
       });
     }
 
-    console.log("👉 Received userId:", userId);
 
     let user;
     if (mongoose.Types.ObjectId.isValid(userId)) {

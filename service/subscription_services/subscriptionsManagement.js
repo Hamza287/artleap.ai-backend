@@ -104,10 +104,6 @@ class SubscriptionManagement {
       }
 
       await user.save();
-      console.debug(
-        "[SubscriptionManagement] User data updated for user:",
-        userId
-      );
       return user;
     } catch (error) {
       console.error("[SubscriptionManagement] updateUserData failed:", error);
@@ -163,7 +159,7 @@ class SubscriptionManagement {
         }
 
         subscription.paymentMethod = paymentMethod;
-        subscription.autoRenew = true;
+        subscription.autoRenew = false;
         subscription.cancelledAt = null;
         subscription.planSnapshot = {
           name: plan.name,
@@ -220,7 +216,7 @@ class SubscriptionManagement {
           isTrial,
           isActive: true,
           paymentMethod,
-          autoRenew: !isTrial,
+          autoRenew: false,
           planSnapshot: {
             name: plan.name,
             type: plan.type,
@@ -336,11 +332,6 @@ class SubscriptionManagement {
   async processExpiredSubscriptions() {
     try {
       const now = new Date();
-      console.debug(
-        "[SubscriptionManagement] Processing expired subscriptions at:",
-        now
-      );
-
       const expiringSoon = await UserSubscription.find({
         endDate: { $lte: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) },
         isActive: true,
@@ -349,10 +340,6 @@ class SubscriptionManagement {
       }).populate("userId planId");
 
       for (const sub of expiringSoon) {
-        console.debug(
-          "[SubscriptionManagement] Sending renewal reminder for subscription:",
-          sub._id
-        );
         await this.notificationService.sendSubscriptionNotification(
           sub.userId._id,
           "renewal_reminder",
@@ -367,23 +354,19 @@ class SubscriptionManagement {
         autoRenew: true,
       }).populate("userId planId");
 
-      console.debug(
-        "[SubscriptionManagement] Found expired subscriptions:",
-        expiredSubs.length
-      );
 
       for (const sub of expiredSubs) {
-        console.debug(
-          "[SubscriptionManagement] Processing expired subscription:",
-          sub._id,
-          {
-            userId: sub.userId._id,
-            planType: sub.planId?.type,
-            endDate: sub.endDate,
-            autoRenew: sub.autoRenew,
-            isTrial: sub.isTrial,
-          }
-        );
+        // console.debug(
+        //   "[SubscriptionManagement] Processing expired subscription:",
+        //   sub._id,
+        //   {
+        //     userId: sub.userId._id,
+        //     planType: sub.planId?.type,
+        //     endDate: sub.endDate,
+        //     autoRenew: sub.autoRenew,
+        //     isTrial: sub.isTrial,
+        //   }
+        // );
 
         try {
           const paymentSuccess = await this.paymentProcessing.processPayment(
@@ -459,23 +442,18 @@ class SubscriptionManagement {
         $or: [{ isTrial: true }, { autoRenew: false }],
       }).populate("userId planId");
 
-      console.debug(
-        "[SubscriptionManagement] Found expired non-auto-renew or trial subscriptions:",
-        expiredNonAutoRenew.length
-      );
-
       for (const sub of expiredNonAutoRenew) {
-        console.debug(
-          "[SubscriptionManagement] Processing expired non-auto-renew/trial subscription:",
-          sub._id,
-          {
-            userId: sub.userId._id,
-            planType: sub.planId?.type,
-            endDate: sub.endDate,
-            autoRenew: sub.autoRenew,
-            isTrial: sub.isTrial,
-          }
-        );
+        // console.debug(
+        //   "[SubscriptionManagement] Processing expired non-auto-renew/trial subscription:",
+        //   sub._id,
+        //   {
+        //     userId: sub.userId._id,
+        //     planType: sub.planId?.type,
+        //     endDate: sub.endDate,
+        //     autoRenew: sub.autoRenew,
+        //     isTrial: sub.isTrial,
+        //   }
+        // );
 
         try {
           sub.isActive = false;

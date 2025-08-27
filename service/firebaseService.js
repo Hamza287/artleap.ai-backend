@@ -16,8 +16,6 @@ const initializeFirebase = () => {
         credential: admin.credential.cert(serviceAccount),
         databaseURL: process.env.FIREBASE_DATABASE_URL || undefined
       });
-
-      console.log('Firebase Admin initialized successfully');
     }
   } catch (error) {
     console.error('Failed to initialize Firebase Admin:', error);
@@ -135,8 +133,6 @@ const sendPushNotification = async (deviceTokens, notificationData) => {
         }
       });
     }
-
-    console.log(`Notification sent: ${response.successCount} successful, ${response.failureCount} failed`);
     return response;
   } catch (error) {
     console.error('Error sending push notification:', error.message);

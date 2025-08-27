@@ -7,7 +7,6 @@ const SubscriptionService = require("../service/subscriptionService");
 const connectToMongoDB = async () => {
   try {
     if (mongoose.connection.readyState === 1) {
-      console.log('[PlansCron] MongoDB already connected');
       return;
     }
 

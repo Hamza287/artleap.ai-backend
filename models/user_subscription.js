@@ -12,7 +12,7 @@ const userSubscriptionSchema = new mongoose.Schema({
   isTrial: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   paymentMethod: { type: String },
-  autoRenew: { type: Boolean, default: true },
+  autoRenew: { type: Boolean, default: false },
   cancelledAt: { type: Date },
   planSnapshot: {
     name: { type: String, required: true },
