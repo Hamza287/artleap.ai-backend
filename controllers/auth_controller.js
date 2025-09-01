@@ -8,7 +8,6 @@ const HistoryService = require('../service/userHistoryService');
 const UserHistory = require('../models/user_history_model');
 
 
-// Helper function to create free subscription
 const createFreeSubscription = async (userId) => {
     const freePlan = await SubscriptionPlan.findOne({ type: 'free' });
     if (!freePlan) {
@@ -19,7 +18,7 @@ const createFreeSubscription = async (userId) => {
         userId: userId,
         planId: freePlan._id,
         startDate: new Date(),
-        endDate: new Date(8640000000000000), // Far future date
+        endDate: new Date(8640000000000000),
         isActive: true,
         isTrial: false,
         autoRenew: true,
@@ -39,7 +38,6 @@ const createFreeSubscription = async (userId) => {
     return freeSubscription;
 };
 
-// 🔹 Signup (for Firebase-authenticated email users)
 const signup = async (req, res) => {
     try {
         const { username, email, profilePic } = req.body;
@@ -60,19 +58,15 @@ const signup = async (req, res) => {
 
         await newUser.save();
 
-        // Create free subscription
         const freeSubscription = await createFreeSubscription(newUser._id);
         
-        // Update user with subscription reference
         newUser.currentSubscription = freeSubscription._id;
         newUser.subscriptionStatus = 'active';
         newUser.planName = 'Free';
         await newUser.save();
 
-        // Initialize user history
         await HistoryService.initializeUserHistory(newUser._id);
         
-        // Record free subscription in history
         await HistoryService.recordSubscription(newUser._id, {
             planId: freeSubscription.planId,
             startDate: freeSubscription.startDate,
@@ -98,7 +92,7 @@ const signup = async (req, res) => {
     }
 };
 
-// 🔹 Firebase Email Login
+
 const login = async (req, res) => {
     try {
         const { email, username, profilePic } = req.body;
@@ -121,16 +115,13 @@ const login = async (req, res) => {
 
             await user.save();
             
-            // Create free subscription
             const freeSubscription = await createFreeSubscription(user._id);
             
-            // Update user with subscription reference
             user.currentSubscription = freeSubscription._id;
             user.subscriptionStatus = 'active';
             user.planName = 'Free';
             await user.save();
 
-            // Initialize history for new users
             await HistoryService.initializeUserHistory(user._id);
             await HistoryService.recordSubscription(user._id, {
                 planId: freeSubscription.planId,
@@ -159,7 +150,6 @@ const login = async (req, res) => {
     }
 };
 
-// 🔹 Google Login
 const googleLogin = async (req, res) => {
     try {
         const { email, username, profilePic, googleId } = req.body;
@@ -190,7 +180,6 @@ const googleLogin = async (req, res) => {
             user.planName = 'Free';
             await user.save();
 
-            // Initialize history
             await HistoryService.initializeUserHistory(user._id);
             await HistoryService.recordSubscription(user._id, {
                 planId: freeSubscription.planId,
@@ -219,7 +208,6 @@ const googleLogin = async (req, res) => {
     }
 };
 
-// 🔹 Apple Login
 const appleLogin = async (req, res) => {
     try {
         const { email, username, profilePic, appleId } = req.body;
@@ -243,10 +231,8 @@ const appleLogin = async (req, res) => {
 
             await user.save();
             
-            // Create free subscription
             const freeSubscription = await createFreeSubscription(user._id);
             
-            // Update user with subscription reference
             user.currentSubscription = freeSubscription._id;
             user.subscriptionStatus = 'active';
             user.planName = 'Free';
@@ -280,7 +266,6 @@ const appleLogin = async (req, res) => {
     }
 };
 
-// 🔹 Delete Account + Data
 const deleteAccount = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -294,10 +279,8 @@ const deleteAccount = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        // Step 0: Delete user history
         await UserHistory.deleteOne({ userId });
 
-        // Rest of your existing delete logic...
         await UserSubscription.deleteMany({ userId });
         
         const userImagesFromCollection = await Image.find({ userId });

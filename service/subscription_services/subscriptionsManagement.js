@@ -5,6 +5,7 @@ const NotificationService = require("./notificationService");
 const PlanManagement = require("./plansManagement");
 const PaymentProcessing = require("./paymentProcessing");
 const createFreeSubscription = require("./../../controllers/auth_controller");
+const { userSubscription } = require("../../controllers/user_profile_controller");
 
 class SubscriptionManagement {
   constructor() {
@@ -46,6 +47,14 @@ class SubscriptionManagement {
           ? mongoose.Types.ObjectId(userId)
           : userId,
       });
+ 
+      const userSubscription = await UserSubscription.findOne({
+        userId,
+        isActive: true,
+        endDate: { $gt: new Date() },
+        isTrial: false,
+      }).populate("planId").populate({ path: "userId" });
+
       if (!user) {
         console.error("[SubscriptionManagement] User not found:", userId);
         throw new Error("User not found");
@@ -88,11 +97,13 @@ class SubscriptionManagement {
         user.lastCreditReset = new Date();
       } else {
         if (carryOverCredits) {
-          user.imageGenerationCredits =
-            remainingImageCredits + plan.imageGenerationCredits;
-          user.promptGenerationCredits =
-            remainingPromptCredits + plan.promptGenerationCredits;
+          user.imageGenerationCredits = remainingImageCredits + plan.imageGenerationCredits;
+          user.promptGenerationCredits = remainingPromptCredits + plan.promptGenerationCredits;
           user.totalCredits = remainingTotalCredits + plan.totalCredits;
+
+          userSubscription.planSnapshot.totalCredits = remainingTotalCredits + plan.totalCredits;
+          userSubscription.planSnapshot.imageGenerationCredits = remainingImageCredits + plan.imageGenerationCredits;
+          userSubscription.planSnapshot.promptGenerationCredits = remainingPromptCredits + plan.promptGenerationCredits;
         } else {
           user.imageGenerationCredits = plan.imageGenerationCredits;
           user.promptGenerationCredits = plan.promptGenerationCredits;

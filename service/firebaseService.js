@@ -2,7 +2,6 @@ const admin = require('firebase-admin');
 const Notification = require('./../models/notification_model');
 const User = require('./../models/user');
 
-// Initialize Firebase Admin with better error handling
 const initializeFirebase = () => {
   try {
     if (!admin.apps.length) {
@@ -23,22 +22,19 @@ const initializeFirebase = () => {
   }
 };
 
-// Save notification to database with improved validation
 const saveNotification = async (notificationData) => {
   try {
     const { userId, type = 'general', title, body, data } = notificationData;
 
-    // Validate required fields
+
     if (!title || !body) {
       throw new Error('Title and body are required');
     }
 
-    // Validate notification type
     if (!['general', 'user'].includes(type)) {
       throw new Error("Invalid notification type. Must be 'general' or 'user'");
     }
 
-    // Validate userId based on type
     if (type === 'general' && userId) {
       throw new Error('General notifications cannot have a userId');
     }
@@ -47,7 +43,6 @@ const saveNotification = async (notificationData) => {
       throw new Error('User-specific notifications require a userId');
     }
 
-    // Check for duplicate general notifications in last 24 hours
     if (type === 'general') {
       const duplicate = await Notification.findOne({
         type: 'general',
@@ -67,7 +62,7 @@ const saveNotification = async (notificationData) => {
       title: title.trim(),
       body: body.trim(),
       data: data || {},
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     });
 
     await notification.save();
@@ -75,16 +70,14 @@ const saveNotification = async (notificationData) => {
   } catch (error) {
     console.error('Error saving notification:', error.message);
     
-    // Handle specific error cases
     if (error.code === 11000) {
       throw new Error('Duplicate notification prevented');
     }
     
-    throw error; // Re-throw for controller to handle
+    throw error;
   }
 };
 
-// Send push notification with improved error handling
 const sendPushNotification = async (deviceTokens, notificationData) => {
   try {
     if (!deviceTokens || !Array.isArray(deviceTokens)) {
@@ -100,7 +93,6 @@ const sendPushNotification = async (deviceTokens, notificationData) => {
       throw new Error('Notification title and body are required');
     }
 
-    // Filter valid tokens
     const validTokens = deviceTokens.filter(t => typeof t === 'string' && t.length > 0);
     
     if (validTokens.length === 0) {
@@ -108,7 +100,6 @@ const sendPushNotification = async (deviceTokens, notificationData) => {
       return { successCount: 0, failureCount: 0 };
     }
 
-    // Check if sendMulticast exists
     if (!admin.messaging().sendMulticast) {
       console.warn('sendMulticast not available, falling back to individual sends');
       return await sendIndividualNotifications(validTokens, notificationData);
@@ -125,7 +116,6 @@ const sendPushNotification = async (deviceTokens, notificationData) => {
 
     const response = await admin.messaging().sendMulticast(message);
     
-    // Log failed tokens if any
     if (response.failureCount > 0) {
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
@@ -140,7 +130,6 @@ const sendPushNotification = async (deviceTokens, notificationData) => {
   }
 };
 
-// Fallback function for older Firebase versions
 const sendIndividualNotifications = async (tokens, notificationData) => {
   let successCount = 0;
   let failureCount = 0;
@@ -167,7 +156,6 @@ const sendIndividualNotifications = async (tokens, notificationData) => {
   return { successCount, failureCount };
 };
 
-// Get device tokens with improved error handling
 const getDeviceTokens = async (userId) => {
   try {
     if (!userId) {
@@ -188,7 +176,7 @@ const getDeviceTokens = async (userId) => {
       : [];
   } catch (error) {
     console.error('Error fetching device tokens:', error.message);
-    return []; // Return empty array to allow graceful degradation
+    return [];
   }
 };
 

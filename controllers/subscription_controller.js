@@ -38,7 +38,6 @@ class SubscriptionController {
     try {
       const { userId, planId, paymentMethod, verificationData } = req.body;
 
-      // Verify the purchase
       let isValid = false;
       if (paymentMethod === "google_pay" || paymentMethod === "google_play") {
         isValid = await this.verifyGooglePurchase(verificationData);
@@ -60,7 +59,6 @@ class SubscriptionController {
         });
       }
 
-      // Create subscription with plan snapshot
       const subscription = await SubscriptionService.createSubscription(
         userId,
         planId,
@@ -68,10 +66,8 @@ class SubscriptionController {
         false,
       );
 
-      // Record payment
       await this.recordPayment(userId, planId, paymentMethod, verificationData);
 
-      // Record subscription in history
       await HistoryService.recordSubscription(userId, {
         planId: subscription.planId,
         startDate: subscription.startDate,
@@ -82,7 +78,6 @@ class SubscriptionController {
         planSnapshot: subscription.planSnapshot,
       });
 
-      // Update credit usage
       await HistoryService.updateCreditUsage(userId);
 
       res.json({
@@ -156,12 +151,10 @@ class SubscriptionController {
         return false;
       }
 
-      // Retrieve the Payment Intent from Stripe
       const paymentIntent = await stripe.paymentIntents.retrieve(
         paymentIntentId
       );
 
-      // Check if the payment is successful
       if (paymentIntent.status === "succeeded") {
         return true;
       } else {
@@ -182,20 +175,19 @@ class SubscriptionController {
 
   async verifyApplePurchase(verificationData) {
     try {
-      const { receiptData } = verificationData; // Base64-encoded receipt from App Store
+      const { receiptData } = verificationData;
       if (!receiptData) {
         console.error("[verifyApplePurchase] Missing receiptData");
         return false;
       }
 
-      // Send receipt to Apple's /verifyReceipt endpoint
       const response = await axios.post(
         process.env.APPLE_SANDBOX
           ? "https://sandbox.itunes.apple.com/verifyReceipt"
           : "https://buy.itunes.apple.com/verifyReceipt",
         {
           "receipt-data": receiptData,
-          password: process.env.APPLE_SHARED_SECRET, // Shared secret from App Store Connect
+          password: process.env.APPLE_SHARED_SECRET,
           "exclude-old-transactions": true,
         }
       );
@@ -210,7 +202,6 @@ class SubscriptionController {
         return false;
       }
 
-      // Check for active subscription
       const activeTransaction = latest_receipt_info.find(
         (tx) =>
           tx.product_id === verificationData.productId &&
