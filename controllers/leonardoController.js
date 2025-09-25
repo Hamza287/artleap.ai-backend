@@ -26,7 +26,8 @@ const generateTextToImage = async (req, res) => {
       presetStyle = 'FILM',
       userId,
       username,
-      creatorEmail
+      creatorEmail,
+      privacy = 'public'
     } = req.body;
 
     if (!prompt || !userId || !username) {
@@ -99,7 +100,8 @@ const generateTextToImage = async (req, res) => {
         username,
         presetStyle,
         prompt,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        privacy
       };
 
       if (i === 0) {
@@ -122,8 +124,6 @@ const generateTextToImage = async (req, res) => {
     }
 
     await SubscriptionService.recordGenerationUsage(userId, generationType,num_images);
-
-    // Update image generation count in history
     await HistoryService.recordImageGeneration(userId, 'byPrompt');
     await HistoryService.updateCreditUsage(userId);
 
@@ -152,7 +152,8 @@ const generateImagetoImage = async (req, res) => {
       username,
       creatorEmail,
       num_images = 1,
-      presetStyle = 'CINEMATIC'
+      presetStyle = 'CINEMATIC',
+      privacy = 'public'
     } = req.body;
 
     if (!image || !userId || !username || !prompt) {
@@ -267,7 +268,8 @@ const generateImagetoImage = async (req, res) => {
         username,
         presetStyle,
         prompt,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        privacy
       };
 
       if (i === 0) {
@@ -292,7 +294,6 @@ const generateImagetoImage = async (req, res) => {
     fs.unlinkSync(imagePath);
 
     await SubscriptionService.recordGenerationUsage(userId, generationType,num_images);
-
     await HistoryService.recordImageGeneration(userId, 'byImage');
     await HistoryService.updateCreditUsage(userId);
 

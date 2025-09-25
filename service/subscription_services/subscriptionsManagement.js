@@ -4,8 +4,6 @@ const mongoose = require("mongoose");
 const NotificationService = require("./notificationService");
 const PlanManagement = require("./plansManagement");
 const PaymentProcessing = require("./paymentProcessing");
-const createFreeSubscription = require("./../../controllers/auth_controller");
-const { userSubscription } = require("../../controllers/user_profile_controller");
 
 class SubscriptionManagement {
   constructor() {

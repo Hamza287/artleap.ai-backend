@@ -1,5 +1,6 @@
 const User = require("../../models/user");
 const mongoose = require("mongoose");
+const UserSubscription = require("../../models/user_subscription");
 
 class CreditManagement {
   async checkGenerationLimits(userId, generationType) {
@@ -81,6 +82,13 @@ class CreditManagement {
           ? mongoose.Types.ObjectId(userId)
           : userId,
       });
+
+      const UserSubscriptionData = await UserSubscription.findOne({
+        userId: mongoose.Types.ObjectId.isValid(userId)
+          ? mongoose.Types.ObjectId(userId)
+          : userId,
+      });
+
       if (!user) {
         console.error("[CreditManagement] User not found:", userId);
         throw new Error("User not found");
@@ -88,22 +96,29 @@ class CreditManagement {
 
       if (user.isSubscribed && user.planName !== "Free") {
         if (generationType === "image") {
-          user.usedImageCredits += 24 * num_images;
-          user.totalCredits -= 24 * num_images;
+          user.usedImageCredits =
+            (user.usedImageCredits || 0) + 24 * num_images;
+          user.totalCredits = (user.totalCredits || 0) - 24 * num_images;
         } else {
-          user.usedPromptCredits += 2 * num_images;
-          user.totalCredits -= 2 * num_images;
+          user.usedPromptCredits =
+            (user.usedPromptCredits || 0) + 2 * num_images;
+          user.totalCredits = (user.totalCredits || 0) - 2 * num_images;
         }
       } else {
-        console.log("credits are deducted from the prompt " + num_images);
+        user.usedPromptCredits = user.usedPromptCredits + 2 * num_images;
+        user.dailyCredits = user.dailyCredits - 2 * num_images;
+        user.totalCredits = user.totalCredits - 2 * num_images;
+        UserSubscriptionData.planSnapshot.totalCredits =
+          UserSubscriptionData.planSnapshot.totalCredits - 2 * num_images;
 
-        user.usedPromptCredits = (user.usedPromptCredits || 0) + 2 * num_images;
-        user.dailyCredits = (user.dailyCredits || 0) - 2 * num_images;
-        user.totalCredits = (user.totalCredits || 0) - 2 * num_images;
+        console.log("❌ Free plan → credits deducted:", {
+          dailyCredits: user.dailyCredits,
+          totalCredits: user.totalCredits,
+          usedPromptCredits: user.usedPromptCredits,
+        });
       }
 
-      await user.save(); // 🔑 persist changes
-
+      await UserSubscriptionData.save();
       await user.save();
     } catch (error) {
       console.error("[CreditManagement] recordGenerationUsage failed:", error);

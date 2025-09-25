@@ -15,12 +15,12 @@ const paymentRecordSchema = new Schema({
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['google_pay','google_play', 'apple_pay', 'credit_card', 'other','stripe']
+    enum: ['google_pay','google_play', 'apple_pay', 'credit_card', 'other','stripe','apple']
   },
   transactionId: {
     type: String,
     required: true,
-    unique: true
+    // unique: true
   },
   amount: {
     type: Number,

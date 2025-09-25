@@ -1,5 +1,6 @@
 const axios = require("axios");
 const mongoose = require("mongoose");
+const ImageModel = require("../models/image_model");
 const User = require("../models/user");
 const {
   uploadImageToS3,
@@ -23,6 +24,7 @@ const generateTextToImage = async (req, res) => {
       presetStyle = "photo",
       aspectRatio = "square_1_1",
       num_images = 1,
+      privacy = "public"
     } = req.body;
 
     if (!userId || !prompt || !username) {
@@ -30,7 +32,6 @@ const generateTextToImage = async (req, res) => {
         error: "❌ Missing required fields (userId, prompt, username).",
       });
     }
-
 
     let user;
     if (mongoose.Types.ObjectId.isValid(userId)) {
@@ -105,6 +106,11 @@ const generateTextToImage = async (req, res) => {
         presetStyle,
         prompt
       );
+
+      if (savedImage && savedImage._id) {
+        await ImageModel.findByIdAndUpdate(savedImage._id, { privacy });
+      }
+
       savedImages.push({
         _id: savedImage._id,
         imageUrl: savedImage.imageUrl,
@@ -113,6 +119,7 @@ const generateTextToImage = async (req, res) => {
         modelName: presetStyle,
         prompt,
         createdAt: savedImage.createdAt,
+        privacy
       });
     }
 

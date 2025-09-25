@@ -16,7 +16,8 @@ const subscriptionRouter = require("./routers/subscription_routes");
 const { initializeFirebase } = require("./service/firebaseService");
 const SubscriptionService = require("./service/subscriptionService");
 const subscriptionService = require("./service/subscriptionService");
-
+const imagePrivacyRoutes = require("./routers/image_privacy_route");
+const os = require("os");
 
 initializeFirebase();
 const app = express();
@@ -38,24 +39,38 @@ app.use("/api", freePikTxtToImg);
 app.use("/api", imageActionRouter);
 app.use("/api", notificationRouter);
 app.use("/api/subscriptions", subscriptionRouter);
+app.use("/api", imagePrivacyRoutes);
 
 // Database Connection
 mongoose
-  .connect(
-    "mongodb://127.0.0.1:27017/user-auth"
-  )
+  .connect("mongodb://127.0.0.1:27017/user-auth")
   .then(() => {
-     SubscriptionService.initializeDefaultPlans();
-     SubscriptionService.syncPlansWithGooglePlay();
-     subscriptionService.syncPlansWithAppStore();
+    SubscriptionService.initializeDefaultPlans();
+    SubscriptionService.syncPlansWithGooglePlay();
+    subscriptionService.syncPlansWithAppStore();
   })
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
   });
 
 // Start the server
-app.listen(PORT, '0.0.0.0', () => 
-  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`)
-);
+app.listen(PORT, "0.0.0.0", () => {
+  // Get network interfaces
+  const interfaces = os.networkInterfaces();
+  let localIP = "localhost";
+
+  for (let iface of Object.values(interfaces)) {
+    for (let alias of iface) {
+      if (alias.family === "IPv4" && !alias.internal) {
+        localIP = alias.address;
+      }
+    }
+  }
+
+  console.log(`🚀 Server running at:`);
+  console.log(`   Local:   http://localhost:${PORT}`);
+  console.log(`   Network: http://${localIP}:${PORT}`);
+});
+
 
 module.exports = app;

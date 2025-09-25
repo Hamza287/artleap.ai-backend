@@ -2,26 +2,21 @@ const Image = require("../models/image_model");
 const User = require("../models/user");
 const Report = require("../models/report_model");
 
-// 🔹 Delete Image
 const deleteImage = async (req, res) => {
   const { imageId } = req.params;
 
   try {
-    // 1. Find and delete the image
     const image = await Image.findByIdAndDelete(imageId);
 
     if (!image) {
       return res.status(404).json({ message: "Image not found" });
     }
-
-    // 2. Verify the user exists
     const user = await User.findById(image.userId);
 
     if (!user) {
       return res.status(404).json({ message: "User is not found in the model" });
     }
 
-    // 3. Update the user's images array
     const updateResult = await User.updateOne(
       { _id: image.userId },
       { $pull: { images: image._id } }
@@ -34,7 +29,6 @@ const deleteImage = async (req, res) => {
   }
 };
 
-// 🔹 Report Image
 const reportImage = async (req, res) => {
   const { imageId } = req.params;
   const { reporterId, reason } = req.body;
