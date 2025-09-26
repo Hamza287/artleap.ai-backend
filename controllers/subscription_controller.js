@@ -135,10 +135,10 @@ async subscribeApple(req, res, userId, planId, verificationResult, verificationD
     const txId = verificationResult.transactionId || verificationResult.originalTransactionId;
     const productId = verificationResult.productId;
 
-    // 🔍 Check if both transactionId & productId already exist
+
     const existingPayment = await PaymentRecord.findOne({
       transactionId: txId,
-      planId: planId``,
+      planId: planId,
     });
 
     if (existingPayment) {
