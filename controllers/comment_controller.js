@@ -13,7 +13,7 @@ const commentController = {
     try {
       const { imageId } = req.params;
       const { comment } = req.body;
-      const userId = commentController.getUserId(req); 
+      const userId = commentController.getUserId(req);
 
       if (!comment || comment.trim().length === 0) {
         return res.status(400).json({
@@ -44,6 +44,10 @@ const commentController = {
       });
 
       await newComment.save();
+
+      await Image.findByIdAndUpdate(imageId, {
+        $inc: { commentCount: 1 }
+      });
 
       await newComment.populate('user', 'username profilePic');
 
@@ -107,12 +111,11 @@ const commentController = {
     }
   },
 
-
   updateComment: async (req, res) => {
     try {
       const { commentId } = req.params;
       const { comment } = req.body;
-      const userId = commentController.getUserId(req); 
+      const userId = commentController.getUserId(req);
 
       if (!comment || comment.trim().length === 0) {
         return res.status(400).json({
@@ -175,9 +178,9 @@ const commentController = {
   deleteComment: async (req, res) => {
     try {
       const { commentId } = req.params;
-      const userId = commentController.getUserId(req); 
+      const userId = commentController.getUserId(req);
 
-      const comment = await Comment.findOneAndDelete({
+      const comment = await Comment.findOne({
         _id: commentId,
         user: userId 
       });
@@ -188,6 +191,16 @@ const commentController = {
           message: "Comment not found or you don't have permission to delete it"
         });
       }
+
+      await Comment.findOneAndDelete({
+        _id: commentId,
+        user: userId 
+      });
+
+      // 🔄 UPDATE COMMENT COUNT
+      await Image.findByIdAndUpdate(comment.image, {
+        $inc: { commentCount: -1 }
+      });
 
       res.json({
         success: true,
@@ -214,13 +227,20 @@ const commentController = {
     try {
       const { imageId } = req.params;
 
-      const commentCount = await Comment.countDocuments({ image: imageId });
+      const image = await Image.findById(imageId).select('commentCount');
+      
+      if (!image) {
+        return res.status(404).json({
+          success: false,
+          message: "Image not found"
+        });
+      }
 
       res.json({
         success: true,
         data: {
           imageId,
-          commentCount
+          commentCount: image.commentCount
         }
       });
 
