@@ -17,6 +17,9 @@ const { initializeFirebase } = require("./service/firebaseService");
 const SubscriptionService = require("./service/subscriptionService");
 const subscriptionService = require("./service/subscriptionService");
 const imagePrivacyRoutes = require("./routers/image_privacy_route");
+const likeRoutes = require("./routers/like_routes");
+const commentRoutes = require("./routers/coment_routes");
+const savedImageRoutes = require("./routers/saved_image_routes");
 const os = require("os");
 
 initializeFirebase();
@@ -40,6 +43,9 @@ app.use("/api", imageActionRouter);
 app.use("/api", notificationRouter);
 app.use("/api/subscriptions", subscriptionRouter);
 app.use("/api", imagePrivacyRoutes);
+app.use("/api", likeRoutes);
+app.use("/api", commentRoutes);
+app.use("/api", savedImageRoutes);
 
 // Database Connection
 mongoose

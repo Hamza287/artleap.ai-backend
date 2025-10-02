@@ -8,7 +8,18 @@ const ImageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   modelName: { type: String },
   prompt: { type: String },
-  privacy: { type: String, enum: ["public", "private", "followers", "personal"], default: "public", index: true }
+  privacy: { type: String, enum: ["public", "private", "followers", "personal"], default: "public", index: true },
+  likeCount: { type: Number, default: 0 },
+  commentCount: { type: Number, default: 0 }
 });
+
+ImageSchema.virtual('savedCount', {
+  ref: 'SavedImage',
+  localField: '_id',
+  foreignField: 'image',
+  count: true
+});
+
+ImageSchema.set('toJSON', { virtuals: true });
 
 module.exports = mongoose.model("Image", ImageSchema);

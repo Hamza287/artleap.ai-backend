@@ -3,7 +3,6 @@ const router = express.Router();
 const SubscriptionController = require("../controllers/subscription_controller");
 const paymentIntentController = require('./../controllers/stripe_payment_intent_controller');
 
-// Properly bind context using arrow functions
 router.get("/plans", (req, res) => SubscriptionController.getPlans(req, res));
 router.post("/sync-apple-plans", (req, res) => SubscriptionController.syncPlans(req, res));
 router.post("/sync", (req, res) => SubscriptionController.syncApplePlans(req, res));

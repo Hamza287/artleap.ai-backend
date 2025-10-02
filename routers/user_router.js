@@ -4,10 +4,8 @@ const { updateUserProfile, upload, updateUserCredits, deductCredits, userSubscri
 
 const router = express.Router();
 
-// Public route (optional, depending on requirements)
 router.get("/users", getAllUsers);
 
-// Protected routes
 router.get("/user/:userId",  getUserProfile);
 router.post("/user/update/:userId",  upload.single("profilePic"), updateUserProfile);
 router.get("/user/profile/:userId", getUserProfileWithImages);
