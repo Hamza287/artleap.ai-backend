@@ -182,7 +182,7 @@ const commentController = {
 
       const comment = await Comment.findOne({
         _id: commentId,
-        user: userId 
+        user: userId
       });
 
       if (!comment) {
@@ -194,13 +194,14 @@ const commentController = {
 
       await Comment.findOneAndDelete({
         _id: commentId,
-        user: userId 
+        user: userId
       });
 
-      // 🔄 UPDATE COMMENT COUNT
       await Image.findByIdAndUpdate(comment.image, {
-        $inc: { commentCount: -1 }
+        $inc: { commentCount: -1 },
+        $max: { commentCount: 0 }
       });
+
 
       res.json({
         success: true,
@@ -228,7 +229,7 @@ const commentController = {
       const { imageId } = req.params;
 
       const image = await Image.findById(imageId).select('commentCount');
-      
+
       if (!image) {
         return res.status(404).json({
           success: false,
