@@ -162,9 +162,7 @@ const getDeviceTokens = async (userId) => {
       throw new Error('User ID is required');
     }
 
-    const user = await User.findOne({ userId })
-      .select('deviceTokens')
-      .lean();
+    const user = await User.findById(userId).select('deviceTokens').lean();
 
     if (!user) {
       console.warn(`User not found with ID: ${userId}`);

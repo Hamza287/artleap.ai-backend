@@ -103,12 +103,20 @@ const updateUserCredits = async (req, res) => {
     const today = moment().startOf('day');
     const lastReset = user.lastCreditReset ? moment(user.lastCreditReset).startOf('day') : null;
 
-    if (user.dailyCredits < 10 && !today.isSame(lastReset)) {
+    // ✅ Reset only if it’s a new day
+    if (!lastReset || !today.isSame(lastReset)) {
       user.dailyCredits = 10;
       user.totalCredits = 10;
       user.usedImageCredits = 0;
+      user.usedPromptCredits = 0;
       user.lastCreditReset = new Date();
       await user.save();
+
+      console.log({
+        success: true,
+        message: `✅ Daily credits reset to 10 for ${user.username}.`,
+        dailyCredits: user.dailyCredits,
+      });
 
       return res.json({
         success: true,
@@ -117,16 +125,19 @@ const updateUserCredits = async (req, res) => {
       });
     }
 
+    // ✅ If already reset today → do NOT reset again
     return res.json({
       success: true,
-      message: `ℹ️ No reset needed. Either already reset today or credits are sufficient.`,
+      message: `ℹ️ Credits already updated today. No reset.`,
       dailyCredits: user.dailyCredits,
     });
+
   } catch (error) {
     console.error('❌ Error resetting daily credits:', error);
     res.status(500).json({ error: "Failed to reset daily credits" });
   }
 };
+
 
 const deductCredits = async (req, res) => {
   try {

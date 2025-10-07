@@ -1,5 +1,6 @@
 const Comment = require("../models/image_coments");
 const Image = require("../models/image_model");
+const { saveNotification, sendPushNotification, getDeviceTokens } = require("./../service/firebaseService");
 
 const commentController = {
   getUserId: (req) => {
@@ -16,25 +17,16 @@ const commentController = {
       const userId = commentController.getUserId(req);
 
       if (!comment || comment.trim().length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: "Comment is required"
-        });
+        return res.status(400).json({ success: false, message: "Comment is required" });
       }
 
       if (comment.length > 1000) {
-        return res.status(400).json({
-          success: false,
-          message: "Comment must be less than 1000 characters"
-        });
+        return res.status(400).json({ success: false, message: "Comment must be less than 1000 characters" });
       }
 
-      const image = await Image.findById(imageId);
+      const image = await Image.findById(imageId).populate("userId", "username profilePic");
       if (!image) {
-        return res.status(404).json({
-          success: false,
-          message: "Image not found"
-        });
+        return res.status(404).json({ success: false, message: "Image not found" });
       }
 
       const newComment = new Comment({
@@ -45,11 +37,35 @@ const commentController = {
 
       await newComment.save();
 
-      await Image.findByIdAndUpdate(imageId, {
-        $inc: { commentCount: 1 }
-      });
+      await Image.findByIdAndUpdate(imageId, { $inc: { commentCount: 1 } });
 
-      await newComment.populate('user', 'username profilePic');
+      await newComment.populate("user", "username profilePic");
+
+      if (String(image.userId._id) !== String(userId)) {
+        const deviceTokens = await getDeviceTokens(image.userId._id);
+
+        const notifData = {
+          title: "New Comment",
+          body: `${newComment.user.username} commented: "${newComment.comment}"`,
+          data: {
+            type: "comment",
+            imageId: imageId,
+            commentId: newComment._id.toString()
+          }
+        };
+
+        if (deviceTokens.length > 0) {
+          await sendPushNotification(deviceTokens, notifData);
+        }
+
+        await saveNotification({
+          userId: image.userId._id,
+          type: "user",
+          title: notifData.title,
+          body: notifData.body,
+          data: notifData.data
+        });
+      }
 
       res.status(201).json({
         success: true,
@@ -60,16 +76,9 @@ const commentController = {
     } catch (error) {
       console.error("Add comment error:", error);
       if (error.message === 'User not authenticated') {
-        return res.status(401).json({
-          success: false,
-          message: "Authentication required"
-        });
+        return res.status(401).json({ success: false, message: "Authentication required" });
       }
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-        error: error.message
-      });
+      res.status(500).json({ success: false, message: "Internal server error", error: error.message });
     }
   },
 

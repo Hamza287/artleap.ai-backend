@@ -26,11 +26,9 @@ initializeFirebase();
 const app = express();
 const PORT = 8000;
 
-// Middleware
 app.use(express.json());
 app.use(cors());
 
-// API Routes
 app.use("/api", authrouter);
 app.use("/api", imageRoutes);
 app.use("/api", favoriteRouter);
@@ -47,7 +45,7 @@ app.use("/api", likeRoutes);
 app.use("/api", commentRoutes);
 app.use("/api", savedImageRoutes);
 
-// Database Connection
+
 mongoose
   .connect("mongodb://127.0.0.1:27017/user-auth")
   .then(() => {
@@ -59,9 +57,7 @@ mongoose
     console.error("❌ MongoDB connection error:", err.message);
   });
 
-// Start the server
 app.listen(PORT, "0.0.0.0", () => {
-  // Get network interfaces
   const interfaces = os.networkInterfaces();
   let localIP = "localhost";
 
