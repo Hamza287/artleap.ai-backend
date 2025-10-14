@@ -36,11 +36,10 @@ const commentController = {
       });
 
       await newComment.save();
-
       await Image.findByIdAndUpdate(imageId, { $inc: { commentCount: 1 } });
-
       await newComment.populate("user", "username profilePic");
 
+     // Send notification to image owner if it's not the user's own image
       if (String(image.userId._id) !== String(userId)) {
         const deviceTokens = await getDeviceTokens(image.userId._id);
 
@@ -50,12 +49,22 @@ const commentController = {
           data: {
             type: "comment",
             imageId: imageId,
-            commentId: newComment._id.toString()
-          }
+            commentId: newComment._id.toString(),
+          },
+        };
+
+        const contextInfo = {
+          action: "addComment",
+          receiverUserId: image.userId._id,
+          imageId,
+          commenterId: userId,
+          tokenCount: deviceTokens?.length || 0,
         };
 
         if (deviceTokens.length > 0) {
-          await sendPushNotification(deviceTokens, notifData);
+          await sendPushNotification(deviceTokens, notifData, contextInfo);
+        } else {
+          console.warn("⚠️ [Push Debug] No tokens found for user:", image.userId._id);
         }
 
         await saveNotification({
@@ -63,9 +72,10 @@ const commentController = {
           type: "user",
           title: notifData.title,
           body: notifData.body,
-          data: notifData.data
+          data: notifData.data,
         });
       }
+
 
       res.status(201).json({
         success: true,
@@ -206,10 +216,11 @@ const commentController = {
         user: userId
       });
 
-      await Image.findByIdAndUpdate(comment.image, {
-        $inc: { commentCount: -1 },
-        $max: { commentCount: 0 }
-      });
+      const image = await Image.findById(comment.image).select('commentCount');
+      if (image) {
+        const newCount = Math.max(0, (image.commentCount || 0) - 1);
+        await Image.findByIdAndUpdate(comment.image, { commentCount: newCount });
+      }
 
 
       res.json({

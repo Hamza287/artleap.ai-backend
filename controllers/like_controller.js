@@ -1,5 +1,6 @@
 const Like = require("../models/like_model");
 const Image = require("../models/image_model");
+const { saveNotification, sendPushNotification, getDeviceTokens } = require("./../service/firebaseService");
 
 const likeController = {
 
@@ -11,59 +12,96 @@ const likeController = {
   },
 
   likeImage: async (req, res) => {
-    try {
-      const { imageId } = req.params;
-      const userId = likeController.getUserId(req); 
+  try {
+    const { imageId } = req.params;
+    const userId = likeController.getUserId(req); 
 
-      const image = await Image.findById(imageId);
-      if (!image) {
-        return res.status(404).json({
-          success: false,
-          message: "Image not found"
-        });
-      }
-
-      const existingLike = await Like.findOne({
-        image: imageId,
-        user: userId
-      });
-
-      if (existingLike) {
-        return res.status(400).json({
-          success: false,
-          message: "Image already liked"
-        });
-      }
-
-      const like = new Like({
-        image: imageId,
-        user: userId
-      });
-
-      await like.save();
-      await like.populate('user', 'username profilePic');
-
-      res.status(201).json({
-        success: true,
-        message: "Image liked successfully",
-        data: like
-      });
-
-    } catch (error) {
-      console.error("Like image error:", error);
-      if (error.message === 'User not authenticated') {
-        return res.status(401).json({
-          success: false,
-          message: "Authentication required"
-        });
-      }
-      res.status(500).json({
+    const image = await Image.findById(imageId).populate('userId', 'username');
+    if (!image) {
+      return res.status(404).json({
         success: false,
-        message: "Internal server error",
-        error: error.message
+        message: "Image not found"
       });
     }
-  },
+
+    const existingLike = await Like.findOne({
+      image: imageId,
+      user: userId
+    });
+
+    if (existingLike) {
+      return res.status(400).json({
+        success: false,
+        message: "Image already liked"
+      });
+    }
+
+    const like = new Like({
+      image: imageId,
+      user: userId
+    });
+
+    await like.save();
+    await like.populate('user', 'username profilePic');
+
+    // Send notification to image owner if it's not the user's own image
+    if (String(image.userId._id) !== String(userId)) {
+      const deviceTokens = await getDeviceTokens(image.userId._id);
+
+      const notifData = {
+        title: "New Like ❤️",
+        body: `${like.user.username} liked your creation`,
+        data: {
+          type: "like",
+          imageId: imageId,
+          likeId: like._id.toString(),
+        },
+      };
+
+      const contextInfo = {
+        action: "likeImage",
+        receiverUserId: image.userId._id,
+        imageId: imageId,
+        likerId: userId,
+        tokenCount: deviceTokens?.length || 0,
+      };
+
+      if (deviceTokens && deviceTokens.length > 0) {
+        await sendPushNotification(deviceTokens, notifData, contextInfo);
+      } else {
+        console.warn("⚠️ [Push Debug] No tokens found for user:", image.userId._id);
+      }
+
+      await saveNotification({
+        userId: image.userId._id,
+        type: "user",
+        title: notifData.title,
+        body: notifData.body,
+        data: notifData.data,
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Image liked successfully",
+      data: like
+    });
+
+  } catch (error) {
+    console.error("Like image error:", error);
+    if (error.message === 'User not authenticated') {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required"
+      });
+    }
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+},
 
   unlikeImage: async (req, res) => {
     try {

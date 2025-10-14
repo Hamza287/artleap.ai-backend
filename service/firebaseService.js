@@ -1,6 +1,7 @@
 const admin = require('firebase-admin');
 const Notification = require('./../models/notification_model');
 const User = require('./../models/user');
+const FcmToken = require("./../models/fcm_token_model");
 
 const initializeFirebase = () => {
   try {
@@ -78,54 +79,65 @@ const saveNotification = async (notificationData) => {
   }
 };
 
-const sendPushNotification = async (deviceTokens, notificationData) => {
+const sendPushNotification = async (deviceTokens, notificationData, contextInfo = {}) => {
   try {
     if (!deviceTokens || !Array.isArray(deviceTokens)) {
-      throw new Error('Invalid device tokens array');
+      console.error("❌ [Push Debug] Invalid deviceTokens:", deviceTokens);
+      throw new Error("Invalid device tokens array");
     }
 
     if (deviceTokens.length === 0) {
-      console.warn('No device tokens provided, skipping notification');
-      return { successCount: 0, failureCount: 0 };
+      console.warn("⚠️ [Push Debug] No device tokens provided. Skipping notification send.");
+      return { successCount: 0, failureCount: 0, message: "No device tokens" };
     }
 
     if (!notificationData?.title || !notificationData?.body) {
-      throw new Error('Notification title and body are required');
+      console.error("❌ [Push Debug] Missing title/body:", notificationData);
+      throw new Error("Notification title and body are required");
     }
 
-    const validTokens = deviceTokens.filter(t => typeof t === 'string' && t.length > 0);
-    
+    const validTokens = deviceTokens.filter(t => typeof t === "string" && t.trim().length > 0);
+    console.log(`📲 [Push Debug] ${validTokens.length}/${deviceTokens.length} valid tokens after filtering.`);
+
     if (validTokens.length === 0) {
-      console.warn('No valid device tokens found after filtering');
-      return { successCount: 0, failureCount: 0 };
+      console.warn("⚠️ [Push Debug] No valid tokens found after filtering.");
+      return { successCount: 0, failureCount: 0, message: "No valid tokens" };
     }
 
     if (!admin.messaging().sendMulticast) {
-      console.warn('sendMulticast not available, falling back to individual sends');
+      console.warn("⚠️ [Push Debug] sendMulticast not available. Falling back to individual sends.");
       return await sendIndividualNotifications(validTokens, notificationData);
     }
 
     const message = {
       notification: {
         title: notificationData.title,
-        body: notificationData.body
+        body: notificationData.body,
       },
       data: notificationData.data || {},
-      tokens: validTokens
+      tokens: validTokens,
     };
 
+    console.log("📦 [Push Debug] Prepared FCM message:", JSON.stringify(message, null, 2));
+
     const response = await admin.messaging().sendMulticast(message);
-    
-    if (response.failureCount > 0) {
-      response.responses.forEach((resp, idx) => {
-        if (!resp.success) {
-          console.error(`Failed to send to token ${validTokens[idx]}:`, resp.error);
-        }
-      });
-    }
+    console.log("✅ [Push Debug] FCM sendMulticast response summary:", {
+      successCount: response.successCount,
+      failureCount: response.failureCount,
+    });
+
+    // Detailed per-token logging
+    response.responses.forEach((resp, i) => {
+      if (resp.success) {
+        console.log(`✅ [Push Debug] Success → Token [${i}]`);
+      } else {
+        console.error(`❌ [Push Debug] Failed → Token [${i}]:`, validTokens[i], resp.error?.message || resp.error);
+      }
+    });
+
     return response;
   } catch (error) {
-    console.error('Error sending push notification:', error.message);
+    console.error("💥 [Push Debug] Error sending push notification:", error);
     throw error;
   }
 };
@@ -159,21 +171,25 @@ const sendIndividualNotifications = async (tokens, notificationData) => {
 const getDeviceTokens = async (userId) => {
   try {
     if (!userId) {
-      throw new Error('User ID is required');
+      throw new Error("User ID is required");
     }
 
-    const user = await User.findById(userId).select('deviceTokens').lean();
+    const record = await FcmToken.findOne({ userId: userId.toString() }).lean();
 
-    if (!user) {
-      console.warn(`User not found with ID: ${userId}`);
+    if (!record) {
+      console.warn(`[Push Debug] No DeviceToken record found for user: ${userId}`);
       return [];
     }
 
-    return Array.isArray(user.deviceTokens) 
-      ? user.deviceTokens.filter(t => typeof t === 'string' && t.length > 0)
-      : [];
+    if (!Array.isArray(record.tokens) || record.tokens.length === 0) {
+      console.warn(`[Push Debug] Empty tokens array for user: ${userId}`);
+      return [];
+    }
+
+    console.log(`[Push Debug] Tokens for user ${userId}:`, record.tokens);
+    return record.tokens;
   } catch (error) {
-    console.error('Error fetching device tokens:', error.message);
+    console.error("Error fetching device tokens:", error.message);
     return [];
   }
 };
