@@ -31,10 +31,10 @@ class ApplePlanSync {
       const now = Math.floor(Date.now() / 1000);
       return jwt.sign(
         {
-          iss: this.issuerId, // Apple Team ID
-          iat: now, // issued at
-          exp: now + 20 * 60, // expires in 20 mins (max allowed)
-          aud: "appstoreconnect-v1", // always this
+          iss: this.issuerId, 
+          iat: now, 
+          exp: now + 20 * 60,
+          aud: "appstoreconnect-v1",
         },
         this.privateKey,
         {

@@ -22,9 +22,9 @@ class PlanManagement {
        basePlanId: "Free",
         description: "Basic access with limited features",
         price: 0,
-        totalCredits: 10,
+        totalCredits: 4,
         imageGenerationCredits: 0,
-        promptGenerationCredits: 10,
+        promptGenerationCredits: 4,
         features: [
           "10 Text to image credits per day",
           "Watermarked images",

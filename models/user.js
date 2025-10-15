@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema({
   password: { type: String, required: false },
   favorites: { type: [mongoose.Schema.Types.ObjectId], ref: "Image", default: [] },
   profilePic: { type: String, default: "" },
-  dailyCredits: { type: Number, default: 10 },
+  dailyCredits: { type: Number, default: 4 },
   isSubscribed: { type: Boolean, default: false },
   images: [{ type: mongoose.Schema.Types.ObjectId, ref: "Image" }],
   lastCreditReset: { type: Date, default: null },
@@ -25,7 +25,7 @@ const UserSchema = new mongoose.Schema({
     default: 'none' 
   },
   planName: { type: String, default: "Free" }, 
-  totalCredits: { type: Number, default: 10 },
+  totalCredits: { type: Number, default: 4 },
   usedImageCredits: { type: Number, default: 0 },
   usedPromptCredits: { type: Number, default: 0 },
   hasActiveTrial: { type: Boolean, default: false },

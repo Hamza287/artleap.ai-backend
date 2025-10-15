@@ -105,8 +105,8 @@ const updateUserCredits = async (req, res) => {
 
     // ✅ Reset only if it’s a new day
     if (!lastReset || !today.isSame(lastReset)) {
-      user.dailyCredits = 10;
-      user.totalCredits = 10;
+      user.dailyCredits = 4;
+      user.totalCredits = 4;
       user.usedImageCredits = 0;
       user.usedPromptCredits = 0;
       user.lastCreditReset = new Date();
@@ -114,13 +114,13 @@ const updateUserCredits = async (req, res) => {
 
       console.log({
         success: true,
-        message: `✅ Daily credits reset to 10 for ${user.username}.`,
+        message: `✅ Daily credits reset to 4 for ${user.username}.`,
         dailyCredits: user.dailyCredits,
       });
 
       return res.json({
         success: true,
-        message: `✅ Daily credits reset to 10 for ${user.username}.`,
+        message: `✅ Daily credits reset to 4 for ${user.username}.`,
         dailyCredits: user.dailyCredits,
       });
     }
