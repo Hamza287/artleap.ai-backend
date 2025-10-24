@@ -14,11 +14,18 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Middleware to check subscription for text-to-image
 const checkTextToImageLimits = async (req, res, next) => {
+  const { userId } = req.body;
   try {
-    const generationType = "image"; // Leonardo text-to-image is image generation (24 credits)
-    const limits = await SubscriptionService.checkGenerationLimits(req.userId, generationType);
+    if (!userId) {
+      return res.status(400).json({ 
+        error: "User ID is required",
+        details: "Please include userId in your request body"
+      });
+    }
+    
+    const generationType = "prompt";
+    const limits = await SubscriptionService.checkGenerationLimits(userId, generationType);
     
     if (!limits.allowed) {
       return res.status(403).json({ 
@@ -33,15 +40,13 @@ const checkTextToImageLimits = async (req, res, next) => {
   }
 };
 
-// Middleware to check subscription for image-to-image
 const checkImageToImageLimits = async (req, res, next) => {
   try {
-    const generationType = "image"; // Leonardo image-to-image is image generation (24 credits)
+    const generationType = "image";
      const { userId } = req.body;
     const limits = await SubscriptionService.checkGenerationLimits(userId, generationType);
     
     if (!limits.allowed) {
-      // Clean up uploaded file if limit is reached
       if (req.file) {
         fs.unlinkSync(req.file.path);
       }
@@ -54,7 +59,7 @@ const checkImageToImageLimits = async (req, res, next) => {
   } catch (error) {
     console.error("Subscription check error:", error);
     if (req.file) {
-      fs.unlinkSync(req.file.path); // Clean up uploaded file on error
+      fs.unlinkSync(req.file.path);
     }
     return res.status(500).json({ error: "Internal server error" });
   }

@@ -153,6 +153,7 @@ class SubscriptionService {
   }
 
   async checkGenerationLimits(userId, generationType) {
+    console.log("generate type is " + generationType);
     try {
       const result = await this.creditManagement.checkGenerationLimits(userId, generationType);
       return result;

@@ -6,7 +6,6 @@ const freePikTxtToImg = express.Router();
 
 freePikTxtToImg.post('/freepikTxtToImg', async (req, res, next) => {
   try {
-    // Extract userId from request body
     const { userId } = req.body;
     
     if (!userId) {
@@ -15,9 +14,7 @@ freePikTxtToImg.post('/freepikTxtToImg', async (req, res, next) => {
         details: "Please include userId in your request body"
       });
     }
-
-    // Check subscription limits before processing
-    const generationType = "prompt"; // Freepik is always prompt generation (2 credits)
+    const generationType = "prompt";
     const limits = await SubscriptionService.checkGenerationLimits(userId, generationType);
     
     if (!limits.allowed) {
@@ -26,11 +23,7 @@ freePikTxtToImg.post('/freepikTxtToImg', async (req, res, next) => {
         details: limits 
       });
     }
-    
-    // Record the credit usage
-    // await SubscriptionService.recordGenerationUsage(userId, generationType);
-    
-    // Proceed to the controller if limits are OK
+  
     next();
   } catch (error) {
     console.error("Subscription check error:", error);

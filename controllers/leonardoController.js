@@ -23,7 +23,7 @@ const generateTextToImage = async (req, res) => {
       width = 1024,
       modelId = 'b24e16ff-06e3-43eb-8d33-4416c2d75876',
       num_images = 1,
-      presetStyle = 'FILM',
+      presetStyle = 'CREATIVE',
       userId,
       username,
       creatorEmail,
@@ -34,15 +34,15 @@ const generateTextToImage = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields (prompt, userId, username).' });
     }
 
-    const generationType = "image";
-    const limits = await SubscriptionService.checkGenerationLimits(userId, generationType);
+    // const generationType = "prompt";
+    // const limits = await SubscriptionService.checkGenerationLimits(userId, generationType);
 
-    if (!limits.allowed) {
-      return res.status(403).json({ 
-        error: "Generation limit reached",
-        details: limits 
-      });
-    }
+    // if (!limits.allowed) {
+    //   return res.status(403).json({ 
+    //     error: "Generation limit reached",
+    //     details: limits 
+    //   });
+    // }
 
     const genRes = await axios.post(`${LEONARDO_BASE_URL}/generations`, {
       prompt,
