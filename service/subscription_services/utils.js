@@ -1,5 +1,5 @@
 const SKU_MAPPINGS = {
-  basic: ["basic", "basica"],
+  basic: ["basic", "basic"],
   standard: ["standard", "standards"],
   premium: ["premium"],
   trial: ["trial", "free_trial"],

@@ -42,12 +42,9 @@ class PlanSync {
     }
   }
 
-  isSubscriptionActive(subscription) {
-    if (!subscription) return false;
-    if (subscription.archived) return false;
-    return (subscription.basePlans || []).some(
-      (plan) => plan.state === "ACTIVE" || plan.state === "BASE_PLAN_STATE_ACTIVE"
-    );
+  isBasePlanActive(basePlan) {
+    if (!basePlan) return false;
+    return basePlan.state === "ACTIVE" || basePlan.state === "BASE_PLAN_STATE_ACTIVE";
   }
 
   isFreePlan(sku) {
@@ -64,49 +61,61 @@ class PlanSync {
         packageName,
       });
 
-      const googleProducts = (response.data.subscriptions || []).map((sub) => {
-        const basePlan = (sub.basePlans || [])[0];
-        const priceObj = basePlan?.regionalConfigs?.["USD"]?.price;
+      const googleProducts = [];
+      
+      (response.data.subscriptions || []).forEach((sub) => {
+        (sub.basePlans || []).forEach((basePlan) => {
+          if (!this.isBasePlanActive(basePlan)) return;
 
-        return {
-          sku: sub.productId,
-          basePlanId: basePlan.basePlanId,
-          name: sub.listings?.[0]?.title || sub.productId,
-          description: sub.listings?.[0]?.description || "",
-          status: sub.state || basePlan?.state || null,
-          priceMicros: priceObj?.amountMicros || 0,
-          fullObject: sub,
-        };
+          const priceObj = basePlan?.regionalConfigs?.["USD"]?.price;
+          const uniqueSku = `${sub.productId}_${basePlan.basePlanId}`;
+          
+          googleProducts.push({
+            sku: uniqueSku,
+            productId: sub.productId,
+            basePlanId: basePlan.basePlanId,
+            name: sub.listings?.[0]?.title || sub.productId,
+            description: sub.listings?.[0]?.description || "",
+            status: basePlan.state,
+            priceMicros: priceObj?.amountMicros || 0,
+            fullObject: sub,
+            basePlanObject: basePlan,
+          });
+        });
       });
 
       const existingPlans = await SubscriptionPlan.find().lean().exec();
       const updatePromises = [];
 
       for (const product of googleProducts) {
-        if (!product?.sku) continue;
+        if (!product?.sku || !product?.productId) continue;
 
         const existingPlan = existingPlans.find(
           (plan) => plan.googleProductId === product.sku
         );
-        const planDetails = getPlanDetails(product.sku, product);
+        
+        const planName = product.basePlanObject?.offerDetails?.offerTags?.[0]?.tag 
+          || `${product.name} (${product.basePlanId})`
+          || product.name;
 
-        const isActive = this.isFreePlan(product.sku) 
-          ? true 
-          : this.isSubscriptionActive(product.fullObject);
+        const planDetails = getPlanDetails(product.productId, product);
+
+        const isActive = this.isFreePlan(product.productId) ? true : this.isBasePlanActive(product.basePlanObject);
 
         const planData = {
           googleProductId: product.sku,
-          name: planDetails.name,
-          type: mapGoogleProductType(product.sku),
+          originalProductId: product.productId,
+          name: planName,
+          type: mapGoogleProductType(product.productId),
           description: planDetails.description,
           price: planDetails.price,
-          totalCredits: calculateCredits(product.sku),
-          imageGenerationCredits: calculateCredits(product.sku, "image"),
-          promptGenerationCredits: calculateCredits(product.sku, "prompt"),
+          totalCredits: calculateCredits(product.productId),
+          imageGenerationCredits: calculateCredits(product.productId, "image"),
+          promptGenerationCredits: calculateCredits(product.productId, "prompt"),
           features: parseFeatures(product.description),
           isActive,
           version: existingPlan ? existingPlan.version + 1 : 1,
-          billingPeriod: mapBillingPeriod(product.sku),
+          billingPeriod: mapBillingPeriod(product.basePlanId),
           basePlanId: product.basePlanId,
         };
 
@@ -126,11 +135,12 @@ class PlanSync {
 
       const deactivationPromises = [];
       for (const plan of existingPlans) {
-        if (
-          !plan.googleProductId ||
-          (!googleProducts.find((p) => p.sku === plan.googleProductId) && 
-           !this.isFreePlan(plan.googleProductId))
-        ) {
+        if (!plan.googleProductId) continue;
+        
+        const shouldDeactivate = !googleProducts.find((p) => p.sku === plan.googleProductId) && 
+          !this.isFreePlan(plan.originalProductId || plan.googleProductId);
+
+        if (shouldDeactivate) {
           deactivationPromises.push(
             SubscriptionPlan.findByIdAndUpdate(
               plan._id,
