@@ -5,6 +5,8 @@ const PaymentProcessing = require("./subscription_services/paymentProcessing");
 const NotificationService = require("./subscription_services/notificationService");
 const CreditManagement = require("./subscription_services/creditsManagement");
 const ApplePlanSync = require('./apple/applePlanSync');
+const GoogleCancellationHandler = require("./plans_handlers/googleCancellationHandler");
+const AppleCancellationHandler = require("./plans_handlers/appleCancellationHandler");
 
 class SubscriptionService {
   constructor() {
@@ -15,6 +17,40 @@ class SubscriptionService {
     this.paymentProcessing = new PaymentProcessing();
     this.notificationService = new NotificationService();
     this.creditManagement = new CreditManagement();
+    this.googleCancellationHandler = new GoogleCancellationHandler();
+    this.appleCancellationHandler = new AppleCancellationHandler();
+  }
+
+   async checkAndHandleSubscriptionCancellations() {
+    try {
+      console.log("[SubscriptionService] Checking for subscription cancellations...");
+      
+      await this.googleCancellationHandler.checkAllActiveSubscriptions();
+      await this.appleCancellationHandler.checkAllActiveAppleSubscriptions();
+      
+      console.log("[SubscriptionService] Subscription cancellation check completed");
+    } catch (error) {
+      console.error("[SubscriptionService] Error checking subscription cancellations:", error);
+      throw error;
+    }
+  }
+
+  async handleGoogleSubscriptionCancellation(purchaseToken) {
+    try {
+      return await this.googleCancellationHandler.processGoogleSubscriptionCancellation(purchaseToken);
+    } catch (error) {
+      console.error("[SubscriptionService] Error handling Google cancellation:", error);
+      throw error;
+    }
+  }
+
+  async handleAppleSubscriptionCancellation(originalTransactionId) {
+    try {
+      return await this.appleCancellationHandler.processAppleSubscriptionCancellation(originalTransactionId);
+    } catch (error) {
+      console.error("[SubscriptionService] Error handling Apple cancellation:", error);
+      throw error;
+    }
   }
 
   async syncPlansWithGooglePlay() {

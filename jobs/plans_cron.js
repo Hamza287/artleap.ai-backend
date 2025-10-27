@@ -3,7 +3,6 @@ const cron = require('node-cron');
 const mongoose = require('mongoose');
 const SubscriptionService = require("../service/subscriptionService");
 
-// MongoDB connection configuration
 const connectToMongoDB = async () => {
   try {
     if (mongoose.connection.readyState === 1) {
@@ -22,7 +21,6 @@ const connectToMongoDB = async () => {
       maxIdleTimeMS: 30000
     });
 
-    // Connection event listeners for production monitoring
     mongoose.connection.on('error', (err) => {
       console.error('[PlansCron] MongoDB connection error:', err.message);
     });
@@ -45,7 +43,6 @@ const connectToMongoDB = async () => {
   }
 };
 
-// Wait for MongoDB connection to be ready
 const waitForConnection = async (maxWaitTime = 30000) => {
   const startTime = Date.now();
   
@@ -59,7 +56,6 @@ const waitForConnection = async (maxWaitTime = 30000) => {
   console.log('[PlansCron] MongoDB connection ready');
 };
 
-// Function to sync plans
 const syncPlans = async () => {
   const startTime = Date.now();
   
@@ -67,13 +63,12 @@ const syncPlans = async () => {
     await connectToMongoDB();
     await waitForConnection();
     
-    // Verify connection with a ping
     await mongoose.connection.db.admin().ping();
     
-    // Now sync plans
     await SubscriptionService.syncPlansWithGooglePlay();
     await SubscriptionService.syncPlansWithAppStore();
     await SubscriptionService.processExpiredSubscriptions();
+    await SubscriptionService.checkAndHandleSubscriptionCancellations();
     
     const duration = Date.now() - startTime;
     console.log(`[PlansCron] Plan synchronization completed successfully in ${duration}ms`);
@@ -86,7 +81,6 @@ const syncPlans = async () => {
       timestamp: new Date().toISOString()
     });
     
-    // If it's a connection error, try to reconnect
     if (error.message.includes('connection') || error.message.includes('timeout')) {
       try {
         await mongoose.connection.close();
@@ -101,7 +95,6 @@ const syncPlans = async () => {
   }
 };
 
-// Initialize database connection
 const initializeCron = async () => {
   try {
     await connectToMongoDB();
@@ -117,23 +110,22 @@ const initializeCron = async () => {
   }
 };
 
-// Schedule the cron job to run daily at midnight (12:00 AM)
-cron.schedule('0 0 * * *', async () => {
-  console.log('[PlansCron] Midnight plan synchronization started');
-  await syncPlans();
-}, {
-  scheduled: true,
-  timezone: "Asia/Karachi"
-});
-// cron.schedule('*/2 * * * *', async () => {
-//   console.log('[PlansCron] Running every 2 minutes');
+// cron.schedule('0 0 * * *', async () => {
+//   console.log('[PlansCron] Midnight plan synchronization started');
 //   await syncPlans();
 // }, {
 //   scheduled: true,
 //   timezone: "Asia/Karachi"
 // });
 
-// Graceful shutdown handlers
+cron.schedule('*/2 * * * *', async () => {
+  console.log('[PlansCron] Running every 2 minutes');
+  await syncPlans();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
 const gracefulShutdown = async (signal) => {
   console.log(`[PlansCron] Received ${signal}, shutting down gracefully...`);
   try {
@@ -161,5 +153,4 @@ process.on('unhandledRejection', (reason, promise) => {
   gracefulShutdown('unhandledRejection');
 });
 
-// Initialize the service
 initializeCron();

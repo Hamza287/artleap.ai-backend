@@ -68,7 +68,7 @@ class PlanSync {
           if (!this.isBasePlanActive(basePlan)) return;
 
           const priceObj = basePlan?.regionalConfigs?.["USD"]?.price;
-          const uniqueSku = `${sub.productId}_${basePlan.basePlanId}`;
+          const uniqueSku = basePlan.basePlanId;
           
           googleProducts.push({
             sku: uniqueSku,

@@ -45,7 +45,7 @@ class SubscriptionManagement {
           ? mongoose.Types.ObjectId(userId)
           : userId,
       });
- 
+
       const userSubscription = await UserSubscription.findOne({
         userId,
         isActive: true,
@@ -168,7 +168,7 @@ class SubscriptionManagement {
         }
 
         subscription.paymentMethod = paymentMethod;
-        subscription.autoRenew = false;
+        subscription.autoRenew = true;
         subscription.cancelledAt = null;
         subscription.planSnapshot = {
           name: plan.name,
@@ -225,7 +225,7 @@ class SubscriptionManagement {
           isTrial,
           isActive: true,
           paymentMethod,
-          autoRenew: false,
+          autoRenew: true,
           planSnapshot: {
             name: plan.name,
             type: plan.type,
@@ -387,7 +387,7 @@ class SubscriptionManagement {
           if (paymentSuccess) {
             const plan = sub.planId;
             sub.startDate = new Date();
-            
+
             if (plan.type === "basic") {
               sub.endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
             } else if (plan.type === "standard") {
