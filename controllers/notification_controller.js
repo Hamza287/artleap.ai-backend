@@ -8,12 +8,10 @@ const {
   sendPushNotification,
 } = require("./../service/firebaseService");
 
-// Helper to check if string is a valid ObjectId
 const isValidObjectId = (id) => {
   return mongoose.Types.ObjectId.isValid(id);
 };
 
-// Get user notifications
 const getUserNotifications = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -27,12 +25,10 @@ const getUserNotifications = async (req, res) => {
       });
     }
 
-    // Get user with hidden notifications
     const user = await User.findById(userId).select('hiddenNotifications');
-    
+  
     const hiddenNotifications = user?.hiddenNotifications || [];
 
-    // Convert hidden notification IDs to ObjectId if valid
     const hiddenIds = hiddenNotifications.map(id => {
       const isValid = isValidObjectId(id);
       return isValid ? new mongoose.Types.ObjectId(id) : id;
@@ -92,7 +88,6 @@ const getUserNotifications = async (req, res) => {
   }
 };
 
-// Mark notification as read
 const markAsRead = async (req, res) => {
   try {
     const { notificationId } = req.params;
@@ -106,7 +101,6 @@ const markAsRead = async (req, res) => {
       });
     }
 
-    // Build query that works with both ObjectId and string IDs
     const query = {
       $or: [{ userId }, { type: "general" }],
     };
@@ -141,7 +135,6 @@ const markAsRead = async (req, res) => {
   }
 };
 
-// Delete notification
 const deleteNotification = async (req, res) => {
   try {
     const { notificationId } = req.params;
@@ -154,7 +147,6 @@ const deleteNotification = async (req, res) => {
       });
     }
 
-    // Find notification by ID (works with both ObjectId and string IDs)
     const idToQuery = isValidObjectId(notificationId)
       ? new mongoose.Types.ObjectId(notificationId)
       : notificationId;
@@ -168,7 +160,6 @@ const deleteNotification = async (req, res) => {
       });
     }
 
-    // Handle general notification (hide for user)
     if (notification.type === "general") {
       const updateResult = await User.findOneAndUpdate(
         { _id: userId },
@@ -228,13 +219,11 @@ const deleteNotification = async (req, res) => {
   }
 };
 
-// Create notification
 const createNotification = async (req, res) => {
   try {
     const { userId: rawUserId, type = "general", title, body, data } = req.body;
     const userId = rawUserId || req.user?._id || null;
 
-    // Basic validation
     if (!title || !body) {
       return res.status(400).json({
         success: false,
@@ -249,7 +238,6 @@ const createNotification = async (req, res) => {
       });
     }
 
-    // Check for conflicting input
     if (type === "general" && userId) {
       return res.status(400).json({
         success: false,
@@ -257,7 +245,6 @@ const createNotification = async (req, res) => {
       });
     }
 
-    // Validate userId for user-specific notifications
     if (type === "user" && !userId) {
       return res.status(400).json({
         success: false,
@@ -265,7 +252,6 @@ const createNotification = async (req, res) => {
       });
     }
 
-    // Check for duplicate general notification in last 24h
     if (type === "general") {
       const existing = await Notification.findOne({
         type: "general",
@@ -293,7 +279,6 @@ const createNotification = async (req, res) => {
 
     await notification.save();
 
-    // Push notification
     if (type === "general") {
       await admin.messaging().send({
         notification: { title, body },
@@ -322,7 +307,6 @@ const createNotification = async (req, res) => {
   }
 };
 
-// Mark all notifications as read
 const markAllAsRead = async (req, res) => {
   try {
     const { userId } = req.user;
@@ -342,13 +326,11 @@ const markAllAsRead = async (req, res) => {
       });
     }
 
-    // Convert valid ObjectIds and keep strings as-is
     const ids = notificationIds.map((id) => {
       const isValid = isValidObjectId(id);
       return isValid ? new mongoose.Types.ObjectId(id) : id;
     });
 
-    // Validate all notification IDs belong to this user
     const userNotifications = await Notification.find({
       _id: { $in: ids },
       $or: [{ userId: userId }, { type: "general" }],

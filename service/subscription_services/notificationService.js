@@ -70,7 +70,6 @@ class NotificationService {
       });
 
       await notification.save();
-      console.debug("[NotificationService] Notification sent for user:", userId);
     } catch (error) {
       console.error("[NotificationService] sendSubscriptionNotification failed:", error);
       throw error;

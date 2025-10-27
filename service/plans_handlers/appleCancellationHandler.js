@@ -46,12 +46,7 @@ class AppleCancellationHandler {
       };
       
       const url = `https://api.storekit.itunes.apple.com/inApps/v1/subscriptions/${originalTransactionId}`;
-      
-      console.log(`[AppleCancellationHandler] Checking subscription status for: ${originalTransactionId}`);
-      
       const response = await axios.get(url, { headers });
-      
-      console.log(`[AppleCancellationHandler] Subscription status response:`, JSON.stringify(response.data, null, 2));
 
       return response.data;
     } catch (error) {
@@ -95,10 +90,7 @@ class AppleCancellationHandler {
 
   async processAppleSubscriptionCancellation(originalTransactionId) {
     try {
-      console.log(`[AppleCancellationHandler] Processing cancellation check for: ${originalTransactionId}`);
-      
       let subscriptionStatus;
-      
       try {
         subscriptionStatus = await this.getSubscriptionStatus(originalTransactionId);
       } catch (error) {
@@ -115,12 +107,9 @@ class AppleCancellationHandler {
       const isCancelled = this.isSubscriptionCancelled(subscriptionStatus);
       
       if (isCancelled) {
-        console.log(`[AppleCancellationHandler] Subscription cancelled: ${originalTransactionId}`);
         await this.handleCancelledAppleSubscription(originalTransactionId, subscriptionStatus);
         return true;
       }
-      
-      console.log(`[AppleCancellationHandler] Subscription still active: ${originalTransactionId}`);
       return false;
     } catch (error) {
       console.error("[AppleCancellationHandler] Error processing Apple cancellation:", error);
@@ -156,8 +145,6 @@ class AppleCancellationHandler {
 
   async handleCancelledAppleSubscription(originalTransactionId, subscriptionData) {
   try {
-    console.log(`[AppleCancellationHandler] Handling cancellation for transaction: ${originalTransactionId}`);
-    
     const paymentRecord = await PaymentRecord.findOne({ 
       $or: [
         { transactionId: originalTransactionId },
@@ -169,12 +156,7 @@ class AppleCancellationHandler {
       console.error("[AppleCancellationHandler] Payment record not found for transaction:", originalTransactionId);
       return;
     }
-
     const userId = paymentRecord.userId;
-    
-    console.log(`[AppleCancellationHandler] Updating payment record for user: ${userId}`);
-    
-    // Update payment record
     await PaymentRecord.updateOne(
       { _id: paymentRecord._id },
       { 
@@ -197,8 +179,6 @@ class AppleCancellationHandler {
         }
       }
     );
-
-    console.log(`[AppleCancellationHandler] Successfully updated subscription cancellation for user: ${userId}`);
   } catch (error) {
     console.error("[AppleCancellationHandler] Error handling Apple cancellation:", error);
     throw error;
@@ -207,8 +187,6 @@ class AppleCancellationHandler {
 
   async checkAllActiveAppleSubscriptions() {
     try {
-      console.log("[AppleCancellationHandler] Checking all active Apple subscriptions");
-      
       const activePayments = await PaymentRecord.find({
         paymentMethod: 'apple',
         status: 'completed',
@@ -217,9 +195,6 @@ class AppleCancellationHandler {
           { expiryDate: { $exists: false } }
         ]
       });
-
-      console.log(`[AppleCancellationHandler] Found ${activePayments.length} active Apple payments to check`);
-
       let cancelledCount = 0;
       
       for (const payment of activePayments) {
@@ -235,8 +210,6 @@ class AppleCancellationHandler {
           console.error(`[AppleCancellationHandler] Error checking payment ${payment._id}:`, error);
         }
       }
-
-      console.log(`[AppleCancellationHandler] Completed checking all subscriptions. Cancelled: ${cancelledCount}`);
     } catch (error) {
       console.error("[AppleCancellationHandler] Error checking all Apple subscriptions:", error);
       throw error;

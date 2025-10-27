@@ -277,11 +277,6 @@ class SubscriptionManagement {
       }
 
       const subscription = await UserSubscription.findOne(query);
-      console.debug(
-        "[SubscriptionManagement] cancelSubscription query result for user:",
-        userId,
-        subscription ? subscription : "No subscription found"
-      );
 
       if (!subscription) {
         console.warn(

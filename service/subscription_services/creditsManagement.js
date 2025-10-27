@@ -4,7 +4,6 @@ const UserSubscription = require("../../models/user_subscription");
 
 class CreditManagement {
   async checkGenerationLimits(userId, generationType) {
-    console.log("generate type is a very " + generationType);
     try {
       const user = await User.findOne({
         _id: mongoose.Types.ObjectId.isValid(userId)

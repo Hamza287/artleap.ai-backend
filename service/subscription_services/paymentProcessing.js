@@ -58,7 +58,6 @@ class PaymentProcessing {
         false,
         false,
       );
-      console.debug("[PaymentProcessing] Subscription renewed:", subscriptionId);
       return newSub;
     } catch (error) {
       console.error("[PaymentProcessing] renewSubscription failed:", error);
