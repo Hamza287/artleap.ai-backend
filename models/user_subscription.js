@@ -5,7 +5,8 @@ const userSubscriptionSchema = new mongoose.Schema({
   planId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "SubscriptionPlan",
-    required: true,
+    required: [true, 'Plan ID is required'],
+    index: true,
   },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
