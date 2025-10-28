@@ -1,4 +1,5 @@
 const admin = require('firebase-admin');
+const { sendPasswordResetEmail } = require('./../utils/emailSender');
 
 const forgotPassword = async (req, res) => {
   try {
@@ -23,15 +24,29 @@ const forgotPassword = async (req, res) => {
       }
       throw error;
     }
+
     const resetLink = await admin.auth().generatePasswordResetLink(email);
+    try {
+      await sendPasswordResetEmail(
+        email, 
+        resetLink, 
+        userRecord.displayName || 'Artleap User'
+      );
+      
+      console.log(`Password reset email sent to: ${email}`);
+      
+      return res.status(200).json({
+        success: true,
+        message: "Password reset link has been sent to your email.",
+      });
 
-    console.log(`Password reset link for ${email}: ${resetLink}`);
-
-    return res.status(200).json({
-      success: true,
-      message: "Password reset link has been sent to your email.",
-      link: resetLink,
-    });
+    } catch (emailError) {
+      console.error("Email sending error:", emailError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send password reset email. Please try again.",
+      });
+    }
 
   } catch (error) {
     console.error("Forgot password error:", error);
@@ -44,4 +59,4 @@ const forgotPassword = async (req, res) => {
 
 module.exports = {
   forgotPassword,
-}
+};
