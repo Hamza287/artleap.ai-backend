@@ -53,7 +53,6 @@ const waitForConnection = async (maxWaitTime = 30000) => {
     
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
-  console.log('[PlansCron] MongoDB connection ready');
 };
 
 const syncPlans = async () => {
@@ -110,13 +109,6 @@ const initializeCron = async () => {
 
 cron.schedule('0 0 * * *', async () => {
   console.log('[PlansCron] Midnight plan synchronization started');
-  await syncPlans();
-}, {
-  scheduled: true,
-  timezone: "Asia/Karachi"
-});
-
-cron.schedule('*/2 * * * *', async () => {
   await syncPlans();
 }, {
   scheduled: true,
