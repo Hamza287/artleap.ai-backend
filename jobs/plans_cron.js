@@ -108,13 +108,13 @@ const initializeCron = async () => {
   }
 };
 
-// cron.schedule('0 0 * * *', async () => {
-//   console.log('[PlansCron] Midnight plan synchronization started');
-//   await syncPlans();
-// }, {
-//   scheduled: true,
-//   timezone: "Asia/Karachi"
-// });
+cron.schedule('0 0 * * *', async () => {
+  console.log('[PlansCron] Midnight plan synchronization started');
+  await syncPlans();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
 
 cron.schedule('*/2 * * * *', async () => {
   await syncPlans();
