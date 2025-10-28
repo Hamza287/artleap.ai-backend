@@ -365,7 +365,6 @@ class SubscriptionManagement {
       isActive: true
     });
     for (const sub of invalidSubscriptions) {
-      console.warn(`[SubscriptionManagement] Found subscription with missing planId: ${sub._id}, user: ${sub.userId}`);
       const freePlan = await this.planManagement.getPlanByType("free");
       if (freePlan) {
         sub.planId = freePlan._id;

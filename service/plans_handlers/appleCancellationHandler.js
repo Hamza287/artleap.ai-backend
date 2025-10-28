@@ -51,7 +51,6 @@ class AppleCancellationHandler {
       return response.data;
     } catch (error) {
       if (error.response?.status === 404) {
-        console.log(`[AppleCancellationHandler] Subscription not found, likely expired: ${originalTransactionId}`);
         return { status: 'EXPIRED' };
       }
       

@@ -28,8 +28,6 @@ class GoogleCancellationHandler {
   try {
     const client = await this.getBillingClient();
 
-    console.log(`[GoogleCancellationHandler] Checking subscription for token: ${purchaseToken}`);
-
     const response = await client.purchases.subscriptionsv2.get({
       packageName,
       token: purchaseToken,
@@ -47,19 +45,15 @@ class GoogleCancellationHandler {
     const autoRenewing = lineItem?.autoRenewingPlan?.autoRenewEnabled ?? false;
 
     if (!autoRenewing) {
-      console.log("[GoogleCancellationHandler] Subscription is cancelled or not renewing");
       await this.handleCancelledSubscription(purchaseToken, subscription);
       return true;
     }
-
-    console.log("[GoogleCancellationHandler] Subscription still active");
     return false;
 
   } catch (error) {
     const message = error.response?.data?.error?.message || error.message;
     console.error("[GoogleCancellationHandler] ❌ Error checking subscription:", message);
 
-    // Graceful handling for expired or invalid tokens
     if (message.includes("not found") || message.includes("invalid")) {
       await this.handleCancelledSubscription(purchaseToken, { reason: "expired_or_invalid" });
       return true;
@@ -97,7 +91,6 @@ class GoogleCancellationHandler {
 
       const userId = paymentRecord.userId;
 
-      // Mark payment as cancelled
       await PaymentRecord.updateOne(
         { _id: paymentRecord._id },
         {
@@ -108,7 +101,6 @@ class GoogleCancellationHandler {
         }
       );
 
-      // Deactivate user subscription
       await UserSubscription.updateMany(
         { userId, isActive: true },
         {
@@ -119,8 +111,6 @@ class GoogleCancellationHandler {
           },
         }
       );
-
-      console.log(`[GoogleCancellationHandler] ✅ Subscription cancelled for user: ${userId}`);
     } catch (error) {
       console.error("[GoogleCancellationHandler] ❌ Error handling subscription cancellation:", error);
     }
@@ -137,7 +127,6 @@ class GoogleCancellationHandler {
           },
         }
       );
-      console.log(`[GoogleCancellationHandler] 🟡 Marked invalid token as cancelled: ${purchaseToken}`);
     } catch (error) {
       console.error("[GoogleCancellationHandler] ❌ Failed to mark invalid token:", error);
     }
@@ -150,9 +139,6 @@ class GoogleCancellationHandler {
         expiryDate: { $gt: new Date() },
         platform: "android",
       });
-
-      console.log(`[GoogleCancellationHandler] 🔍 Checking ${activePayments.length} active Android subscriptions`);
-
       for (const payment of activePayments) {
         await this.processGoogleSubscriptionCancellation(payment.receiptData);
       }
