@@ -1,4 +1,4 @@
-const admin = require("./../service/firebaseService");
+const admin = require('firebase-admin');
 
 const forgotPassword = async (req, res) => {
   try {
