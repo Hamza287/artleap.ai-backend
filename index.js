@@ -49,7 +49,6 @@ app.use("/api", savedImageRoutes);
 mongoose
   .connect("mongodb://127.0.0.1:27017/user-auth")
   .then(() => {
-      console.log("Mongo d connected :");
     SubscriptionService.initializeDefaultPlans();
     SubscriptionService.syncPlansWithGooglePlay();
     subscriptionService.syncPlansWithAppStore();

@@ -67,7 +67,6 @@ const syncPlans = async () => {
     await SubscriptionService.syncPlansWithGooglePlay();
     await SubscriptionService.syncPlansWithAppStore();
     await SubscriptionService.processExpiredSubscriptions();
-    await SubscriptionService.checkAndHandleSubscriptionCancellations();
     
     const duration = Date.now() - startTime;
   } catch (error) {
@@ -93,6 +92,64 @@ const syncPlans = async () => {
   }
 };
 
+const checkCancellations = async () => {
+  const startTime = Date.now();
+  
+  try {
+    await connectToMongoDB();
+    await waitForConnection();
+    
+    await mongoose.connection.db.admin().ping();
+    
+    await SubscriptionService.checkAndHandleSubscriptionCancellations();
+    
+    const duration = Date.now() - startTime;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error('[PlansCron] Cancellation check failed:', {
+      message: error.message,
+      duration: duration + 'ms',
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+    
+    if (error.message.includes('connection') || error.message.includes('timeout')) {
+      try {
+        await mongoose.connection.close();
+        await connectToMongoDB();
+      } catch (reconnectError) {
+        console.error('[PlansCron] Reconnection failed:', {
+          message: reconnectError.message,
+          timestamp: new Date().toISOString()
+        });
+      }
+    }
+  }
+};
+
+const processExpiredSubscriptions = async () => {
+  const startTime = Date.now();
+  
+  try {
+    await connectToMongoDB();
+    await waitForConnection();
+    
+    await mongoose.connection.db.admin().ping();
+    
+    await SubscriptionService.processExpiredSubscriptions();
+    
+    const duration = Date.now() - startTime;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error('[PlansCron] Expired subscriptions processing failed:', {
+      message: error.message,
+      duration: duration + 'ms',
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
+
 const initializeCron = async () => {
   try {
     await connectToMongoDB();
@@ -110,6 +167,30 @@ const initializeCron = async () => {
 cron.schedule('0 0 * * *', async () => {
   console.log('[PlansCron] Midnight plan synchronization started');
   await syncPlans();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+cron.schedule('* * * * *', async () => {
+  console.log('[PlansCron] Minute cancellation check started');
+  await checkCancellations();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+cron.schedule('0 1 * * *', async () => {
+  console.log('[PlansCron] Expired subscriptions processing started');
+  await processExpiredSubscriptions();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+cron.schedule('0 2 * * *', async () => {
+  console.log('[PlansCron] Grace period processing started');
+  await SubscriptionService.subscriptionManagement.processGracePeriodSubscriptions();
 }, {
   scheduled: true,
   timezone: "Asia/Karachi"

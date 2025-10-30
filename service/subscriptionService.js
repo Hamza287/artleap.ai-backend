@@ -21,10 +21,11 @@ class SubscriptionService {
     this.appleCancellationHandler = new AppleCancellationHandler();
   }
 
-   async checkAndHandleSubscriptionCancellations() {
+  async checkAndHandleSubscriptionCancellations() {
     try {
       await this.googleCancellationHandler.checkAllActiveSubscriptions();
       await this.appleCancellationHandler.checkAllActiveAppleSubscriptions();
+      await this.subscriptionManagement.processGracePeriodSubscriptions();
     } catch (error) {
       console.error("[SubscriptionService] Error checking subscription cancellations:", error);
       throw error;
@@ -58,7 +59,7 @@ class SubscriptionService {
     }
   }
 
-   async syncPlansWithAppStore() {
+  async syncPlansWithAppStore() {
     try {
       await this.applePlanSync.syncPlansWithAppStore();
     } catch (error) {
@@ -185,7 +186,6 @@ class SubscriptionService {
   }
 
   async checkGenerationLimits(userId, generationType) {
-    console.log("generate type is " + generationType);
     try {
       const result = await this.creditManagement.checkGenerationLimits(userId, generationType);
       return result;

@@ -7,6 +7,9 @@ const paymentRecordSchema = new Schema({
     ref: 'User',
     required: true
   },
+  originalTransactionId: {
+  type: String
+},
   planId: {
     type: String,
     ref: 'SubscriptionPlan',
@@ -20,7 +23,6 @@ const paymentRecordSchema = new Schema({
   transactionId: {
     type: String,
     required: true,
-    // unique: true
   },
   amount: {
     type: Number,
@@ -34,7 +36,7 @@ const paymentRecordSchema = new Schema({
   platform: {
     type: String,
     required: true,
-    enum: ['android', 'ios', 'web',,'stripe']
+    enum: ['android', 'ios', 'web','stripe']
   },
   receiptData: {
     type: String,
@@ -43,7 +45,7 @@ const paymentRecordSchema = new Schema({
   status: {
     type: String,
     required: true,
-    enum: ['pending', 'completed', 'failed', 'refunded'],
+    enum: ['pending', 'completed', 'failed', 'refunded', 'grace_period', 'cancelled'],
     default: 'pending'
   },
   paymentDate: {
@@ -55,7 +57,8 @@ const paymentRecordSchema = new Schema({
     type: Boolean,
     default: false
   },
-  metadata: Schema.Types.Mixed, // For storing additional payment processor data
+  cancellationReason: String,
+  metadata: Schema.Types.Mixed,
   billingDetails: {
     name: String,
     email: String,
@@ -78,23 +81,21 @@ const paymentRecordSchema = new Schema({
     promptGenerationCredits: { type: Number, required: true },
     features: [{ type: String }],
     version: { type: Number, required: true },
-    googleProductId: { type: String } // Link to Google Play product SKU
+    googleProductId: { type: String }
   }
 }, {
-  timestamps: true, // Adds createdAt and updatedAt fields
+  timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
 });
 
-// Indexes for faster queries
 paymentRecordSchema.index({ userId: 1 });
 paymentRecordSchema.index({ transactionId: 1 });
 paymentRecordSchema.index({ status: 1 });
 paymentRecordSchema.index({ paymentDate: 1 });
 paymentRecordSchema.index({ expiryDate: 1 });
-paymentRecordSchema.index({ 'planSnapshot.googleProductId': 1 }); // Index for Google Play product ID
+paymentRecordSchema.index({ 'planSnapshot.googleProductId': 1 });
 
-// Virtual populate to get user details without storing them
 paymentRecordSchema.virtual('user', {
   ref: 'User',
   localField: 'userId',
@@ -102,7 +103,6 @@ paymentRecordSchema.virtual('user', {
   justOne: true
 });
 
-// Virtual populate to get plan details
 paymentRecordSchema.virtual('plan', {
   ref: 'SubscriptionPlan',
   localField: 'planId',
@@ -110,7 +110,6 @@ paymentRecordSchema.virtual('plan', {
   justOne: true
 });
 
-// Pre-save hook to set expiry date for subscriptions
 paymentRecordSchema.pre('save', function(next) {
   if (this.isModified('status') && this.status === 'completed') {
     const planType = this.planSnapshot?.type || this.metadata?.planDuration;
@@ -136,7 +135,6 @@ paymentRecordSchema.pre('save', function(next) {
   next();
 });
 
-// Static method to verify payment
 paymentRecordSchema.statics.verifyPayment = async function(transactionId) {
   const payment = await this.findOne({ transactionId });
   if (!payment) {
@@ -145,7 +143,6 @@ paymentRecordSchema.statics.verifyPayment = async function(transactionId) {
   return payment.status === 'completed';
 };
 
-// Instance method to get receipt details
 paymentRecordSchema.methods.getReceiptDetails = function() {
   return {
     transactionId: this.transactionId,
@@ -157,6 +154,7 @@ paymentRecordSchema.methods.getReceiptDetails = function() {
     googleProductId: this.planSnapshot?.googleProductId
   };
 };
+
 
 const PaymentRecord = mongoose.model('PaymentRecord', paymentRecordSchema);
 
