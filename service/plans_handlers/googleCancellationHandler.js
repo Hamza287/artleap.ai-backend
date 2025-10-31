@@ -114,7 +114,7 @@ class GoogleCancellationHandler {
         {
           $set: {
             autoRenew: false,
-            isActive: false,
+            isActive: true,
             cancelledAt: new Date(),
           },
         }
