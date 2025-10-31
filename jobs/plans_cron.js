@@ -69,6 +69,7 @@ const syncPlans = async () => {
     await SubscriptionService.processExpiredSubscriptions();
     
     const duration = Date.now() - startTime;
+    console.log(`[PlansCron] Plan synchronization completed in ${duration}ms`);
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error('[PlansCron] Plan synchronization failed:', {
@@ -104,6 +105,7 @@ const checkCancellations = async () => {
     await SubscriptionService.checkAndHandleSubscriptionCancellations();
     
     const duration = Date.now() - startTime;
+    console.log(`[PlansCron] Cancellation check completed in ${duration}ms`);
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error('[PlansCron] Cancellation check failed:', {
@@ -139,9 +141,112 @@ const processExpiredSubscriptions = async () => {
     await SubscriptionService.processExpiredSubscriptions();
     
     const duration = Date.now() - startTime;
+    console.log(`[PlansCron] Expired subscriptions processing completed in ${duration}ms`);
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error('[PlansCron] Expired subscriptions processing failed:', {
+      message: error.message,
+      duration: duration + 'ms',
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
+
+const processGracePeriodSubscriptions = async () => {
+  const startTime = Date.now();
+  
+  try {
+    await connectToMongoDB();
+    await waitForConnection();
+    
+    await mongoose.connection.db.admin().ping();
+    
+    await SubscriptionService.subscriptionManagement.processGracePeriodSubscriptions();
+    
+    const duration = Date.now() - startTime;
+    console.log(`[PlansCron] Grace period processing completed in ${duration}ms`);
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error('[PlansCron] Grace period processing failed:', {
+      message: error.message,
+      duration: duration + 'ms',
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
+
+const syncAllSubscriptions = async () => {
+  const startTime = Date.now();
+  
+  try {
+    await connectToMongoDB();
+    await waitForConnection();
+    
+    await mongoose.connection.db.admin().ping();
+    
+    await SubscriptionService.syncAllSubscriptionStatus();
+    
+    const duration = Date.now() - startTime;
+    console.log(`[PlansCron] Full subscription sync completed in ${duration}ms`);
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error('[PlansCron] Full subscription sync failed:', {
+      message: error.message,
+      duration: duration + 'ms',
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
+
+const cleanupOrphanedSubscriptions = async () => {
+  const startTime = Date.now();
+  
+  try {
+    await connectToMongoDB();
+    await waitForConnection();
+    
+    await mongoose.connection.db.admin().ping();
+    
+    await SubscriptionService.cleanupOrphanedSubscriptions();
+    
+    const duration = Date.now() - startTime;
+    console.log(`[PlansCron] Orphaned subscriptions cleanup completed in ${duration}ms`);
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error('[PlansCron] Orphaned subscriptions cleanup failed:', {
+      message: error.message,
+      duration: duration + 'ms',
+      stack: error.stack,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
+
+const generateSubscriptionHealthReport = async () => {
+  const startTime = Date.now();
+  
+  try {
+    await connectToMongoDB();
+    await waitForConnection();
+    
+    await mongoose.connection.db.admin().ping();
+    
+    const report = await SubscriptionService.getSubscriptionHealthReport();
+    
+    const duration = Date.now() - startTime;
+    console.log(`[PlansCron] Health report generated in ${duration}ms`, {
+      totalSubscriptions: report.localSubscriptions?.total || 0,
+      activeSubscriptions: report.localSubscriptions?.active || 0,
+      expiredSubscriptions: report.localSubscriptions?.expired || 0,
+      gracePeriodSubscriptions: report.localSubscriptions?.gracePeriod || 0,
+      issuesFound: report.issues?.length || 0
+    });
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error('[PlansCron] Health report generation failed:', {
       message: error.message,
       duration: duration + 'ms',
       stack: error.stack,
@@ -154,6 +259,7 @@ const initializeCron = async () => {
   try {
     await connectToMongoDB();
     await waitForConnection();
+    console.log('[PlansCron] Subscription cron service initialized successfully');
   } catch (error) {
     console.error('[PlansCron] Service initialization failed:', {
       message: error.message,
@@ -172,15 +278,64 @@ cron.schedule('0 0 * * *', async () => {
   timezone: "Asia/Karachi"
 });
 
-cron.schedule('*/2 * * * *', async () => {
-  console.log('[PlansCron] Running every 2 minutes');
-  await syncPlans();
+cron.schedule('*/5 * * * *', async () => {
+  console.log('[PlansCron] 5-minute cancellation check started');
+  await checkCancellations();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+cron.schedule('0 1 * * *', async () => {
+  console.log('[PlansCron] Expired subscriptions processing started');
+  await processExpiredSubscriptions();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+cron.schedule('0 2 * * *', async () => {
+  console.log('[PlansCron] Grace period processing started');
+  await processGracePeriodSubscriptions();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+cron.schedule('0 3 * * *', async () => {
+  console.log('[PlansCron] Full subscription sync started');
+  await syncAllSubscriptions();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+cron.schedule('0 4 * * *', async () => {
+  console.log('[PlansCron] Orphaned subscriptions cleanup started');
+  await cleanupOrphanedSubscriptions();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+cron.schedule('0 6 * * *', async () => {
+  console.log('[PlansCron] Subscription health report generation started');
+  await generateSubscriptionHealthReport();
+}, {
+  scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+cron.schedule('30 * * * *', async () => {
+  console.log('[PlansCron] Hourly subscription status check started');
+  await syncAllSubscriptions();
 }, {
   scheduled: true,
   timezone: "Asia/Karachi"
 });
 
 const gracefulShutdown = async (signal) => {
+  console.log(`[PlansCron] Received ${signal}, shutting down gracefully...`);
   try {
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();
@@ -207,3 +362,13 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 initializeCron();
+
+module.exports = {
+  syncPlans,
+  checkCancellations,
+  processExpiredSubscriptions,
+  processGracePeriodSubscriptions,
+  syncAllSubscriptions,
+  cleanupOrphanedSubscriptions,
+  generateSubscriptionHealthReport
+};

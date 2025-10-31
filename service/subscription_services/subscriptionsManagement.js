@@ -1,5 +1,6 @@
 const UserSubscription = require("../../models/user_subscription");
 const User = require("../../models/user");
+const PaymentRecord = require("../../models/recordPayment_model");
 const mongoose = require("mongoose");
 const NotificationService = require("./notificationService");
 const PlanManagement = require("./plansManagement");
@@ -10,6 +11,320 @@ class SubscriptionManagement {
     this.notificationService = new NotificationService();
     this.planManagement = new PlanManagement();
     this.paymentProcessing = new PaymentProcessing(this);
+  }
+
+  async syncLocalSubscriptionStatus() {
+    try {
+      console.log("[SubscriptionManagement] Syncing local subscription status");
+      
+      const allSubscriptions = await UserSubscription.find({
+        isActive: true
+      }).populate("userId planId");
+
+      let updated = 0;
+      let errors = 0;
+
+      for (const subscription of allSubscriptions) {
+        try {
+          const now = new Date();
+          const user = await User.findById(subscription.userId._id);
+          
+          if (!user) {
+            console.warn(`[SubscriptionManagement] User not found for subscription: ${subscription._id}`);
+            continue;
+          }
+
+          // Check if subscription is expired but still marked as active
+          if (subscription.endDate < now && subscription.isActive) {
+            console.log(`[SubscriptionManagement] Subscription expired but still active: ${subscription._id}`);
+            
+            subscription.isActive = false;
+            subscription.cancelledAt = new Date();
+            await subscription.save();
+
+            // Downgrade user to free plan
+            const freePlan = await this.planManagement.getPlanByType("free");
+            if (freePlan) {
+              await this.updateUserData(
+                subscription.userId._id,
+                freePlan,
+                null,
+                false,
+                false,
+                false
+              );
+              updated++;
+            }
+          }
+
+          // Check if user subscription status matches User model
+          if (user.isSubscribed !== subscription.isActive) {
+            console.log(`[SubscriptionManagement] Mismatch found for user ${user._id}: User.isSubscribed=${user.isSubscribed}, Subscription.isActive=${subscription.isActive}`);
+            
+            user.isSubscribed = subscription.isActive;
+            user.subscriptionStatus = subscription.isActive ? 'active' : 'cancelled';
+            await user.save();
+            updated++;
+          }
+
+        } catch (error) {
+          errors++;
+          console.error(`[SubscriptionManagement] Error syncing subscription ${subscription._id}:`, error);
+        }
+      }
+
+      console.log(`[SubscriptionManagement] Local subscription sync completed: ${updated} updated, ${errors} errors`);
+      return { updated, errors };
+
+    } catch (error) {
+      console.error("[SubscriptionManagement] Error syncing local subscription status:", error);
+      throw error;
+    }
+  }
+
+  async cleanupOrphanedSubscriptions() {
+    try {
+      console.log("[SubscriptionManagement] Cleaning up orphaned subscriptions");
+      
+      // Find subscriptions without valid users
+      const orphanedSubscriptions = await UserSubscription.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user"
+          }
+        },
+        {
+          $match: {
+            "user.0": { $exists: false }
+          }
+        }
+      ]);
+
+      let deleted = 0;
+      for (const subscription of orphanedSubscriptions) {
+        await UserSubscription.deleteOne({ _id: subscription._id });
+        deleted++;
+      }
+
+      // Find duplicate active subscriptions for same user
+      const duplicateSubscriptions = await UserSubscription.aggregate([
+        {
+          $match: {
+            isActive: true
+          }
+        },
+        {
+          $group: {
+            _id: "$userId",
+            count: { $sum: 1 },
+            subscriptions: { $push: "$$ROOT" }
+          }
+        },
+        {
+          $match: {
+            count: { $gt: 1 }
+          }
+        }
+      ]);
+
+      let fixed = 0;
+      for (const group of duplicateSubscriptions) {
+        // Keep the most recent subscription, deactivate others
+        const sortedSubscriptions = group.subscriptions.sort((a, b) => 
+          new Date(b.startDate) - new Date(a.startDate)
+        );
+        
+        for (let i = 1; i < sortedSubscriptions.length; i++) {
+          await UserSubscription.updateOne(
+            { _id: sortedSubscriptions[i]._id },
+            {
+              $set: {
+                isActive: false,
+                cancelledAt: new Date(),
+                autoRenew: false
+              }
+            }
+          );
+          fixed++;
+        }
+      }
+
+      console.log(`[SubscriptionManagement] Orphaned subscription cleanup completed: ${deleted} deleted, ${fixed} duplicates fixed`);
+      return { deleted, fixed };
+
+    } catch (error) {
+      console.error("[SubscriptionManagement] Error cleaning up orphaned subscriptions:", error);
+      throw error;
+    }
+  }
+
+  async verifyUserSubscriptionStatus(userId) {
+    try {
+      console.log("[SubscriptionManagement] Verifying user subscription status", { userId });
+      
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      const activeSubscription = await this.getUserActiveSubscription(userId);
+      
+      if (activeSubscription && !user.isSubscribed) {
+        console.log(`[SubscriptionManagement] Fixing user subscription status: user ${userId} has active subscription but isSubscribed=false`);
+        user.isSubscribed = true;
+        user.subscriptionStatus = 'active';
+        await user.save();
+        return { fixed: true, previousStatus: false, newStatus: true };
+      }
+
+      if (!activeSubscription && user.isSubscribed) {
+        console.log(`[SubscriptionManagement] Fixing user subscription status: user ${userId} has no active subscription but isSubscribed=true`);
+        user.isSubscribed = false;
+        user.subscriptionStatus = 'cancelled';
+        await user.save();
+        return { fixed: true, previousStatus: true, newStatus: false };
+      }
+
+      return { fixed: false, currentStatus: user.isSubscribed };
+
+    } catch (error) {
+      console.error("[SubscriptionManagement] Error verifying user subscription status:", error);
+      throw error;
+    }
+  }
+
+  async getSubscriptionStats() {
+    try {
+      const totalSubscriptions = await UserSubscription.countDocuments();
+      const activeSubscriptions = await UserSubscription.countDocuments({ 
+        isActive: true,
+        endDate: { $gt: new Date() }
+      });
+      const expiredSubscriptions = await UserSubscription.countDocuments({ 
+        isActive: true,
+        endDate: { $lte: new Date() }
+      });
+      const gracePeriodSubscriptions = await UserSubscription.countDocuments({ 
+        isActive: true,
+        autoRenew: false,
+        cancelledAt: { $exists: true }
+      });
+      const trialSubscriptions = await UserSubscription.countDocuments({ 
+        isActive: true,
+        isTrial: true
+      });
+
+      return {
+        total: totalSubscriptions,
+        active: activeSubscriptions,
+        expired: expiredSubscriptions,
+        gracePeriod: gracePeriodSubscriptions,
+        trial: trialSubscriptions
+      };
+    } catch (error) {
+      console.error("[SubscriptionManagement] Error getting subscription stats:", error);
+      return {};
+    }
+  }
+
+  async getSubscriptionIssues() {
+    try {
+      const issues = [];
+
+      // Check for subscriptions without users
+      const orphanedSubs = await UserSubscription.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user"
+          }
+        },
+        {
+          $match: {
+            "user.0": { $exists: false }
+          }
+        }
+      ]);
+
+      if (orphanedSubs.length > 0) {
+        issues.push({
+          type: "orphaned_subscriptions",
+          count: orphanedSubs.length,
+          message: `Found ${orphanedSubs.length} subscriptions without valid users`
+        });
+      }
+
+      // Check for expired but active subscriptions
+      const expiredActiveSubs = await UserSubscription.countDocuments({
+        isActive: true,
+        endDate: { $lte: new Date() }
+      });
+
+      if (expiredActiveSubs > 0) {
+        issues.push({
+          type: "expired_but_active",
+          count: expiredActiveSubs,
+          message: `Found ${expiredActiveSubs} subscriptions that are expired but still marked as active`
+        });
+      }
+
+      // Check for users with mismatched subscription status
+      const mismatchedUsers = await User.aggregate([
+        {
+          $lookup: {
+            from: "usersubscriptions",
+            localField: "_id",
+            foreignField: "userId",
+            as: "subscriptions"
+          }
+        },
+        {
+          $match: {
+            $or: [
+              {
+                isSubscribed: true,
+                "subscriptions": {
+                  $not: {
+                    $elemMatch: {
+                      isActive: true,
+                      endDate: { $gt: new Date() }
+                    }
+                  }
+                }
+              },
+              {
+                isSubscribed: false,
+                "subscriptions": {
+                  $elemMatch: {
+                    isActive: true,
+                    endDate: { $gt: new Date() }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]);
+
+      if (mismatchedUsers.length > 0) {
+        issues.push({
+          type: "status_mismatch",
+          count: mismatchedUsers.length,
+          message: `Found ${mismatchedUsers.length} users with mismatched subscription status`
+        });
+      }
+
+      return issues;
+
+    } catch (error) {
+      console.error("[SubscriptionManagement] Error getting subscription issues:", error);
+      return [];
+    }
   }
 
   async getUserActiveSubscription(userId) {
@@ -86,10 +401,10 @@ class SubscriptionManagement {
       user.planType = plan.type;
 
       if (plan.type === "free") {
-        user.totalCredits = 10;
-        user.dailyCredits = 10;
+        user.totalCredits = 4;
+        user.dailyCredits = 4;
         user.imageGenerationCredits = 0;
-        user.promptGenerationCredits = 10;
+        user.promptGenerationCredits = 4;
         user.usedImageCredits = 0;
         user.usedPromptCredits = 0;
         user.lastCreditReset = new Date();

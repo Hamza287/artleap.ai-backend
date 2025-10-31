@@ -1,9 +1,11 @@
 const UserSubscription = require("../../models/user_subscription");
+const PaymentRecord = require("../../models/recordPayment_model");
 const NotificationService = require("./notificationService");
 const SubscriptionManagement = require("./subscriptionsManagement");
 const SubscriptionPlan = require("../../models/subscriptionPlan_model");
 const User = require('./../../models/user');
 const mongoose = require('mongoose');
+
 class PaymentProcessing {
   constructor(subscriptionManagement) {
     this.notificationService = new NotificationService();
@@ -65,59 +67,239 @@ class PaymentProcessing {
     }
   }
 
-  //  async SetBackFreePlan(subscriptionId,userId) {
-  //   try {
-  //     const oldSub = await UserSubscription.findById(subscriptionId).populate("planId userId");
-  //     const freePlan = await SubscriptionPlan.findOne({ type: 'free' });
-  //     const existingUser = await User.findOne({
-  //             _id: mongoose.Types.ObjectId.isValid(userId)
-  //               ? mongoose.Types.ObjectId(userId)
-  //               : userId,
-  //           });
-  //     if (!oldSub) {
-  //       console.error("[SetBackFreePlan] Subscription not found:", subscriptionId);
-  //       throw new Error("Subscription not found");
-  //     }
+  async cleanupOrphanedPaymentRecords() {
+    try {
+      console.log("[PaymentProcessing] Cleaning up orphaned payment records");
+      
+      // Find payment records without valid users
+      const orphanedPayments = await PaymentRecord.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user"
+          }
+        },
+        {
+          $match: {
+            "user.0": { $exists: false }
+          }
+        }
+      ]);
 
-  //     if (!freePlan) {
-  //       console.error("[SetBackFreePlan] Free Plan Not Found:", subscriptionId);
-  //       throw new Error("Subscription not found");
-  //     }
+      let deleted = 0;
+      for (const payment of orphanedPayments) {
+        await PaymentRecord.deleteOne({ _id: payment._id });
+        deleted++;
+      }
 
-  //     const setBackFree = new UserSubscription({
-  //       userId: oldSub.userId._id,
-  //       planId: freePlan._id,
-  //       startDate: new Date(),
-  //       endDate: new Date(8640000000000000), // Far future date
-  //       isActive: true,
-  //       isTrial: oldSub.isTrial,
-  //       autoRenew: false,
-  //       paymentMethod: oldSub.paymentMethod,
-  //       planSnapshot: {
-  //           name: freePlan.name,
-  //           type: freePlan.type,
-  //           price: freePlan.price,
-  //           totalCredits: freePlan.totalCredits,
-  //           imageGenerationCredits: freePlan.imageGenerationCredits,
-  //           promptGenerationCredits: freePlan.promptGenerationCredits,
-  //           features: freePlan.features,
-  //           version: freePlan.version
-  //       }
-  //     });
+      // Find duplicate payment records for same transaction
+      const duplicatePayments = await PaymentRecord.aggregate([
+        {
+          $group: {
+            _id: {
+              transactionId: "$transactionId",
+              originalTransactionId: "$originalTransactionId",
+              receiptData: "$receiptData"
+            },
+            count: { $sum: 1 },
+            payments: { $push: "$$ROOT" }
+          }
+        },
+        {
+          $match: {
+            $or: [
+              { "_id.transactionId": { $ne: null }, "count": { $gt: 1 } },
+              { "_id.originalTransactionId": { $ne: null }, "count": { $gt: 1 } },
+              { "_id.receiptData": { $ne: null }, "count": { $gt: 1 } }
+            ]
+          }
+        }
+      ]);
 
-  //     await setBackFree.save();
+      let fixed = 0;
+      for (const group of duplicatePayments) {
+        // Keep the most recent payment record, delete others
+        const sortedPayments = group.payments.sort((a, b) => 
+          new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        
+        for (let i = 1; i < sortedPayments.length; i++) {
+          await PaymentRecord.deleteOne({ _id: sortedPayments[i]._id });
+          fixed++;
+        }
+      }
 
-  //     existingUser.currentSubscription = freePlan._id;
-  //     existingUser.subscriptionStatus = 'active';
-  //     existingUser.planName = 'Free';
-  //     existingUser.save();
+      console.log(`[PaymentProcessing] Orphaned payment records cleanup completed: ${deleted} deleted, ${fixed} duplicates fixed`);
+      return { deleted, fixed };
 
-  //     console.debug(" Subscription change back to Free :", subscriptionId);
-  //   } catch (error) {
-  //     console.error("Subscription change back to Free failed:", error);
-  //     throw error;
-  //   }
-  // }
+    } catch (error) {
+      console.error("[PaymentProcessing] Error cleaning up orphaned payment records:", error);
+      throw error;
+    }
+  }
+
+  async getLatestPaymentRecord(userId) {
+    try {
+      const paymentRecord = await PaymentRecord.findOne({
+        userId: userId
+      }).sort({ createdAt: -1 });
+
+      return paymentRecord;
+    } catch (error) {
+      console.error("[PaymentProcessing] Error getting latest payment record:", error);
+      throw error;
+    }
+  }
+
+  async getPaymentStats() {
+    try {
+      const totalPayments = await PaymentRecord.countDocuments();
+      const completedPayments = await PaymentRecord.countDocuments({ 
+        status: "completed" 
+      });
+      const cancelledPayments = await PaymentRecord.countDocuments({ 
+        status: "cancelled" 
+      });
+      const gracePeriodPayments = await PaymentRecord.countDocuments({ 
+        status: "grace_period" 
+      });
+      const androidPayments = await PaymentRecord.countDocuments({ 
+        platform: "android" 
+      });
+      const iosPayments = await PaymentRecord.countDocuments({ 
+        platform: "ios" 
+      });
+
+      return {
+        total: totalPayments,
+        completed: completedPayments,
+        cancelled: cancelledPayments,
+        gracePeriod: gracePeriodPayments,
+        android: androidPayments,
+        ios: iosPayments
+      };
+    } catch (error) {
+      console.error("[PaymentProcessing] Error getting payment stats:", error);
+      return {};
+    }
+  }
+
+  async validatePaymentRecord(paymentRecordId) {
+    try {
+      const paymentRecord = await PaymentRecord.findById(paymentRecordId).populate("userId");
+      
+      if (!paymentRecord) {
+        return { valid: false, reason: "Payment record not found" };
+      }
+
+      if (!paymentRecord.userId) {
+        return { valid: false, reason: "No associated user" };
+      }
+
+      // Check if payment record has necessary fields based on platform
+      if (paymentRecord.platform === "android" && !paymentRecord.receiptData) {
+        return { valid: false, reason: "Android payment missing receipt data" };
+      }
+
+      if (paymentRecord.platform === "ios" && !paymentRecord.originalTransactionId && !paymentRecord.transactionId) {
+        return { valid: false, reason: "iOS payment missing transaction IDs" };
+      }
+
+      return { valid: true, paymentRecord };
+
+    } catch (error) {
+      console.error("[PaymentProcessing] Error validating payment record:", error);
+      return { valid: false, reason: "Validation error" };
+    }
+  }
+
+  async fixInvalidPaymentRecords() {
+    try {
+      console.log("[PaymentProcessing] Fixing invalid payment records");
+      
+      const invalidPayments = await PaymentRecord.find({
+        $or: [
+          { userId: { $exists: false } },
+          { platform: { $exists: false } },
+          { 
+            $and: [
+              { platform: "android" },
+              { receiptData: { $exists: false } }
+            ]
+          },
+          {
+            $and: [
+              { platform: "ios" },
+              { originalTransactionId: { $exists: false } },
+              { transactionId: { $exists: false } }
+            ]
+          }
+        ]
+      });
+
+      let fixed = 0;
+      let deleted = 0;
+
+      for (const payment of invalidPayments) {
+        try {
+          // Try to find associated user
+          if (!payment.userId) {
+            await PaymentRecord.deleteOne({ _id: payment._id });
+            deleted++;
+            continue;
+          }
+
+          const user = await User.findById(payment.userId);
+          if (!user) {
+            await PaymentRecord.deleteOne({ _id: payment._id });
+            deleted++;
+            continue;
+          }
+
+          // Try to fix missing platform
+          if (!payment.platform) {
+            if (payment.receiptData) {
+              payment.platform = "android";
+            } else if (payment.originalTransactionId || payment.transactionId) {
+              payment.platform = "ios";
+            } else {
+              await PaymentRecord.deleteOne({ _id: payment._id });
+              deleted++;
+              continue;
+            }
+          }
+
+          // Validate based on platform
+          if (payment.platform === "android" && !payment.receiptData) {
+            await PaymentRecord.deleteOne({ _id: payment._id });
+            deleted++;
+            continue;
+          }
+
+          if (payment.platform === "ios" && !payment.originalTransactionId && !payment.transactionId) {
+            await PaymentRecord.deleteOne({ _id: payment._id });
+            deleted++;
+            continue;
+          }
+
+          await payment.save();
+          fixed++;
+
+        } catch (error) {
+          console.error(`[PaymentProcessing] Error fixing payment record ${payment._id}:`, error);
+        }
+      }
+
+      console.log(`[PaymentProcessing] Invalid payment records fixed: ${fixed} fixed, ${deleted} deleted`);
+      return { fixed, deleted };
+
+    } catch (error) {
+      console.error("[PaymentProcessing] Error fixing invalid payment records:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = PaymentProcessing;

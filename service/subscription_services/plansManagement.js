@@ -26,7 +26,7 @@ class PlanManagement {
         imageGenerationCredits: 0,
         promptGenerationCredits: 4,
         features: [
-          "10 Text to image credits per day",
+          "4 Text to image credits per day",
           "Watermarked images",
           "Basic generation features",
         ],
