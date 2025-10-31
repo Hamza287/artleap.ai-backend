@@ -23,12 +23,8 @@ class SubscriptionService {
 
    async checkAndHandleSubscriptionCancellations() {
     try {
-      console.log("[SubscriptionService] Checking for subscription cancellations...");
-      
       await this.googleCancellationHandler.checkAllActiveSubscriptions();
       await this.appleCancellationHandler.checkAllActiveAppleSubscriptions();
-      
-      console.log("[SubscriptionService] Subscription cancellation check completed");
     } catch (error) {
       console.error("[SubscriptionService] Error checking subscription cancellations:", error);
       throw error;

@@ -53,7 +53,6 @@ const waitForConnection = async (maxWaitTime = 30000) => {
     
     await new Promise(resolve => setTimeout(resolve, 1000));
   }
-  console.log('[PlansCron] MongoDB connection ready');
 };
 
 const syncPlans = async () => {
@@ -71,7 +70,6 @@ const syncPlans = async () => {
     await SubscriptionService.checkAndHandleSubscriptionCancellations();
     
     const duration = Date.now() - startTime;
-    console.log(`[PlansCron] Plan synchronization completed successfully in ${duration}ms`);
   } catch (error) {
     const duration = Date.now() - startTime;
     console.error('[PlansCron] Plan synchronization failed:', {
@@ -99,7 +97,6 @@ const initializeCron = async () => {
   try {
     await connectToMongoDB();
     await waitForConnection();
-    console.log('[PlansCron] Service initialized successfully');
   } catch (error) {
     console.error('[PlansCron] Service initialization failed:', {
       message: error.message,
@@ -127,7 +124,6 @@ cron.schedule('*/2 * * * *', async () => {
 });
 
 const gracefulShutdown = async (signal) => {
-  console.log(`[PlansCron] Received ${signal}, shutting down gracefully...`);
   try {
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close();

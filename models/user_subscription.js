@@ -5,14 +5,15 @@ const userSubscriptionSchema = new mongoose.Schema({
   planId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "SubscriptionPlan",
-    required: true,
+    required: [true, 'Plan ID is required'],
+    index: true,
   },
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   isTrial: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   paymentMethod: { type: String },
-  autoRenew: { type: Boolean, default: false },
+  autoRenew: { type: Boolean, default: true },
   cancelledAt: { type: Date },
   planSnapshot: {
     name: { type: String, required: true },
