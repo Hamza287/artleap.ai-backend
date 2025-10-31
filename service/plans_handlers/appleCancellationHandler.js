@@ -142,9 +142,9 @@ class AppleCancellationHandler {
     return false;
   }
 
-  async handleCancelledAppleSubscription(originalTransactionId, subscriptionData) {
+ async handleCancelledAppleSubscription(originalTransactionId, subscriptionData) {
   try {
-    const paymentRecord = await PaymentRecord.findOne({ 
+    const paymentRecord = await PaymentRecord.findOne({
       $or: [
         { transactionId: originalTransactionId },
         { originalTransactionId: originalTransactionId }
@@ -155,34 +155,114 @@ class AppleCancellationHandler {
       console.error("[AppleCancellationHandler] Payment record not found for transaction:", originalTransactionId);
       return;
     }
+
     const userId = paymentRecord.userId;
+
+    // 1️⃣ Mark payment as cancelled
     await PaymentRecord.updateOne(
       { _id: paymentRecord._id },
-      { 
-        $set: { 
-          status: 'cancelled',
-          cancelledAt: new Date()
-        }
+      {
+        $set: {
+          status: "cancelled",
+          cancelledAt: new Date(),
+        },
       }
     );
 
+    // 2️⃣ Deactivate current active subscriptions
     await UserSubscription.updateMany(
-      { 
-        userId: userId,
-        isActive: true 
-      },
-      { 
-        $set: { 
+      { userId, isActive: true },
+      {
+        $set: {
+          isActive: false,
           autoRenew: false,
-          cancelledAt: new Date()
-        }
+          cancelledAt: new Date(),
+        },
       }
     );
+
+    console.log(`[AppleCancellationHandler] ⚠️ Subscription cancelled for user ${userId}`);
+
+    // 3️⃣ If expired or inactive → shift to Free plan
+    const expired =
+      subscriptionData?.status === "EXPIRED" ||
+      (subscriptionData?.data?.[0]?.expiresDate &&
+        new Date(subscriptionData.data[0].expiresDate) < new Date()) ||
+      (subscriptionData?.lastTransactions?.[0]?.expiresDate &&
+        new Date(subscriptionData.lastTransactions[0].expiresDate) < new Date());
+
+    if (expired) {
+      console.log(`[AppleCancellationHandler] ⏳ Subscription expired for user ${userId}, switching to Free plan...`);
+      await this.shiftUserToFreePlan(userId);
+    }
+
   } catch (error) {
-    console.error("[AppleCancellationHandler] Error handling Apple cancellation:", error);
+    console.error("[AppleCancellationHandler] ❌ Error handling Apple cancellation:", error);
     throw error;
   }
 }
+
+
+async shiftUserToFreePlan(userId) {
+    try {
+      const freePlan = await SubscriptionPlan.findOne({ type: "free" });
+
+      if (!freePlan) {
+        console.error(
+          "[GoogleCancellationHandler] ❌ Free plan not found in database!"
+        );
+        return;
+      }
+
+      await UserSubscription.create({
+        userId,
+        planId: freePlan._id,
+        startDate: new Date(),
+        endDate: new Date(8640000000000000),
+        isActive: true,
+        isTrial: false,
+        autoRenew: true,
+        paymentMethod: "free",
+        planSnapshot: {
+            name: freePlan.name,
+            type: freePlan.type,
+            price: freePlan.price,
+            totalCredits: freePlan.totalCredits,
+            imageGenerationCredits: freePlan.imageGenerationCredits,
+            promptGenerationCredits: freePlan.promptGenerationCredits,
+            features: freePlan.features,
+            version: freePlan.version
+        },
+      });
+
+      await User.updateOne(
+      { _id: userId },
+      {
+        $set: {
+          currentSubscription: newFreeSub._id,
+          planName: "Free",
+          isSubscribed: false,
+          subscriptionStatus: "expired",
+          totalCredits: 4,
+          dailyCredits: 4,
+          usedImageCredits: 0,
+          usedPromptCredits: 0,
+          hasActiveTrial: false,
+          watermarkEnabled: true,
+        },
+      }
+    );
+
+      console.log(
+        `[GoogleCancellationHandler] ✅ User ${userId} successfully switched to Free plan with 4 credits.`
+      );
+    } catch (error) {
+      console.error(
+        "[GoogleCancellationHandler] ❌ Failed to shift user to free plan:",
+        error
+      );
+    }
+  }
 
   async checkAllActiveAppleSubscriptions() {
     try {
