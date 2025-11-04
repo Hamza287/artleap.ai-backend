@@ -1,6 +1,6 @@
 const Comment = require("../models/image_coments");
 const Image = require("../models/image_model");
-const { saveNotification, sendPushNotification, getDeviceTokens } = require("./../service/firebaseService");
+const SendNotificationService = require("./../service/sendNotificationService");
 
 const commentController = {
   getUserId: (req) => {
@@ -39,43 +39,27 @@ const commentController = {
       await Image.findByIdAndUpdate(imageId, { $inc: { commentCount: 1 } });
       await newComment.populate("user", "username profilePic");
 
-     // Send notification to image owner if it's not the user's own image
       if (String(image.userId._id) !== String(userId)) {
-        const deviceTokens = await getDeviceTokens(image.userId._id);
-
-        const notifData = {
-          title: "New Comment",
-          body: `${newComment.user.username} commented: "${newComment.comment}"`,
-          data: {
-            type: "comment",
-            imageId: imageId,
-            commentId: newComment._id.toString(),
-          },
-        };
-
-        const contextInfo = {
-          action: "addComment",
-          receiverUserId: image.userId._id,
-          imageId,
-          commenterId: userId,
-          tokenCount: deviceTokens?.length || 0,
-        };
-
-        if (deviceTokens.length > 0) {
-          await sendPushNotification(deviceTokens, notifData, contextInfo);
-        } else {
-          console.warn("⚠️ [Push Debug] No tokens found for user:", image.userId._id);
-        }
-
-        await saveNotification({
-          userId: image.userId._id,
-          type: "user",
-          title: notifData.title,
-          body: notifData.body,
-          data: notifData.data,
-        });
+        await SendNotificationService.sendCustomNotification(
+          image.userId._id,
+          userId,
+          {
+            title: "New Comment",
+            body: `${newComment.user.username} commented: "${newComment.comment}"`,
+            type: "user",
+            action: "addComment",
+            data: {
+              type: "comment",
+              imageId: imageId,
+              commentId: newComment._id.toString(),
+            },
+            contextInfo: {
+              imageId: imageId,
+              commenterId: userId,
+            }
+          }
+        );
       }
-
 
       res.status(201).json({
         success: true,
@@ -221,7 +205,6 @@ const commentController = {
         const newCount = Math.max(0, (image.commentCount || 0) - 1);
         await Image.findByIdAndUpdate(comment.image, { commentCount: newCount });
       }
-
 
       res.json({
         success: true,

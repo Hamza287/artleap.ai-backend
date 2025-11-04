@@ -1,23 +1,23 @@
-const SubscriptionPlan = require("../../models/subscriptionPlan_model");
 const { google } = require("googleapis");
 const androidpublisher = google.androidpublisher("v3");
-const googleCredentials = require("../../google-credentials.json");
+const SubscriptionPlan = require("./../../models/subscriptionPlan_model");
 const mongoose = require("mongoose");
-const packageName = process.env.PACKAGE_NAME || "com.XrDIgital.ImaginaryVerse";
-const {
-  mapGoogleProductType,
-  mapBillingPeriod,
-  calculateCredits,
-  parseFeatures,
-  getPlanDetails,
-} = require("./utils");
+const googleConfig = require("./../../config/google");
+const { 
+  mapGoogleProductType, 
+  mapBillingPeriod, 
+  calculateCredits, 
+  parseFeatures, 
+  getPlanDetails 
+} = require("./../../utils/googleUtils");
 
-class PlanSync {
+class GooglePlanSyncService {
   constructor() {
     this.auth = new google.auth.GoogleAuth({
-      credentials: googleCredentials,
+      credentials: googleConfig.credentials,
       scopes: ["https://www.googleapis.com/auth/androidpublisher"],
     });
+    this.packageName = googleConfig.packageName;
   }
 
   async getBillingClient() {
@@ -25,8 +25,7 @@ class PlanSync {
       await this.auth.getClient();
       return androidpublisher;
     } catch (error) {
-      console.error("[PlanSync] Failed to fetch billing client:", error);
-      throw error;
+      throw new Error("Failed to initialize Google Play Billing client");
     }
   }
 
@@ -37,7 +36,6 @@ class PlanSync {
       }
       await mongoose.connection.db.admin().ping();
     } catch (error) {
-      console.error("[PlanSync] Database connection check failed:", error);
       throw new Error(`Database connection failed: ${error.message}`);
     }
   }
@@ -58,7 +56,7 @@ class PlanSync {
 
       const response = await client.monetization.subscriptions.list({
         auth: this.auth,
-        packageName,
+        packageName: this.packageName,
       });
 
       const googleProducts = [];
@@ -153,10 +151,9 @@ class PlanSync {
       await Promise.all(deactivationPromises);
 
     } catch (error) {
-      console.error("[PlanSync] Error syncing plans:", error);
       throw new Error(`Failed to sync plans with Google Play: ${error.message}`);
     }
   }
 }
 
-module.exports = PlanSync;
+module.exports = GooglePlanSyncService;

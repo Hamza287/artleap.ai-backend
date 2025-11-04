@@ -1,28 +1,19 @@
 const axios = require("axios");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
-const PaymentRecord = require("../../models/recordPayment_model");
-const User = require("../../models/user");
-const UserSubscription = require("../../models/user_subscription");
-const SubscriptionPlan = require("../../models/subscriptionPlan_model");
+const PaymentRecord = require("./../../models/recordPayment_model");
+const User = require("./../../models/user");
+const UserSubscription = require("./../../models/user_subscription");
+const SubscriptionPlan = require("./../../models/subscriptionPlan_model");
+const appleConfig = require("./../../config/apple");
+const { isInGracePeriod } = require("./../../utils/subscriptionUtils");
 
-class AppleCancellationHandler {
+class AppleCancellationService {
   constructor() {
-    this.bundleId = process.env.PACKAGE_NAME;
-    this.issuerId = process.env.APPLE_ISSUER_ID;
-    this.keyId = process.env.APPLE_KEY_ID;
-    this.privateKey = fs.readFileSync(
-      process.env.APPLE_PRIVATE_KEY_PATH,
-      "utf8"
-    );
-  }
-
-  logError(message, error) {
-    console.error(`[AppleCancellationHandler][ERROR] ${message}`, {
-      error: error.message,
-      stack: error.stack,
-      response: error.response?.data
-    });
+    this.bundleId = appleConfig.bundleId;
+    this.issuerId = appleConfig.issuerId;
+    this.keyId = appleConfig.keyId;
+    this.privateKey = fs.readFileSync(appleConfig.privateKeyPath, "utf8");
   }
 
   async generateToken() {
@@ -43,18 +34,12 @@ class AppleCancellationHandler {
         }
       );
     } catch (error) {
-      this.logError("Failed to generate JWT:", error);
       throw new Error("Failed to generate App Store Connect API token");
     }
   }
 
   async getSubscriptionStatus(originalTransactionId) {
     try {
-      // Validate transaction ID format first
-      if (!this.isValidTransactionId(originalTransactionId)) {
-        return { status: "INVALID_ID" };
-      }
-
       const token = await this.generateToken();
       const headers = {
         Authorization: `Bearer ${token}`,
@@ -67,32 +52,15 @@ class AppleCancellationHandler {
       return response.data;
     } catch (error) {
       if (error.response?.status === 404) {
-        return { 
-          status: "NOT_FOUND",
-          errorCode: error.response?.data?.errorCode,
-          errorMessage: error.response?.data?.errorMessage
-        };
+        return { status: "NOT_FOUND" };
       }
 
       if (error.response?.status === 401) {
         throw new Error("Invalid App Store Connect API credentials");
       }
 
-      this.logError("Error fetching subscription status:", error);
-      return { 
-        status: "ERROR", 
-        error: error.message 
-      };
+      throw error;
     }
-  }
-
-  isValidTransactionId(transactionId) {
-    if (!transactionId) return false;
-    if (typeof transactionId !== 'string') return false;
-    if (transactionId.length < 10) return false;
-    
-    // Apple transaction IDs are typically numeric
-    return /^\d+$/.test(transactionId);
   }
 
   async getAllSubscriptionsFromAppStore() {
@@ -142,15 +110,13 @@ class AppleCancellationHandler {
           
         } catch (error) {
           results.errors++;
-          this.logError(`Error processing payment record ${paymentRecord._id}:`, error);
+          console.error(`Error processing payment record ${paymentRecord._id}:`, error);
         }
       }
 
       return results;
-
     } catch (error) {
-      this.logError("Error fetching all subscriptions from App Store:", error);
-      throw error;
+      throw new Error(`Failed to fetch all subscriptions from App Store: ${error.message}`);
     }
   }
 
@@ -159,29 +125,14 @@ class AppleCancellationHandler {
       const subscriptionStatus = await this.getSubscriptionStatus(transactionId);
 
       if (subscriptionStatus.status === "NOT_FOUND") {
-        const shouldDowngrade = await this.shouldDowngradeNotFoundSubscription(transactionId);
-        
         return {
-          isCancelledOrExpired: shouldDowngrade,
-          cancellationType: shouldDowngrade ? "subscription_not_found" : "active",
+          isCancelledOrExpired: true,
+          cancellationType: "expired",
           isInGracePeriod: false,
-          isExpired: shouldDowngrade,
-          expiryTime: shouldDowngrade ? new Date() : null,
-          finalStatus: shouldDowngrade ? "cancelled" : "active",
-          autoRenewing: !shouldDowngrade,
-          foundInAppStore: false
-        };
-      }
-
-      if (subscriptionStatus.status === "INVALID_ID") {
-        return {
-          isCancelledOrExpired: false,
-          cancellationType: "active",
-          isInGracePeriod: false,
-          isExpired: false,
-          expiryTime: null,
-          finalStatus: "active",
-          autoRenewing: true,
+          isExpired: true,
+          expiryTime: new Date(),
+          finalStatus: "cancelled",
+          autoRenewing: false,
           foundInAppStore: false
         };
       }
@@ -191,38 +142,9 @@ class AppleCancellationHandler {
         ...cancellationInfo,
         foundInAppStore: true
       };
-
     } catch (error) {
-      this.logError("Error getting subscription status from App Store:", error);
+      console.error("Error getting subscription status from App Store:", error);
       return null;
-    }
-  }
-
-  async shouldDowngradeNotFoundSubscription(transactionId) {
-    try {
-      const paymentRecord = await PaymentRecord.findOne({
-        $or: [
-          { originalTransactionId: transactionId },
-          { transactionId: transactionId }
-        ]
-      });
-
-      if (!paymentRecord) {
-        return false;
-      }
-      const createdAt = new Date(paymentRecord.createdAt);
-      const now = new Date();
-      const daysSinceCreation = (now - createdAt) / (1000 * 60 * 60 * 24);
-      
-      if (paymentRecord.expiryDate) {
-        const expiryDate = new Date(paymentRecord.expiryDate);
-        return expiryDate < now && daysSinceCreation > 30;
-      }
-      
-      return daysSinceCreation > 60;
-    } catch (error) {
-      this.logError("Error checking if should downgrade not found subscription:", error);
-      return false;
     }
   }
 
@@ -339,9 +261,8 @@ class AppleCancellationHandler {
       }
 
       return true;
-
     } catch (error) {
-      this.logError("Error comparing and updating local records:", error);
+      console.error("Error comparing and updating local records:", error);
       return false;
     }
   }
@@ -356,7 +277,7 @@ class AppleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error updating user for active subscription:", error);
+      console.error("Error updating user for active subscription:", error);
     }
   }
 
@@ -369,7 +290,7 @@ class AppleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error updating user for grace period:", error);
+      console.error("Error updating user for grace period:", error);
     }
   }
 
@@ -383,7 +304,7 @@ class AppleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error updating user for cancelled but active:", error);
+      console.error("Error updating user for cancelled but active:", error);
     }
   }
 
@@ -396,7 +317,7 @@ class AppleCancellationHandler {
       };
     }
 
-    if (subscriptionData.status === "NOT_FOUND" || subscriptionData.status === "INVALID_ID") {
+    if (subscriptionData.status === "NOT_FOUND") {
       return { 
         isCancelled: false, 
         willCancel: false,
@@ -427,7 +348,7 @@ class AppleCancellationHandler {
         autoRenewing = latestTransaction.autoRenewStatus === 1;
 
         if (isExpired) {
-          isInGracePeriod = this.isInGracePeriod(expiryTime);
+          isInGracePeriod = isInGracePeriod(expiryTime);
           finalStatus = isInGracePeriod ? "grace_period" : "cancelled";
           isCancelled = true;
           cancellationType = "expired";
@@ -452,22 +373,11 @@ class AppleCancellationHandler {
     };
   }
 
-  isInGracePeriod(expiryTime) {
-    if (!expiryTime) return false;
-    
-    const gracePeriodDays = 7;
-    const gracePeriodEnd = new Date(expiryTime);
-    gracePeriodEnd.setDate(gracePeriodEnd.getDate() + gracePeriodDays);
-    const now = new Date();
-    
-    return now <= gracePeriodEnd;
-  }
-
   async processAppleSubscriptionCancellation(originalTransactionId) {
     try {
       const subscriptionStatus = await this.getSubscriptionStatus(originalTransactionId);
 
-      if (subscriptionStatus.status === "NOT_FOUND" || subscriptionStatus.status === "INVALID_ID") {
+      if (subscriptionStatus.status === "NOT_FOUND") {
         return false;
       }
 
@@ -480,7 +390,7 @@ class AppleCancellationHandler {
 
       return false;
     } catch (error) {
-      this.logError("Error processing Apple cancellation:", error);
+      console.error("Error processing Apple cancellation:", error);
       return false;
     }
   }
@@ -495,16 +405,14 @@ class AppleCancellationHandler {
       });
 
       if (!paymentRecord) {
-        this.logError("Payment record not found for transaction:", { originalTransactionId });
-        return;
+        throw new Error("Payment record not found for transaction");
       }
 
       const userId = paymentRecord.userId;
       const user = await User.findOne({ _id: userId });
 
       if (!user) {
-        this.logError("User not found:", { userId });
-        return;
+        throw new Error("User not found");
       }
 
       const newStatus = cancellationInfo.isInGracePeriod ? "grace_period" : "cancelled";
@@ -562,10 +470,8 @@ class AppleCancellationHandler {
           await this.updateUserForGracePeriod(userId);
         }
       }
-
     } catch (error) {
-      this.logError("Error handling Apple cancellation:", error);
-      throw error;
+      throw new Error(`Failed to handle Apple cancellation: ${error.message}`);
     }
   }
 
@@ -574,8 +480,7 @@ class AppleCancellationHandler {
       const freePlan = await SubscriptionPlan.findOne({ type: "free" });
 
       if (!freePlan) {
-        console.error("[AppleCancellationHandler] Free plan not found");
-        return;
+        throw new Error("Free plan not found");
       }
 
       const user = await User.findOne({ _id: userId });
@@ -598,8 +503,7 @@ class AppleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error downgrading to free plan:", error);
-      throw error;
+      throw new Error(`Failed to downgrade to free plan: ${error.message}`);
     }
   }
 
@@ -621,13 +525,11 @@ class AppleCancellationHandler {
             await this.processAppleSubscriptionCancellation(transactionId);
           }
         } catch (error) {
-          this.logError(`Error checking payment ${payment._id}:`, error);
+          console.error(`Error checking payment ${payment._id}:`, error);
         }
       }
-
     } catch (error) {
-      this.logError("Error checking all Apple subscriptions:", error);
-      throw error;
+      throw new Error(`Failed to check all Apple subscriptions: ${error.message}`);
     }
   }
 
@@ -654,10 +556,10 @@ class AppleCancellationHandler {
         gracePeriod: gracePeriodSubscriptions
       };
     } catch (error) {
-      this.logError("Error getting subscription stats:", error);
+      console.error("Error getting subscription stats:", error);
       return {};
     }
   }
 }
 
-module.exports = AppleCancellationHandler;
+module.exports = AppleCancellationService;

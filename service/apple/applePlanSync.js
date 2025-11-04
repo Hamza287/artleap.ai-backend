@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const mongoose = require("mongoose");
 const SubscriptionPlan = require("./../../models/subscriptionPlan_model");
+const appleConfig = require("./../../config/apple");
 const {
   mapAppleProductType,
   mapAppleProductName,
@@ -13,17 +14,14 @@ const {
   calculateCredits,
   parseFeatures,
   getPlanDetails,
-} = require("./../subscription_services/utils");
+} = require("./../../utils/googleUtils");
 
-class ApplePlanSync {
+class ApplePlanSyncService {
   constructor() {
-    this.appId = process.env.APPLE_APP_ID;
-    this.issuerId = process.env.APPLE_ISSUER_ID;
-    this.keyId = process.env.APPLE_KEY_ID;
-    this.privateKey = fs.readFileSync(
-      process.env.APPLE_PRIVATE_KEY_PATH,
-      "utf8"
-    );
+    this.appId = appleConfig.appId;
+    this.issuerId = appleConfig.issuerId;
+    this.keyId = appleConfig.keyId;
+    this.privateKey = fs.readFileSync(appleConfig.privateKeyPath, "utf8");
   }
 
   async generateToken() {
@@ -31,8 +29,8 @@ class ApplePlanSync {
       const now = Math.floor(Date.now() / 1000);
       return jwt.sign(
         {
-          iss: this.issuerId, 
-          iat: now, 
+          iss: this.issuerId,
+          iat: now,
           exp: now + 20 * 60,
           aud: "appstoreconnect-v1",
         },
@@ -43,7 +41,6 @@ class ApplePlanSync {
         }
       );
     } catch (error) {
-      console.error("[ApplePlanSync] Failed to generate JWT:", error);
       throw new Error("Failed to generate App Store Connect API token");
     }
   }
@@ -55,7 +52,6 @@ class ApplePlanSync {
       }
       await mongoose.connection.db.admin().ping();
     } catch (error) {
-      console.error("[ApplePlanSync] Database connection check failed:", error);
       throw new Error(`Database connection failed: ${error.message}`);
     }
   }
@@ -75,7 +71,6 @@ class ApplePlanSync {
       const headers = { Authorization: `Bearer ${token}` };
       const baseURL = "https://api.appstoreconnect.apple.com/v1";
 
-      // Fetch subscription groups
       const groupsResponse = await axios.get(
         `${baseURL}/apps/${this.appId}/subscriptionGroups`,
         { headers }
@@ -97,14 +92,12 @@ class ApplePlanSync {
           const attributes = sub.attributes;
           const productId = attributes.productId;
 
-          // Fetch localizations (en-US)
           const localizationsResponse = await axios.get(
             `${baseURL}/subscriptions/${subId}/subscriptionLocalizations`,
             { headers }
           );
 
           const localizationData = localizationsResponse.data.data || [];
-          // Prefer en-US if available
           const enLocalization = localizationData.find(
             (loc) => loc.attributes.locale === "en-US"
           );
@@ -114,7 +107,6 @@ class ApplePlanSync {
           const name = localization.name || attributes.name || productId;
           const description = localization.description || "";
 
-          // Fetch price for USA (assuming prices match Google)
           const pricesResponse = await axios.get(
             `${baseURL}/subscriptions/${subId}/prices?include=subscriptionPricePoint,territory&filter[territory]=USA`,
             { headers }
@@ -170,12 +162,9 @@ class ApplePlanSync {
           price: planDetails.price || product.price,
           totalCredits: calculateCredits(product.productId),
           imageGenerationCredits: calculateCredits(product.productId, "image"),
-          promptGenerationCredits: calculateCredits(
-            product.productId,
-            "prompt"
-          ),
+          promptGenerationCredits: calculateCredits(product.productId, "prompt"),
           features: parseFeatures(product.description),
-          isActive:true,
+          isActive: true,
           version: existingPlan ? existingPlan.version + 1 : 1,
           billingPeriod: mapAppleBillingPeriod(product.subscriptionPeriod),
         };
@@ -210,13 +199,9 @@ class ApplePlanSync {
 
       await Promise.all(deactivationPromises);
     } catch (error) {
-      console.error(
-        "[ApplePlanSync] Error syncing plans:",
-        error.response?.data || error.message
-      );
       throw new Error(`Failed to sync plans with App Store: ${error.message}`);
     }
   }
 }
 
-module.exports = ApplePlanSync;
+module.exports = ApplePlanSyncService;

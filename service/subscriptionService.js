@@ -1,16 +1,16 @@
-const PlanSync = require("./subscription_services/planSync");
+const GooglePlanSyncService = require("./google/googlePlanSync");
 const PlanManagement = require("./subscription_services/plansManagement");
 const SubscriptionManagement = require("./subscription_services/subscriptionsManagement");
 const PaymentProcessing = require("./subscription_services/paymentProcessing");
 const NotificationService = require("./subscription_services/notificationService");
 const CreditManagement = require("./subscription_services/creditsManagement");
 const ApplePlanSync = require('./apple/applePlanSync');
-const GoogleCancellationHandler = require("./plans_handlers/googleCancellationHandler");
+const GoogleCancellationHandler = require("./google/googleCancellationHandler");
 const AppleCancellationHandler = require("./plans_handlers/appleCancellationHandler");
 
 class SubscriptionService {
   constructor() {
-    this.planSync = new PlanSync();
+    this.planSync = new GooglePlanSyncService();
     this.applePlanSync = new ApplePlanSync();
     this.planManagement = new PlanManagement();
     this.subscriptionManagement = new SubscriptionManagement();
@@ -23,24 +23,12 @@ class SubscriptionService {
 
   async checkAndHandleSubscriptionCancellations() {
     try {
-      console.log("[SubscriptionService] Starting comprehensive subscription cancellation check");
-      
       await this.googleCancellationHandler.getAllSubscriptionsFromPlayStore();
-      
       await this.appleCancellationHandler.checkAllActiveAppleSubscriptions();
-      
       await this.subscriptionManagement.processExpiredSubscriptions();
-      
       await this.subscriptionManagement.processGracePeriodSubscriptions();
-      
       await this.syncAllSubscriptionStatus();
-      
       await this.cleanupOrphanedSubscriptions();
-      
-      // await this.notifyAboutSubscriptionChanges();
-      
-      console.log("[SubscriptionService] Completed comprehensive subscription cancellation check");
-      
     } catch (error) {
       console.error("[SubscriptionService] Error checking subscription cancellations:", error);
       throw error;
@@ -49,23 +37,9 @@ class SubscriptionService {
 
   async syncAllSubscriptionStatus() {
     try {
-      console.log("[SubscriptionService] Syncing all subscription status across platforms");
-      
       const googleResults = await this.googleCancellationHandler.syncAllSubscriptionsWithPlayStore();
-      
       const appleResults = await this.appleCancellationHandler.syncAllSubscriptionsWithAppStore();
-      
       await this.subscriptionManagement.syncLocalSubscriptionStatus();
-      
-      console.log("[SubscriptionService] Subscription status sync completed", {
-        googleProcessed: googleResults.processed,
-        googleUpdated: googleResults.updated,
-        googleErrors: googleResults.errors,
-        appleProcessed: appleResults?.processed || 0,
-        appleUpdated: appleResults?.updated || 0,
-        appleErrors: appleResults?.errors || 0
-      });
-      
     } catch (error) {
       console.error("[SubscriptionService] Error syncing subscription status:", error);
       throw error;
@@ -74,37 +48,13 @@ class SubscriptionService {
 
   async cleanupOrphanedSubscriptions() {
     try {
-      console.log("[SubscriptionService] Cleaning up orphaned subscriptions");
-      
       await this.subscriptionManagement.cleanupOrphanedSubscriptions();
-      
       await this.paymentProcessing.cleanupOrphanedPaymentRecords();
-      
-      console.log("[SubscriptionService] Orphaned subscription cleanup completed");
-      
     } catch (error) {
       console.error("[SubscriptionService] Error cleaning up orphaned subscriptions:", error);
       throw error;
     }
   }
-
-  // async notifyAboutSubscriptionChanges() {
-  //   try {
-  //     console.log("[SubscriptionService] Sending subscription change notifications");
-      
-  //     await this.notificationService.sendBulkSubscriptionNotifications();
-      
-  //     await this.notificationService.sendGracePeriodReminders();
-      
-  //     await this.notificationService.sendExpirationWarnings();
-      
-  //     console.log("[SubscriptionService] Subscription change notifications sent");
-      
-  //   } catch (error) {
-  //     console.error("[SubscriptionService] Error sending subscription notifications:", error);
-  //     throw error;
-  //   }
-  // }
 
   async handleGoogleSubscriptionCancellation(purchaseToken) {
     try {
@@ -126,10 +76,8 @@ class SubscriptionService {
 
   async forceSyncUserSubscription(userId) {
     try {
-      console.log("[SubscriptionService] Force syncing user subscription", { userId });
-      
       const userSubscription = await this.subscriptionManagement.getUserActiveSubscription(userId);
-      
+  
       if (userSubscription && userSubscription.platform === 'android') {
         const paymentRecord = await this.paymentProcessing.getLatestPaymentRecord(userId);
         if (paymentRecord && paymentRecord.receiptData) {
@@ -145,9 +93,6 @@ class SubscriptionService {
       }
       
       await this.subscriptionManagement.verifyUserSubscriptionStatus(userId);
-      
-      console.log("[SubscriptionService] Force sync completed for user", { userId });
-      
     } catch (error) {
       console.error("[SubscriptionService] Error force syncing user subscription:", error);
       throw error;

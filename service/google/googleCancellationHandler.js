@@ -31,9 +31,7 @@ class GoogleCancellationHandler {
 
   async getBillingClient() {
     try {
-      this.logDebug("Initializing Google Play Billing client");
       const authClient = await this.auth.getClient();
-      this.logDebug("Billing client initialized successfully");
       return androidpublisher;
     } catch (error) {
       this.logError("Failed to fetch billing client:", error);
@@ -43,16 +41,11 @@ class GoogleCancellationHandler {
 
   async getAllSubscriptionsFromPlayStore(packageName = "com.XrDIgital.ImaginaryVerse") {
     try {
-      this.logDebug("Fetching all subscriptions from Play Store");
-      
       const client = await this.getBillingClient();
       const allPaymentRecords = await PaymentRecord.find({
         platform: "android",
         receiptData: { $exists: true, $ne: null }
       });
-
-      this.logDebug(`Found ${allPaymentRecords.length} payment records to check with Play Store`);
-
       const results = {
         processed: 0,
         updated: 0,
@@ -62,12 +55,6 @@ class GoogleCancellationHandler {
 
       for (const paymentRecord of allPaymentRecords) {
         try {
-          this.logDebug(`Checking payment record ${results.processed + 1}/${allPaymentRecords.length}`, {
-            paymentId: paymentRecord._id,
-            purchaseToken: paymentRecord.receiptData,
-            currentStatus: paymentRecord.status
-          });
-
           const playStoreStatus = await this.getSubscriptionStatusFromPlayStore(paymentRecord.receiptData, packageName);
           
           if (playStoreStatus) {
@@ -93,8 +80,6 @@ class GoogleCancellationHandler {
           this.logError(`Error processing payment record ${paymentRecord._id}:`, error);
         }
       }
-
-      this.logDebug("Completed syncing all subscriptions with Play Store", results);
       return results;
 
     } catch (error) {
@@ -105,8 +90,6 @@ class GoogleCancellationHandler {
 
   async getSubscriptionStatusFromPlayStore(purchaseToken, packageName = "com.XrDIgital.ImaginaryVerse") {
     try {
-      this.logDebug("Getting subscription status from Play Store", { purchaseToken });
-
       const client = await this.getBillingClient();
       const response = await client.purchases.subscriptionsv2.get({
         packageName,
@@ -115,8 +98,6 @@ class GoogleCancellationHandler {
       });
 
       const subscription = response.data;
-      this.logDebug("Raw Play Store subscription data", subscription);
-
       if (!subscription) {
         this.logDebug("No subscription data found in Play Store");
         return null;
@@ -129,15 +110,12 @@ class GoogleCancellationHandler {
       }
 
       const cancellationInfo = this.analyzePlayStoreSubscriptionStatus(lineItem, subscription);
-      this.logDebug("Play Store status analysis", cancellationInfo);
-
       return cancellationInfo;
 
     } catch (error) {
       const message = error.response?.data?.error?.message || error.message;
       
       if (message.includes("not found") || message.includes("invalid")) {
-        this.logDebug("Subscription not found in Play Store - treating as expired");
         return {
           isCancelledOrExpired: true,
           cancellationType: "expired",
@@ -159,23 +137,19 @@ class GoogleCancellationHandler {
     const now = new Date();
     
     const autoRenewing = lineItem.autoRenewingPlan?.autoRenewEnabled ?? false;
-    this.logDebug("Play Store auto renewing status", { autoRenewing });
-    
+  
     const expiryTime = lineItem.expiryTime ? new Date(lineItem.expiryTime) : null;
     const isExpired = expiryTime ? expiryTime < now : true;
-    this.logDebug("Play Store expiry check", { expiryTime, isExpired, currentTime: now });
-    
+ 
     const cancellationReason = lineItem.canceledReason;
     const userCancellationTime = lineItem.userCancellationTime ? 
       new Date(lineItem.userCancellationTime) : null;
-    this.logDebug("Play Store cancellation details", { cancellationReason, userCancellationTime });
-
+   
     const isInGracePeriod = this.isInGracePeriod(expiryTime, isExpired, userCancellationTime);
     
     const isRefunded = lineItem.refunded ?? false;
     const isRevoked = subscription.revocationReason ? true : false;
-    this.logDebug("Play Store additional status", { isRefunded, isRevoked });
-    
+  
     let isCancelledOrExpired = false;
     let cancellationType = "active";
     let finalStatus = "active";
@@ -184,33 +158,26 @@ class GoogleCancellationHandler {
       isCancelledOrExpired = true;
       cancellationType = "expired";
       finalStatus = "cancelled";
-      this.logDebug("Play Store: Subscription EXPIRED");
     } else if (!autoRenewing && userCancellationTime) {
       isCancelledOrExpired = true;
       cancellationType = "user_cancelled";
       finalStatus = isInGracePeriod ? "grace_period" : "cancelled";
-      this.logDebug("Play Store: User CANCELLED", { finalStatus });
     } else if (isRefunded) {
       isCancelledOrExpired = true;
       cancellationType = "refunded";
       finalStatus = "cancelled";
-      this.logDebug("Play Store: Subscription REFUNDED");
     } else if (isRevoked) {
       isCancelledOrExpired = true;
       cancellationType = "revoked";
       finalStatus = "cancelled";
-      this.logDebug("Play Store: Subscription REVOKED");
     } else if (cancellationReason) {
       isCancelledOrExpired = true;
       cancellationType = cancellationReason;
       finalStatus = "cancelled";
-      this.logDebug("Play Store: Subscription cancelled with reason:", cancellationReason);
     } else if (autoRenewing) {
       finalStatus = "active";
-      this.logDebug("Play Store: Subscription ACTIVE and auto-renewing");
     } else {
       finalStatus = "active";
-      this.logDebug("Play Store: Subscription ACTIVE but not auto-renewing");
     }
 
     return {
@@ -231,21 +198,9 @@ class GoogleCancellationHandler {
 
   async compareAndUpdateLocalRecords(paymentRecord, playStoreStatus) {
     try {
-      this.logDebug("Comparing local records with Play Store status", {
-        paymentId: paymentRecord._id,
-        localStatus: paymentRecord.status,
-        playStoreStatus: playStoreStatus.finalStatus
-      });
-
       if (paymentRecord.status === playStoreStatus.finalStatus) {
-        this.logDebug("Local status matches Play Store - no update needed");
         return false;
       }
-
-      this.logDebug("Local status differs from Play Store - updating records", {
-        currentLocalStatus: paymentRecord.status,
-        newPlayStoreStatus: playStoreStatus.finalStatus
-      });
 
       const userId = paymentRecord.userId;
       
@@ -262,11 +217,8 @@ class GoogleCancellationHandler {
         }
       );
 
-      this.logDebug("Payment record updated to match Play Store");
-
       const user = await User.findOne({ _id: userId });
       if (!user) {
-        this.logDebug("User not found for payment record", { userId });
         return true;
       }
 
@@ -276,8 +228,6 @@ class GoogleCancellationHandler {
       });
 
       if (playStoreStatus.finalStatus === "cancelled" && playStoreStatus.isExpired) {
-        this.logDebug("Play Store shows expired - downgrading user to free plan");
-        
         if (userSubscription) {
           await UserSubscription.updateOne(
             { _id: userSubscription._id },
@@ -298,8 +248,7 @@ class GoogleCancellationHandler {
         await this.downgradeToFreePlan(userId, playStoreStatus.cancellationType);
         
       } else if (playStoreStatus.finalStatus === "cancelled" && !playStoreStatus.isExpired) {
-        this.logDebug("Play Store shows cancelled but not expired - turning off auto renew but keeping plan");
-        
+    
         if (userSubscription) {
           await UserSubscription.updateOne(
             { _id: userSubscription._id },
@@ -319,8 +268,7 @@ class GoogleCancellationHandler {
         await this.updateUserForCancelledButActive(userId, playStoreStatus.cancellationType, playStoreStatus.expiryTime);
         
       } else if (playStoreStatus.finalStatus === "grace_period") {
-        this.logDebug("Play Store shows grace period - updating status");
-        
+     
         if (userSubscription) {
           await UserSubscription.updateOne(
             { _id: userSubscription._id },
@@ -340,8 +288,7 @@ class GoogleCancellationHandler {
         await this.updateUserForGracePeriod(userId);
         
       } else if (playStoreStatus.finalStatus === "active") {
-        this.logDebug("Play Store shows active - ensuring local records are correct");
-        
+  
         if (userSubscription) {
           await UserSubscription.updateOne(
             { _id: userSubscription._id },
@@ -359,8 +306,6 @@ class GoogleCancellationHandler {
         
         await this.updateUserForActiveSubscription(userId, playStoreStatus.autoRenewing);
       }
-
-      this.logDebug("Successfully updated local records to match Play Store");
       return true;
 
     } catch (error) {
@@ -371,20 +316,12 @@ class GoogleCancellationHandler {
 
   async updateUserForActiveSubscription(userId, autoRenewing) {
     try {
-      this.logDebug("Updating user for active subscription", { userId, autoRenewing });
-      
       const user = await User.findOne({ _id: userId });
       if (user) {
         user.isSubscribed = true;
         user.subscriptionStatus = 'active';
         user.autoRenew = autoRenewing;
         await user.save();
-        
-        this.logDebug("User updated for active subscription", {
-          userId,
-          subscriptionStatus: user.subscriptionStatus,
-          autoRenew: user.autoRenew
-        });
       }
     } catch (error) {
       this.logError("Error updating user for active subscription:", error);
@@ -393,18 +330,12 @@ class GoogleCancellationHandler {
 
   async updateUserForGracePeriod(userId) {
     try {
-      this.logDebug("Updating user for grace period", { userId });
-      
       const user = await User.findOne({ _id: userId });
       if (user) {
         user.subscriptionStatus = 'grace_period';
         user.planName = 'Premium (Grace Period)';
         await user.save();
         
-        this.logDebug("User updated for grace period", {
-          userId,
-          newStatus: user.subscriptionStatus
-        });
       }
     } catch (error) {
       this.logError("Error updating user for grace period:", error);
@@ -412,25 +343,13 @@ class GoogleCancellationHandler {
   }
 
   async updateUserForCancelledButActive(userId, cancellationType, expiryTime) {
-    try {
-      this.logDebug("Updating user for cancelled but active subscription", { 
-        userId, 
-        cancellationType,
-        expiryTime 
-      });
-      
+    try { 
       const user = await User.findOne({ _id: userId });
       if (user) {
         user.subscriptionStatus = 'cancelled';
         user.cancellationReason = cancellationType;
         user.isSubscribed = true;
         await user.save();
-        
-        this.logDebug("User updated for cancelled but active", {
-          userId,
-          subscriptionStatus: user.subscriptionStatus,
-          isSubscribed: user.isSubscribed
-        });
       }
     } catch (error) {
       this.logError("Error updating user for cancelled but active:", error);
@@ -439,12 +358,8 @@ class GoogleCancellationHandler {
 
   async downgradeToFreePlan(userId, cancellationType = "unknown") {
     try {
-      this.logDebug("Downgrading user to free plan", { userId, cancellationType });
-      
       const freePlan = await SubscriptionPlan.findOne({ type: 'free' });
-      
       if (!freePlan) {
-        console.error("[GoogleCancellationHandler] Free plan not found");
         return;
       }
 
@@ -485,13 +400,6 @@ class GoogleCancellationHandler {
         await user.save();
         await userSubscription.save(); 
 
-
-        this.logDebug("User downgraded to free plan", {
-          userId,
-          previousPlan,
-          newPlan: user.planType,
-          cancellationType
-        });
       } else {
         console.warn("[GoogleCancellationHandler] User not found for downgrade:", userId);
       }
@@ -503,7 +411,6 @@ class GoogleCancellationHandler {
 
   isInGracePeriod(expiryTime, isExpired, userCancellationTime) {
     if (isExpired) {
-      this.logDebug("Subscription expired - NO grace period");
       return false;
     }
     
@@ -515,14 +422,6 @@ class GoogleCancellationHandler {
     gracePeriodEnd.setDate(gracePeriodEnd.getDate() + gracePeriodDays);
     
     const isInGrace = now <= gracePeriodEnd;
-    
-    this.logDebug(`Grace period calculation`, {
-      now,
-      expiryTime,
-      gracePeriodEnd,
-      isInGrace,
-      gracePeriodDays
-    });
     
     return isInGrace;
   }
@@ -536,7 +435,6 @@ class GoogleCancellationHandler {
   }
 
   async forceExpireSubscription(purchaseToken) {
-    this.logDebug("Force expiring subscription", { purchaseToken });
     
     const paymentRecord = await PaymentRecord.findOne({ receiptData: purchaseToken });
     if (paymentRecord) {

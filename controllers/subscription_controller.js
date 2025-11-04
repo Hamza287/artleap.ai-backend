@@ -1,6 +1,7 @@
 const SubscriptionService = require("../service/subscriptionService");
 const HistoryService = require("../service/userHistoryService");
 const PaymentReversalService = require("../service/paymentReversalService");
+const SendNotificationService = require("./../service/sendNotificationService");
 const { google } = require("googleapis");
 const androidpublisher = google.androidpublisher("v3");
 const PaymentRecord = require("../models/recordPayment_model");
@@ -134,6 +135,22 @@ class SubscriptionController {
       });
 
       await HistoryService.updateCreditUsage(userId);
+
+      await SendNotificationService.sendCustomNotification(
+        userId,
+        userId,
+        {
+          title: "Subscription Activated 🎉",
+          body: `Your ${subscription.planSnapshot?.name || 'premium'} subscription is now active!`,
+          type: "system",
+          action: "subscription_activated",
+          data: {
+            type: "subscription",
+            planId: planId,
+            subscriptionId: subscription._id.toString(),
+          }
+        }
+      );
       
       res.json({
         success: true,
@@ -227,6 +244,22 @@ class SubscriptionController {
       });
 
       await HistoryService.updateCreditUsage(userId);
+
+      await SendNotificationService.sendCustomNotification(
+        userId,
+        userId,
+        {
+          title: "Subscription Activated 🎉",
+          body: `Your ${subscription.planSnapshot?.name || 'premium'} subscription is now active!`,
+          type: "system",
+          action: "subscription_activated",
+          data: {
+            type: "subscription",
+            planId: planId,
+            subscriptionId: subscription._id.toString(),
+          }
+        }
+      );
       
       return res.json({
         success: true,
@@ -542,6 +575,24 @@ class SubscriptionController {
           });
       }
 
+      if (refundResult.success) {
+        await SendNotificationService.sendCustomNotification(
+          userId,
+          userId,
+          {
+            title: "Refund Processed",
+            body: `Your subscription payment has been refunded. Reason: ${reason}`,
+            type: "system",
+            action: "refund_processed",
+            data: {
+              type: "refund",
+              transactionId: transactionId,
+              planId: planId,
+            }
+          }
+        );
+      }
+
       res.json({
         success: refundResult.success,
         data: refundResult,
@@ -610,6 +661,22 @@ class SubscriptionController {
 
       await HistoryService.updateCreditUsage(userId);
 
+      await SendNotificationService.sendCustomNotification(
+        userId,
+        userId,
+        {
+          title: "Free Trial Started 🚀",
+          body: "Your free trial has started! Enjoy premium features.",
+          type: "system",
+          action: "trial_started",
+          data: {
+            type: "trial",
+            planId: trial.planId,
+            endDate: trial.endDate,
+          }
+        }
+      );
+
       res.json({
         success: true,
         data: trial,
@@ -649,6 +716,24 @@ class SubscriptionController {
       });
 
       await HistoryService.updateCreditUsage(userId);
+
+      await SendNotificationService.sendCustomNotification(
+        userId,
+        userId,
+        {
+          title: immediate ? "Subscription Cancelled" : "Subscription Will Not Renew",
+          body: immediate ? 
+            "Your subscription has been cancelled immediately." : 
+            "Your subscription will not renew at the end of the current period.",
+          type: "system",
+          action: "subscription_cancelled",
+          data: {
+            type: "subscription",
+            planId: currentSubscription?.planId,
+            immediate: immediate,
+          }
+        }
+      );
 
       res.json({
         success: true,
@@ -708,6 +793,23 @@ class SubscriptionController {
 
       if (limits.allowed) {
         await HistoryService.updateCreditUsage(userId);
+      }
+
+      if (!limits.allowed && limits.reason === "credits_exhausted") {
+        await SendNotificationService.sendCustomNotification(
+          userId,
+          userId,
+          {
+            title: "Credits Exhausted",
+            body: "You've used all your generation credits. Upgrade your plan to continue.",
+            type: "system",
+            action: "credits_exhausted",
+            data: {
+              type: "credits",
+              generationType: generationType,
+            }
+          }
+        );
       }
 
       res.json({ 

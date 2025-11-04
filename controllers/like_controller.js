@@ -1,6 +1,6 @@
 const Like = require("../models/like_model");
 const Image = require("../models/image_model");
-const { saveNotification, sendPushNotification, getDeviceTokens } = require("./../service/firebaseService");
+const SendNotificationService = require("./../service/sendNotificationService");
 
 const likeController = {
 
@@ -44,41 +44,26 @@ const likeController = {
     await like.save();
     await like.populate('user', 'username profilePic');
 
-    // Send notification to image owner if it's not the user's own image
     if (String(image.userId._id) !== String(userId)) {
-      const deviceTokens = await getDeviceTokens(image.userId._id);
-
-      const notifData = {
-        title: "New Like ❤️",
-        body: `${like.user.username} liked your creation`,
-        data: {
-          type: "like",
-          imageId: imageId,
-          likeId: like._id.toString(),
-        },
-      };
-
-      const contextInfo = {
-        action: "likeImage",
-        receiverUserId: image.userId._id,
-        imageId: imageId,
-        likerId: userId,
-        tokenCount: deviceTokens?.length || 0,
-      };
-
-      if (deviceTokens && deviceTokens.length > 0) {
-        await sendPushNotification(deviceTokens, notifData, contextInfo);
-      } else {
-        console.warn("⚠️ [Push Debug] No tokens found for user:", image.userId._id);
-      }
-
-      await saveNotification({
-        userId: image.userId._id,
-        type: "user",
-        title: notifData.title,
-        body: notifData.body,
-        data: notifData.data,
-      });
+      await SendNotificationService.sendCustomNotification(
+        image.userId._id,
+        userId,
+        {
+          title: "New Like ❤️",
+          body: `${like.user.username} liked your creation`,
+          type: "user",
+          action: "likeImage",
+          data: {
+            type: "like",
+            imageId: imageId,
+            likeId: like._id.toString(),
+          },
+          contextInfo: {
+            imageId: imageId,
+            likerId: userId,
+          }
+        }
+      );
     }
 
     res.status(201).json({
@@ -106,7 +91,7 @@ const likeController = {
   unlikeImage: async (req, res) => {
     try {
       const { imageId } = req.params;
-      const userId = likeController.getUserId(req); // Use userId instead of id
+      const userId = likeController.getUserId(req);
 
       const like = await Like.findOneAndDelete({
         image: imageId,
@@ -233,7 +218,7 @@ const likeController = {
 
   getUserLikes: async (req, res) => {
     try {
-      const userId = likeController.getUserId(req); // Use userId instead of id
+      const userId = likeController.getUserId(req);
       const { page = 1, limit = 20 } = req.query;
 
       const likes = await Like.find({ user: userId })

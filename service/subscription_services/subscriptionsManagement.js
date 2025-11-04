@@ -15,8 +15,6 @@ class SubscriptionManagement {
 
   async syncLocalSubscriptionStatus() {
     try {
-      console.log("[SubscriptionManagement] Syncing local subscription status");
-      
       const allSubscriptions = await UserSubscription.find({
         isActive: true
       }).populate("userId planId");
@@ -30,19 +28,14 @@ class SubscriptionManagement {
           const user = await User.findById(subscription.userId._id);
           
           if (!user) {
-            console.warn(`[SubscriptionManagement] User not found for subscription: ${subscription._id}`);
             continue;
           }
 
-          // Check if subscription is expired but still marked as active
           if (subscription.endDate < now && subscription.isActive) {
-            console.log(`[SubscriptionManagement] Subscription expired but still active: ${subscription._id}`);
-            
             subscription.isActive = false;
             subscription.cancelledAt = new Date();
             await subscription.save();
 
-            // Downgrade user to free plan
             const freePlan = await this.planManagement.getPlanByType("free");
             if (freePlan) {
               await this.updateUserData(
@@ -57,10 +50,7 @@ class SubscriptionManagement {
             }
           }
 
-          // Check if user subscription status matches User model
           if (user.isSubscribed !== subscription.isActive) {
-            console.log(`[SubscriptionManagement] Mismatch found for user ${user._id}: User.isSubscribed=${user.isSubscribed}, Subscription.isActive=${subscription.isActive}`);
-            
             user.isSubscribed = subscription.isActive;
             user.subscriptionStatus = subscription.isActive ? 'active' : 'cancelled';
             await user.save();
@@ -73,7 +63,6 @@ class SubscriptionManagement {
         }
       }
 
-      console.log(`[SubscriptionManagement] Local subscription sync completed: ${updated} updated, ${errors} errors`);
       return { updated, errors };
 
     } catch (error) {
@@ -84,9 +73,6 @@ class SubscriptionManagement {
 
   async cleanupOrphanedSubscriptions() {
     try {
-      console.log("[SubscriptionManagement] Cleaning up orphaned subscriptions");
-      
-      // Find subscriptions without valid users
       const orphanedSubscriptions = await UserSubscription.aggregate([
         {
           $lookup: {
@@ -109,7 +95,6 @@ class SubscriptionManagement {
         deleted++;
       }
 
-      // Find duplicate active subscriptions for same user
       const duplicateSubscriptions = await UserSubscription.aggregate([
         {
           $match: {
@@ -132,7 +117,6 @@ class SubscriptionManagement {
 
       let fixed = 0;
       for (const group of duplicateSubscriptions) {
-        // Keep the most recent subscription, deactivate others
         const sortedSubscriptions = group.subscriptions.sort((a, b) => 
           new Date(b.startDate) - new Date(a.startDate)
         );
@@ -152,7 +136,6 @@ class SubscriptionManagement {
         }
       }
 
-      console.log(`[SubscriptionManagement] Orphaned subscription cleanup completed: ${deleted} deleted, ${fixed} duplicates fixed`);
       return { deleted, fixed };
 
     } catch (error) {
@@ -163,8 +146,6 @@ class SubscriptionManagement {
 
   async verifyUserSubscriptionStatus(userId) {
     try {
-      console.log("[SubscriptionManagement] Verifying user subscription status", { userId });
-      
       const user = await User.findById(userId);
       if (!user) {
         throw new Error("User not found");
@@ -173,7 +154,6 @@ class SubscriptionManagement {
       const activeSubscription = await this.getUserActiveSubscription(userId);
       
       if (activeSubscription && !user.isSubscribed) {
-        console.log(`[SubscriptionManagement] Fixing user subscription status: user ${userId} has active subscription but isSubscribed=false`);
         user.isSubscribed = true;
         user.subscriptionStatus = 'active';
         await user.save();
@@ -181,7 +161,6 @@ class SubscriptionManagement {
       }
 
       if (!activeSubscription && user.isSubscribed) {
-        console.log(`[SubscriptionManagement] Fixing user subscription status: user ${userId} has no active subscription but isSubscribed=true`);
         user.isSubscribed = false;
         user.subscriptionStatus = 'cancelled';
         await user.save();
@@ -234,7 +213,6 @@ class SubscriptionManagement {
     try {
       const issues = [];
 
-      // Check for subscriptions without users
       const orphanedSubs = await UserSubscription.aggregate([
         {
           $lookup: {
@@ -259,7 +237,6 @@ class SubscriptionManagement {
         });
       }
 
-      // Check for expired but active subscriptions
       const expiredActiveSubs = await UserSubscription.countDocuments({
         isActive: true,
         endDate: { $lte: new Date() }
@@ -273,7 +250,6 @@ class SubscriptionManagement {
         });
       }
 
-      // Check for users with mismatched subscription status
       const mismatchedUsers = await User.aggregate([
         {
           $lookup: {
@@ -338,10 +314,7 @@ class SubscriptionManagement {
 
       return paidSubscription || null;
     } catch (error) {
-      console.error(
-        "[SubscriptionManagement] getUserActiveSubscription failed:",
-        error
-      );
+      console.error("[SubscriptionManagement] getUserActiveSubscription failed:", error);
       throw error;
     }
   }
@@ -369,7 +342,6 @@ class SubscriptionManagement {
       }).populate("planId").populate({ path: "userId" });
 
       if (!user) {
-        console.error("[SubscriptionManagement] User not found:", userId);
         throw new Error("User not found");
       }
 
@@ -446,18 +418,15 @@ class SubscriptionManagement {
           : userId,
       });
       if (!user) {
-        console.error("[SubscriptionManagement] User not found:", userId);
         throw new Error("User not found");
       }
 
       const plan = await this.planManagement.getPlanById(planId);
       if (!plan) {
-        console.error("[SubscriptionManagement] Plan not found:", planId);
         throw new Error("Plan not found");
       }
 
       if (isTrial && plan.type !== "trial") {
-        console.error("[SubscriptionManagement] Invalid trial plan:", planId);
         throw new Error("Only trial plans can be marked as trial");
       }
 
@@ -515,10 +484,6 @@ class SubscriptionManagement {
         );
       } else {
         if (activeSub && !isTrial && activeSub.planId) {
-          console.error(
-            "[SubscriptionManagement] User already has active subscription:",
-            userId
-          );
           throw new Error("User already has an active subscription");
         }
 
@@ -574,10 +539,7 @@ class SubscriptionManagement {
 
       return subscription;
     } catch (error) {
-      console.error(
-        "[SubscriptionManagement] createSubscription failed:",
-        error
-      );
+      console.error("[SubscriptionManagement] createSubscription failed:", error);
       throw error;
     }
   }
@@ -597,13 +559,8 @@ class SubscriptionManagement {
       const subscription = await UserSubscription.findOne(query);
 
       if (!subscription) {
-        console.warn(
-          "[SubscriptionManagement] No active paid subscription found for cancellation:",
-          userId
-        );
         const user = await User.findOne({ _id: userId });
         if (!user) {
-          console.error("[SubscriptionManagement] User not found:", userId);
           throw new Error("User not found");
         }
         const freePlan = await this.planManagement.getPlanByType("free");
@@ -665,11 +622,7 @@ class SubscriptionManagement {
 
       return subscription;
     } catch (error) {
-      console.error(
-        "[SubscriptionManagement] cancelSubscription failed for user:",
-        userId,
-        error
-      );
+      console.error("[SubscriptionManagement] cancelSubscription failed for user:", userId, error);
       throw error;
     }
   }
@@ -711,10 +664,7 @@ class SubscriptionManagement {
             }
           }
         } catch (error) {
-          console.error(
-            `[SubscriptionManagement] Error processing grace period subscription: ${sub._id}`,
-            error
-          );
+          console.error(`[SubscriptionManagement] Error processing grace period subscription: ${sub._id}`, error);
         }
       }
     } catch (error) {
@@ -838,10 +788,7 @@ class SubscriptionManagement {
             await this.cancelSubscription(sub.userId._id, true, true);
           }
         } catch (error) {
-          console.error(
-            `[SubscriptionManagement] Error renewing subscription: ${sub._id}`,
-            error
-          );
+          console.error(`[SubscriptionManagement] Error renewing subscription: ${sub._id}`, error);
           await this.cancelSubscription(sub.userId._id, true, true);
         }
       }
@@ -876,17 +823,11 @@ class SubscriptionManagement {
             );
           }
         } catch (error) {
-          console.error(
-            `[SubscriptionManagement] Error processing expired subscription: ${sub._id}`,
-            error
-          );
+          console.error(`[SubscriptionManagement] Error processing expired subscription: ${sub._id}`, error);
         }
       }
     } catch (error) {
-      console.error(
-        "[SubscriptionManagement] processExpiredSubscriptions failed:",
-        error
-      );
+      console.error("[SubscriptionManagement] processExpiredSubscriptions failed:", error);
       throw error;
     }
   }
@@ -895,13 +836,11 @@ class SubscriptionManagement {
     try {
       const trialPlan = await this.planManagement.getPlanByType("trial");
       if (!trialPlan) {
-        console.error("[SubscriptionManagement] Trial plan not configured");
         throw new Error("Trial plan not configured");
       }
 
       const user = await User.findOne({ _id: userId });
       if (!user) {
-        console.error("[SubscriptionManagement] User not found:", userId);
         throw new Error("User not found");
       }
 
@@ -911,17 +850,10 @@ class SubscriptionManagement {
       });
 
       if (previousTrial) {
-        console.error(
-          "[SubscriptionManagement] User already used trial:",
-          userId
-        );
         throw new Error("You've already used your free trial");
       }
 
       if (!paymentMethod) {
-        console.error(
-          "[SubscriptionManagement] Payment method required for trial"
-        );
         throw new Error("Payment method required for trial");
       }
 
