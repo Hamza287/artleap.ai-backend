@@ -268,7 +268,7 @@ class AppleCancellationHandler {
             {
               $set: {
                 autoRenew: false,
-                isActive: false,
+                isActive: true,
                 cancelledAt: new Date(),
                 cancellationReason: appStoreStatus.cancellationType,
                 status: "cancelled",

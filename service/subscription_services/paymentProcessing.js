@@ -69,9 +69,6 @@ class PaymentProcessing {
 
   async cleanupOrphanedPaymentRecords() {
     try {
-      console.log("[PaymentProcessing] Cleaning up orphaned payment records");
-      
-      // Find payment records without valid users
       const orphanedPayments = await PaymentRecord.aggregate([
         {
           $lookup: {
@@ -94,7 +91,6 @@ class PaymentProcessing {
         deleted++;
       }
 
-      // Find duplicate payment records for same transaction
       const duplicatePayments = await PaymentRecord.aggregate([
         {
           $group: {
@@ -120,7 +116,6 @@ class PaymentProcessing {
 
       let fixed = 0;
       for (const group of duplicatePayments) {
-        // Keep the most recent payment record, delete others
         const sortedPayments = group.payments.sort((a, b) => 
           new Date(b.createdAt) - new Date(a.createdAt)
         );
@@ -130,8 +125,6 @@ class PaymentProcessing {
           fixed++;
         }
       }
-
-      console.log(`[PaymentProcessing] Orphaned payment records cleanup completed: ${deleted} deleted, ${fixed} duplicates fixed`);
       return { deleted, fixed };
 
     } catch (error) {
@@ -198,7 +191,6 @@ class PaymentProcessing {
         return { valid: false, reason: "No associated user" };
       }
 
-      // Check if payment record has necessary fields based on platform
       if (paymentRecord.platform === "android" && !paymentRecord.receiptData) {
         return { valid: false, reason: "Android payment missing receipt data" };
       }
@@ -217,8 +209,6 @@ class PaymentProcessing {
 
   async fixInvalidPaymentRecords() {
     try {
-      console.log("[PaymentProcessing] Fixing invalid payment records");
-      
       const invalidPayments = await PaymentRecord.find({
         $or: [
           { userId: { $exists: false } },
@@ -244,7 +234,6 @@ class PaymentProcessing {
 
       for (const payment of invalidPayments) {
         try {
-          // Try to find associated user
           if (!payment.userId) {
             await PaymentRecord.deleteOne({ _id: payment._id });
             deleted++;
@@ -258,7 +247,6 @@ class PaymentProcessing {
             continue;
           }
 
-          // Try to fix missing platform
           if (!payment.platform) {
             if (payment.receiptData) {
               payment.platform = "android";
@@ -271,7 +259,6 @@ class PaymentProcessing {
             }
           }
 
-          // Validate based on platform
           if (payment.platform === "android" && !payment.receiptData) {
             await PaymentRecord.deleteOne({ _id: payment._id });
             deleted++;
@@ -291,8 +278,6 @@ class PaymentProcessing {
           console.error(`[PaymentProcessing] Error fixing payment record ${payment._id}:`, error);
         }
       }
-
-      console.log(`[PaymentProcessing] Invalid payment records fixed: ${fixed} fixed, ${deleted} deleted`);
       return { fixed, deleted };
 
     } catch (error) {

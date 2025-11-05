@@ -142,7 +142,7 @@ class GooglePlanSyncService {
           deactivationPromises.push(
             SubscriptionPlan.findByIdAndUpdate(
               plan._id,
-              { $set: { isActive: false, updatedAt: new Date() } }
+              { $set: { isActive: true, updatedAt: new Date() } }
             )
           );
         }

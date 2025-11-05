@@ -6,12 +6,21 @@ const NotificationService = require("./notificationService");
 const PlanManagement = require("./plansManagement");
 const PaymentProcessing = require("./paymentProcessing");
 
+
+function num(v, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+
 class SubscriptionManagement {
   constructor() {
     this.notificationService = new NotificationService();
     this.planManagement = new PlanManagement();
     this.paymentProcessing = new PaymentProcessing(this);
   }
+
+  
 
   async syncLocalSubscriptionStatus() {
     try {
@@ -126,7 +135,7 @@ class SubscriptionManagement {
             { _id: sortedSubscriptions[i]._id },
             {
               $set: {
-                isActive: false,
+                isActive: true,
                 cancelledAt: new Date(),
                 autoRenew: false
               }
@@ -320,95 +329,98 @@ class SubscriptionManagement {
   }
 
   async updateUserData(
-    userId,
-    plan,
-    subscription = null,
-    isSubscribed = true,
-    isTrial = false,
-    carryOverCredits = false
-  ) {
-    try {
-      const user = await User.findOne({
-        _id: mongoose.Types.ObjectId.isValid(userId)
-          ? mongoose.Types.ObjectId(userId)
-          : userId,
-      });
+  userId,
+  plan,
+  subscription = null,
+  isSubscribed = true,
+  isTrial = false,
+  carryOverCredits = false
+) {
+  try {
+    const user = await User.findOne({
+      _id: mongoose.Types.ObjectId.isValid(userId)
+        ? mongoose.Types.ObjectId(userId)
+        : userId,
+    });
 
-      const userSubscription = await UserSubscription.findOne({
-        userId,
-        isActive: true,
-        endDate: { $gt: new Date() },
-        isTrial: false,
-      }).populate("planId").populate({ path: "userId" });
+    const userSubscription = await UserSubscription.findOne({
+      userId,
+      isActive: true,
+      endDate: { $gt: new Date() },
+      isTrial: false,
+    }).populate("planId").populate({ path: "userId" });
 
-      if (!user) {
-        throw new Error("User not found");
-      }
+    if (!user) throw new Error("User not found");
 
-      let remainingImageCredits = 0;
-      let remainingPromptCredits = 0;
-      let remainingTotalCredits = 0;
+    // Coerce all inputs to safe numbers once
+    const planImg = num(plan?.imageGenerationCredits);
+    const planPr  = num(plan?.promptGenerationCredits);
+    const planTot = num(plan?.totalCredits);
 
-      if (carryOverCredits && user.isSubscribed && user.planType !== "free") {
-        remainingImageCredits = Math.max(
-          0,
-          user.imageGenerationCredits - user.usedImageCredits
-        );
-        remainingPromptCredits = Math.max(
-          0,
-          user.promptGenerationCredits - user.usedPromptCredits
-        );
-        remainingTotalCredits = Math.max(
-          0,
-          user.totalCredits - (user.usedImageCredits + user.usedPromptCredits)
-        );
-      }
+    const uImg   = num(user.imageGenerationCredits);
+    const uPr    = num(user.promptGenerationCredits);
+    const uTot   = num(user.totalCredits);
+    const uUsedI = num(user.usedImageCredits);
+    const uUsedP = num(user.usedPromptCredits);
 
-      user.currentSubscription = subscription ? subscription._id : null;
-      user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
-      user.isSubscribed = isSubscribed;
-      user.watermarkEnabled = plan.type === "free";
-      user.hasActiveTrial = isTrial;
-      user.planName = plan.name;
-      user.planType = plan.type;
+    let remainingImageCredits = 0;
+    let remainingPromptCredits = 0;
+    let remainingTotalCredits = 0;
 
-      if (plan.type === "free") {
-        user.totalCredits = 4;
-        user.dailyCredits = 4;
-        user.imageGenerationCredits = 0;
-        user.promptGenerationCredits = 4;
-        user.usedImageCredits = 0;
-        user.usedPromptCredits = 0;
-        user.lastCreditReset = new Date();
-      } else {
-        if (carryOverCredits) {
-          user.imageGenerationCredits = remainingImageCredits + plan.imageGenerationCredits;
-          user.promptGenerationCredits = remainingPromptCredits + plan.promptGenerationCredits;
-          user.totalCredits = remainingTotalCredits + plan.totalCredits;
-
-          if (userSubscription) {
-            userSubscription.planSnapshot.totalCredits = remainingTotalCredits + plan.totalCredits;
-            userSubscription.planSnapshot.imageGenerationCredits = remainingImageCredits + plan.imageGenerationCredits;
-            userSubscription.planSnapshot.promptGenerationCredits = remainingPromptCredits + plan.promptGenerationCredits;
-            await userSubscription.save();
-          }
-        } else {
-          user.imageGenerationCredits = plan.imageGenerationCredits;
-          user.promptGenerationCredits = plan.promptGenerationCredits;
-          user.totalCredits = plan.totalCredits;
-        }
-        user.dailyCredits = 0;
-        user.usedImageCredits = 0;
-        user.usedPromptCredits = 0;
-      }
-
-      await user.save();
-      return user;
-    } catch (error) {
-      console.error("[SubscriptionManagement] updateUserData failed:", error);
-      throw error;
+    if (carryOverCredits && user.isSubscribed && user.planType !== "free") {
+      remainingImageCredits = Math.max(0, uImg - uUsedI);
+      remainingPromptCredits = Math.max(0, uPr - uUsedP);
+      remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
     }
+
+    user.currentSubscription = subscription ? subscription._id : null;
+    user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
+    user.isSubscribed = isSubscribed;
+    user.watermarkEnabled = plan.type === "free";
+    user.hasActiveTrial = isTrial;
+    user.planName = plan.name;
+    user.planType = plan.type;
+
+    if (plan.type === "free") {
+      user.totalCredits = 4;
+      user.dailyCredits = 4;
+      user.imageGenerationCredits = 0;
+      user.promptGenerationCredits = 4;
+      user.usedImageCredits = 0;
+      user.usedPromptCredits = 0;
+      user.lastCreditReset = new Date();
+    } else {
+      if (carryOverCredits) {
+        user.imageGenerationCredits   = num(remainingImageCredits + planImg);
+        user.promptGenerationCredits  = num(remainingPromptCredits + planPr);
+        user.totalCredits             = num(remainingTotalCredits + planTot);
+
+        if (userSubscription && userSubscription.planSnapshot) {
+          userSubscription.cancelledAt = null;
+          userSubscription.planSnapshot.totalCredits            = num(remainingTotalCredits + planTot);
+          userSubscription.planSnapshot.imageGenerationCredits  = num(remainingImageCredits + planImg);
+          userSubscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
+          await userSubscription.save();
+        }
+      } else {
+        user.imageGenerationCredits  = num(planImg);
+        user.promptGenerationCredits = num(planPr);
+        user.totalCredits            = num(planTot);
+      }
+
+      user.dailyCredits = 0;
+      user.usedImageCredits = 0;
+      user.usedPromptCredits = 0;
+    }
+
+    await user.save();
+    return user;
+  } catch (error) {
+    console.error("[SubscriptionManagement] updateUserData failed:", error);
+    throw error;
   }
+}
+
 
   async createSubscription(userId, planId, paymentMethod, isTrial = false) {
     try {

@@ -263,23 +263,23 @@ class SubscriptionService {
     }
   }
 
-  async getSubscriptionHealthReport() {
-    try {
-      const report = {
-        timestamp: new Date(),
-        googleSubscriptions: await this.googleCancellationHandler.getSubscriptionStats(),
-        appleSubscriptions: await this.appleCancellationHandler.getSubscriptionStats(),
-        localSubscriptions: await this.subscriptionManagement.getSubscriptionStats(),
-        paymentRecords: await this.paymentProcessing.getPaymentStats(),
-        issues: await this.subscriptionManagement.getSubscriptionIssues()
-      };
+  // async getSubscriptionHealthReport() {
+  //   try {
+  //     const report = {
+  //       timestamp: new Date(),
+  //       googleSubscriptions: await this.googleCancellationHandler.getSubscriptionStats(),
+  //       appleSubscriptions: await this.appleCancellationHandler.getSubscriptionStats(),
+  //       localSubscriptions: await this.subscriptionManagement.getSubscriptionStats(),
+  //       paymentRecords: await this.paymentProcessing.getPaymentStats(),
+  //       issues: await this.subscriptionManagement.getSubscriptionIssues()
+  //     };
       
-      return report;
-    } catch (error) {
-      console.error("[SubscriptionService] Error getting subscription health report:", error);
-      throw error;
-    }
-  }
+  //     return report;
+  //   } catch (error) {
+  //     console.error("[SubscriptionService] Error getting subscription health report:", error);
+  //     throw error;
+  //   }
+  // }
 }
 
 module.exports = new SubscriptionService();

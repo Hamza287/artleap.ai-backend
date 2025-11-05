@@ -108,14 +108,7 @@ class CreditManagement {
         user.usedPromptCredits = user.usedPromptCredits + 2 * num_images;
         user.dailyCredits = user.dailyCredits - 2 * num_images;
         user.totalCredits = user.totalCredits - 2 * num_images;
-        UserSubscriptionData.planSnapshot.totalCredits =
-          UserSubscriptionData.planSnapshot.totalCredits - 2 * num_images;
-
-        console.log("❌ Free plan → credits deducted:", {
-          dailyCredits: user.dailyCredits,
-          totalCredits: user.totalCredits,
-          usedPromptCredits: user.usedPromptCredits,
-        });
+        UserSubscriptionData.planSnapshot.totalCredits = UserSubscriptionData.planSnapshot.totalCredits - 2 * num_images;
       }
 
       await UserSubscriptionData.save();
