@@ -24,7 +24,6 @@ class AppleCancellationController {
         message: result ? "Subscription cancelled successfully" : "Subscription is still active"
       });
     } catch (error) {
-      console.error("Error checking Apple cancellation:", error);
       res.status(500).json({ 
         success: false,
         error: error.message 
@@ -41,7 +40,6 @@ class AppleCancellationController {
         message: "All Apple subscriptions checked successfully"
       });
     } catch (error) {
-      console.error("Error checking all Apple subscriptions:", error);
       res.status(500).json({ 
         success: false,
         error: error.message 
@@ -68,7 +66,6 @@ class AppleCancellationController {
         message: isCancelled ? "Subscription cancelled" : "Subscription active"
       });
     } catch (error) {
-      console.error("Error checking subscription with receipt:", error);
       res.status(500).json({ 
         success: false,
         error: error.message 

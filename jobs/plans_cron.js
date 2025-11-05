@@ -27,7 +27,6 @@ const connectToMongoDB = async () => {
     });
 
   } catch (error) {
-    console.error('[PlansCron] Failed to connect to MongoDB:', error.message);
     throw error;
   }
 };
@@ -41,7 +40,6 @@ const ensureConnection = async () => {
     await mongoose.connection.db.admin().ping();
     return true;
   } catch (error) {
-    console.warn('[PlansCron] MongoDB ping failed, reconnecting...');
     await mongoose.connection.close();
     await connectToMongoDB();
     return mongoose.connection.readyState === 1;
@@ -56,16 +54,9 @@ const executeWithConnection = async (operation, operationName) => {
     if (!isConnected) {
       throw new Error('Unable to establish MongoDB connection');
     }
-
     await operation();
-    const duration = Date.now() - startTime;
     
   } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`[PlansCron] ${operationName} failed:`, {
-      message: error.message,
-      duration: `${duration}ms`
-    });
     throw error;
   }
 };
@@ -129,7 +120,7 @@ const runAllTasksOnce = async () => {
 
     const cycleDuration = Date.now() - cycleStart;
   } catch (error) {
-    console.error('[PlansCron] Minute cycle failed:', error.message);
+   throw error;
   } finally {
     isRunning = false;
   }
@@ -140,7 +131,6 @@ const initializeCron = async () => {
     await connectToMongoDB();
     isInitialized = true;
   } catch (error) {
-    console.error('[PlansCron] Service initialization failed:', error.message);
     process.exit(1);
   }
 };
@@ -158,7 +148,7 @@ const gracefulShutdown = async (signal) => {
       await mongoose.connection.close();
     }
   } catch (error) {
-    console.error('[PlansCron] Error during shutdown:', error.message);
+    throw error;
   }
   process.exit(0);
 };
