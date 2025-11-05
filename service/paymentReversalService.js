@@ -16,9 +16,6 @@ class PaymentReversalService {
 
   async reverseApplePayment(transactionId, userId, planId, reason) {
     try {
-      console.log(`[PaymentReversalService] Starting Apple payment reversal for transaction: ${transactionId}`);
-      console.log(`[PaymentReversalService] Reason: ${reason}, User: ${userId}, Plan: ${planId}`);
-
       const paymentRecord = await PaymentRecord.findOne({
         transactionId: transactionId,
         userId: userId,
@@ -41,8 +38,6 @@ class PaymentReversalService {
         }
       );
 
-      console.log(`[PaymentReversalService] Apple payment marked as refunded: ${transactionId}`);
-      
       return { 
         success: true, 
         message: "Payment successfully refunded",
@@ -56,9 +51,6 @@ class PaymentReversalService {
 
   async reverseGooglePayment(purchaseToken, userId, planId, reason) {
     try {
-      console.log(`[PaymentReversalService] Starting Google payment reversal for token: ${purchaseToken}`);
-      console.log(`[PaymentReversalService] Reason: ${reason}, User: ${userId}, Plan: ${planId}`);
-
       const authClient = await this.googleAuth.getClient();
       google.options({ auth: authClient });
 
@@ -90,8 +82,6 @@ class PaymentReversalService {
         }
       );
 
-      console.log(`[PaymentReversalService] Google payment revoked and marked as refunded: ${purchaseToken}`);
-      
       return { 
         success: true, 
         message: "Payment successfully revoked and refunded",
@@ -121,9 +111,7 @@ class PaymentReversalService {
 
   async reverseStripePayment(paymentIntentId, userId, planId, reason) {
     try {
-      console.log(`[PaymentReversalService] Starting Stripe payment reversal for: ${paymentIntentId}`);
-      console.log(`[PaymentReversalService] Reason: ${reason}, User: ${userId}, Plan: ${planId}`);
-
+  
       const paymentRecord = await PaymentRecord.findOne({
         transactionId: paymentIntentId,
         userId: userId,
@@ -152,8 +140,6 @@ class PaymentReversalService {
         }
       );
 
-      console.log(`[PaymentReversalService] Stripe payment refunded successfully: ${refund.id}`);
-      
       return { 
         success: true, 
         message: "Payment successfully refunded",
@@ -184,9 +170,6 @@ class PaymentReversalService {
 
   async handleFailedSubscription(userId, planId, paymentMethod, verificationData, error) {
     try {
-      console.log(`[PaymentReversalService] Handling failed subscription for user: ${userId}`);
-      console.log(`[PaymentReversalService] Plan: ${planId}, Method: ${paymentMethod}, Error: ${error.message}`);
-
       let reversalResult;
 
       switch (paymentMethod) {
@@ -223,7 +206,6 @@ class PaymentReversalService {
           reversalResult = { success: false, error: `Unsupported payment method: ${paymentMethod}` };
       }
 
-      console.log(`[PaymentReversalService] Payment reversal result:`, reversalResult);
       return reversalResult;
 
     } catch (reversalError) {
@@ -234,8 +216,6 @@ class PaymentReversalService {
 
   async getRefundStatus(transactionId, paymentMethod) {
     try {
-      console.log(`[PaymentReversalService] Getting refund status for: ${transactionId}, Method: ${paymentMethod}`);
-
       const paymentRecord = await PaymentRecord.findOne({
         $or: [
           { transactionId: transactionId },

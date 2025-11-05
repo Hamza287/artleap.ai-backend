@@ -19,7 +19,6 @@ app.post('/generate-ghibli-style', upload.single('image'), async (req, res) => {
     const base64Image = imageBuffer.toString('base64');
     const base64DataUrl = `data:image/png;base64,${base64Image}`;
 
-    // Step 1: Get description using GPT-4 Vision
     const visionResponse = await openai.chat.completions.create({
       model: "gpt-4-vision-preview",
       messages: [
@@ -37,7 +36,6 @@ app.post('/generate-ghibli-style', upload.single('image'), async (req, res) => {
     const description = visionResponse.choices[0].message.content;
     const stylizedPrompt = `${description}, Studio Ghibli anime style, watercolor soft background, cel-shaded`;
 
-    // Step 2: Generate image with DALL·E 3
     const dalleResponse = await openai.images.generate({
       model: "dall-e-3",
       prompt: stylizedPrompt,
@@ -47,7 +45,7 @@ app.post('/generate-ghibli-style', upload.single('image'), async (req, res) => {
     });
 
     const imageUrl = dalleResponse.data[0].url;
-    fs.unlinkSync(imagePath); // Clean up
+    fs.unlinkSync(imagePath);
 
     return res.status(200).json({
       message: "Ghibli-style image generated successfully!",

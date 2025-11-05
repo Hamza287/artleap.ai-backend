@@ -82,30 +82,24 @@ const saveNotification = async (notificationData) => {
 const sendPushNotification = async (deviceTokens, notificationData, contextInfo = {}) => {
   try {
     if (!deviceTokens || !Array.isArray(deviceTokens)) {
-      console.error("❌ [Push Debug] Invalid deviceTokens:", deviceTokens);
       throw new Error("Invalid device tokens array");
     }
 
     if (deviceTokens.length === 0) {
-      console.warn("⚠️ [Push Debug] No device tokens provided. Skipping notification send.");
       return { successCount: 0, failureCount: 0, message: "No device tokens" };
     }
 
     if (!notificationData?.title || !notificationData?.body) {
-      console.error("❌ [Push Debug] Missing title/body:", notificationData);
       throw new Error("Notification title and body are required");
     }
 
     const validTokens = deviceTokens.filter(t => typeof t === "string" && t.trim().length > 0);
-    console.log(`📲 [Push Debug] ${validTokens.length}/${deviceTokens.length} valid tokens after filtering.`);
 
     if (validTokens.length === 0) {
-      console.warn("⚠️ [Push Debug] No valid tokens found after filtering.");
       return { successCount: 0, failureCount: 0, message: "No valid tokens" };
     }
 
     if (!admin.messaging().sendMulticast) {
-      console.warn("⚠️ [Push Debug] sendMulticast not available. Falling back to individual sends.");
       return await sendIndividualNotifications(validTokens, notificationData);
     }
 
@@ -118,15 +112,11 @@ const sendPushNotification = async (deviceTokens, notificationData, contextInfo 
       tokens: validTokens,
     };
 
-    console.log("📦 [Push Debug] Prepared FCM message:", JSON.stringify(message, null, 2));
-
     const response = await admin.messaging().sendMulticast(message);
     console.log("✅ [Push Debug] FCM sendMulticast response summary:", {
       successCount: response.successCount,
       failureCount: response.failureCount,
     });
-
-    // Detailed per-token logging
     response.responses.forEach((resp, i) => {
       if (resp.success) {
         console.log(`✅ [Push Debug] Success → Token [${i}]`);
@@ -177,16 +167,13 @@ const getDeviceTokens = async (userId) => {
     const record = await FcmToken.findOne({ userId: userId.toString() }).lean();
 
     if (!record) {
-      console.warn(`[Push Debug] No DeviceToken record found for user: ${userId}`);
       return [];
     }
 
     if (!Array.isArray(record.tokens) || record.tokens.length === 0) {
-      console.warn(`[Push Debug] Empty tokens array for user: ${userId}`);
       return [];
     }
 
-    console.log(`[Push Debug] Tokens for user ${userId}:`, record.tokens);
     return record.tokens;
   } catch (error) {
     console.error("Error fetching device tokens:", error.message);

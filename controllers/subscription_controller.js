@@ -59,12 +59,7 @@ class SubscriptionController {
   async subscribe(req, res) {
     try {
       const { userId, planId, paymentMethod, verificationData } = req.body;
-
-      console.log(`[subscribe] Starting subscription process for user ${userId}, plan ${planId}, method ${paymentMethod}`);
-      console.log(`[subscribe] Verification data:`, JSON.stringify(verificationData, null, 2));
-
       if (!userId) {
-        console.log(`[subscribe] Missing userId in request`);
         return res.status(400).json({
           success: false,
           error: "User ID is required",
@@ -72,7 +67,6 @@ class SubscriptionController {
       }
 
       if (!planId) {
-        console.log(`[subscribe] Missing planId in request`);
         return res.status(400).json({
           success: false,
           error: "Plan ID is required",
@@ -82,7 +76,6 @@ class SubscriptionController {
       let verificationResult = await this.verifyPurchase(paymentMethod, verificationData);
 
       if (!verificationResult || verificationResult.success === false) {
-        console.log(`[subscribe] Purchase verification failed`);
         return res.status(400).json({
           success: false,
           error: "Purchase verification failed",
@@ -100,7 +93,6 @@ class SubscriptionController {
       });
 
       if (existingPayment) {
-        console.log(`[subscribe] Payment record already exists for transaction: ${txId}`);
         const currentSubscription = await SubscriptionService.getUserActiveSubscription(userId);
         return res.json({
           success: true,
@@ -108,8 +100,6 @@ class SubscriptionController {
           message: "Already subscribed",
         });
       }
-
-      console.log(`[subscribe] Creating subscription for user ${userId} with plan ${planId}`);
       const subscription = await SubscriptionService.createSubscription(
         userId,
         planId,
@@ -117,7 +107,6 @@ class SubscriptionController {
         false
       );
 
-      console.log(`[subscribe] Subscription created successfully: ${subscription._id}`);
 
       await this.recordPayment(userId, planId, paymentMethod, {
         ...verificationData,
@@ -172,8 +161,6 @@ class SubscriptionController {
           error
         );
 
-        console.log(`[subscribe] Payment reversal result:`, reversalResult);
-
         return res.status(500).json({ 
           success: false, 
           error: `Subscription failed: ${error.message}`,
@@ -199,16 +186,12 @@ class SubscriptionController {
           error: "Plan ID is required for Apple subscription",
         });
       }
-
-      console.log(`[subscribeApple] Processing Apple subscription for user ${userId}, plan ${planId}`);
-
       const existingPayment = await PaymentRecord.findOne({
         transactionId: txId,
         planId: planId,
       });
 
       if (existingPayment) {
-        console.log(`[subscribeApple] Payment record already exists for transaction: ${txId}`);
         const currentSubscription = await SubscriptionService.getUserActiveSubscription(userId);
         return res.json({
           success: true,
@@ -216,16 +199,12 @@ class SubscriptionController {
           message: "Already subscribed to this product",
         });
       }
-      
-      console.log(`[subscribeApple] Creating subscription for user ${userId} with plan ${planId}`);
       const subscription = await SubscriptionService.createSubscription(
         userId,
         planId,
         "apple",
         false
       );
-
-      console.log(`[subscribeApple] Subscription created successfully: ${subscription._id}`);
 
       await this.recordPayment(userId, planId, "apple", {
         ...verificationData,
@@ -280,8 +259,6 @@ class SubscriptionController {
           verificationData, 
           error
         );
-
-        console.log(`[subscribeApple] Payment reversal result:`, reversalResult);
 
         return res.status(500).json({ 
           success: false, 
@@ -340,12 +317,6 @@ class SubscriptionController {
         token: verificationData.purchaseToken,
       });
 
-      console.log(`[verifyGooglePurchase] Google API response:`, {
-        subscriptionState: response.data.subscriptionState,
-        paymentState: response.data.paymentState,
-        acknowledgementState: response.data.acknowledgementState
-      });
-
       const isActive = response.data.subscriptionState === "SUBSCRIPTION_STATE_ACTIVE";
       const isTestPurchase = !!response.data.testPurchase;
 
@@ -356,9 +327,7 @@ class SubscriptionController {
             subscriptionId: verificationData.productId,
             token: verificationData.purchaseToken,
           });
-          console.log(`[verifyGooglePurchase] Purchase acknowledged successfully`);
         }
-        console.log(`[verifyGooglePurchase] Google purchase verified successfully`);
         return { success: true };
       } else {
         console.warn(`[verifyGooglePurchase] Payment NOT verified. Subscription state: ${response.data.subscriptionState}, Payment state: ${response.data.paymentState}`);
@@ -381,14 +350,9 @@ class SubscriptionController {
         console.error("[verifyStripePurchase] Missing paymentIntentId");
         return { success: false };
       }
-
-      console.log(`[verifyStripePurchase] Retrieving payment intent: ${paymentIntentId}`);
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
 
-      console.log(`[verifyStripePurchase] Payment intent status: ${paymentIntent.status}`);
-
       if (paymentIntent.status === "succeeded") {
-        console.log(`[verifyStripePurchase] Verification successful`);
         return { success: true };
       } else {
         console.warn(`[verifyStripePurchase] Payment NOT verified. Status: ${paymentIntent.status}`);
@@ -402,7 +366,6 @@ class SubscriptionController {
 
   async verifyApplePurchase(verificationData) {
     try {
-      console.log(`[verifyApplePurchase] Starting verification`);
       const { receiptData, productId } = verificationData;
 
       if (!receiptData) {
@@ -411,13 +374,11 @@ class SubscriptionController {
       }
 
       if (receiptData.startsWith("eyJ")) {
-        console.log(`[verifyApplePurchase] Processing JWS receipt`);
         const tx = this.decodeJWS(receiptData);
 
         const isActive = this.isAppStoreSubscriptionActive(tx);
 
         if (tx.productId === productId && isActive) {
-          console.log(`[verifyApplePurchase] JWS receipt verified successfully`);
           return {
             success: true,
             transactionId: tx.transactionId,
@@ -426,7 +387,6 @@ class SubscriptionController {
             expiresDate: tx.expiresDate,
           };
         }
-        console.log(`[verifyApplePurchase] JWS receipt verification failed`);
         return { success: false };
       }
 
@@ -434,7 +394,6 @@ class SubscriptionController {
         ? "https://sandbox.itunes.apple.com/verifyReceipt"
         : "https://buy.itunes.apple.com/verifyReceipt";
 
-      console.log(`[verifyApplePurchase] Verifying receipt with Apple: ${url}`);
       const response = await axios.post(url, {
         "receipt-data": receiptData,
         password: process.env.APPLE_SHARED_SECRET,
@@ -453,7 +412,6 @@ class SubscriptionController {
       );
 
       if (activeTransaction) {
-        console.log(`[verifyApplePurchase] Apple receipt verified successfully`);
         return {
           success: true,
           transactionId: activeTransaction.transaction_id,
@@ -462,8 +420,6 @@ class SubscriptionController {
           expiresDate: activeTransaction.expires_date_ms,
         };
       }
-      
-      console.log(`[verifyApplePurchase] No active subscription found`);
       return { success: false };
     } catch (error) {
       console.error(`[verifyApplePurchase] Apple verification error: ${error.message}`);
@@ -494,8 +450,7 @@ class SubscriptionController {
     const expires = new Date(transactionInfo.expiresDate);
     const now = new Date();
     const isActive = expires > now;
-    
-    console.log(`[isAppStoreSubscriptionActive] Expiry: ${expires}, Now: ${now}, IsActive: ${isActive}`);
+   
     return isActive;
   }
 
@@ -503,8 +458,6 @@ class SubscriptionController {
   try {
     const plan = await SubscriptionService.getPlanById(planId);
     const transactionId = this.getTransactionId(paymentMethod, verificationData);
-
-    console.log(`[recordPayment] Recording payment for user ${userId}, plan ${planId}, transaction ${transactionId}`);
 
     const paymentRecord = new PaymentRecord({
       userId,
@@ -531,11 +484,8 @@ class SubscriptionController {
 
     if (paymentMethod === "apple" && verificationData.originalTransactionId) {
       paymentRecord.originalTransactionId = verificationData.originalTransactionId;
-      console.log(`[recordPayment] Stored originalTransactionId: ${verificationData.originalTransactionId}`);
     }
-
     await paymentRecord.save();
-    console.log(`[recordPayment] Payment record saved successfully: ${paymentRecord._id}`);
   } catch (error) {
     console.error(`[recordPayment] Error saving payment record:`, error);
     throw error;
@@ -545,9 +495,6 @@ class SubscriptionController {
   async refundPayment(req, res) {
     try {
       const { transactionId, paymentMethod, userId, planId, reason } = req.body;
-
-      console.log(`[refundPayment] Starting manual refund for transaction: ${transactionId}`);
-      console.log(`[refundPayment] Payment method: ${paymentMethod}, User: ${userId}, Plan: ${planId}, Reason: ${reason}`);
 
       if (!transactionId || !paymentMethod || !userId || !planId) {
         return res.status(400).json({
@@ -612,8 +559,6 @@ class SubscriptionController {
     try {
       const { transactionId, paymentMethod } = req.query;
 
-      console.log(`[getRefundStatus] Getting refund status for transaction: ${transactionId}, method: ${paymentMethod}`);
-
       if (!transactionId || !paymentMethod) {
         return res.status(400).json({
           success: false,
@@ -641,8 +586,6 @@ class SubscriptionController {
     try {
       const { paymentMethod } = req.body;
       const userId = req.user.userId;
-
-      console.log(`[startTrial] Starting free trial for user: ${userId}, method: ${paymentMethod}`);
 
       const trial = await SubscriptionService.startFreeTrial(
         userId,
@@ -694,9 +637,6 @@ class SubscriptionController {
   async cancelSubscription(req, res) {
     try {
       const { immediate, userId } = req.body;
-
-      console.log(`[cancelSubscription] Cancelling subscription for user: ${userId}, immediate: ${immediate}`);
-
       const currentSubscription = await SubscriptionService.getUserActiveSubscription(userId);
 
       const result = await SubscriptionService.cancelSubscription(
@@ -752,13 +692,9 @@ class SubscriptionController {
   async getCurrentSubscription(req, res) {
     try {
       const userId = req.query.userId;
-
-      console.log(`[getCurrentSubscription] Getting current subscription for user: ${userId}`);
-
       const subscription = await SubscriptionService.getUserActiveSubscription(userId);
       
       if (!subscription) {
-        console.log(`[getCurrentSubscription] No active subscription found for user: ${userId}`);
         return res.json({
           success: true,
           data: null,
@@ -783,9 +719,6 @@ class SubscriptionController {
     try {
       const { generationType } = req.params;
       const userId = req.user.userId;
-
-      console.log(`[checkGeneration] Checking generation limits for user: ${userId}, type: ${generationType}`);
-
       const limits = await SubscriptionService.checkGenerationLimits(
         userId,
         generationType
@@ -828,9 +761,6 @@ class SubscriptionController {
   async getSubscriptionHistory(req, res) {
     try {
       const { userId } = req.params;
-
-      console.log(`[getSubscriptionHistory] Getting subscription history for user: ${userId}`);
-
       const history = await HistoryService.getUserHistory(userId);
 
       res.json({

@@ -33,15 +33,6 @@ class GoogleCancellationHandler {
     this.debug = true;
   }
 
-  logDebug(message, data = null) {
-    if (this.debug) {
-      console.log(
-        `[GoogleCancellationHandler][DEBUG] ${message}`,
-        data ? JSON.stringify(data, null, 2) : ""
-      );
-    }
-  }
-
   logError(message, error) {
     console.error(`[GoogleCancellationHandler][ERROR] ${message}`, {
       error: error.message,
@@ -75,11 +66,6 @@ class GoogleCancellationHandler {
             paymentRecord.receiptData,
             packageName
           );
-
-          this.logDebug("PlayStore status parsed", {
-            token: paymentRecord.receiptData,
-            status: playStoreStatus
-          });
 
           if (playStoreStatus) {
             const needsUpdate = await this.compareAndUpdateLocalRecords(
@@ -121,24 +107,9 @@ class GoogleCancellationHandler {
 
       const subscription = response.data;
 
-      this.logDebug("Raw PlayStore response head", {
-        token: purchaseToken,
-        lineItemsCount: subscription?.lineItems?.length || 0
-      });
-
       if (!subscription) return null;
       const lineItem = subscription.lineItems?.[0];
       if (!lineItem) return null;
-
-      this.logDebug("Raw lineItem fields", {
-        token: purchaseToken,
-        expiryTime: lineItem.expiryTime,
-        autoRenewEnabled: lineItem.autoRenewingPlan?.autoRenewEnabled,
-        canceledReason: lineItem.canceledReason,
-        userCancellationTime: lineItem.userCancellationTime,
-        refunded: lineItem.refunded,
-        revocationReason: subscription.revocationReason
-      });
 
       return this.analyzePlayStoreSubscriptionStatus(lineItem, subscription);
     } catch (error) {
@@ -237,13 +208,6 @@ class GoogleCancellationHandler {
         $or: [{ isActive: true }, { status: { $in: ["active", "grace_period", "cancelled"] } }]
       }).populate("planId");
 
-      this.logDebug("Local subscription prior to update", {
-        userId,
-        userSubscriptionId: userSubscription?._id,
-        isActive: userSubscription?.isActive,
-        endDate: userSubscription?.endDate
-      });
-
       if (playStoreStatus.finalStatus === "cancelled" && playStoreStatus.isExpired) {
         if (userSubscription) {
           await UserSubscription.updateOne(
@@ -333,13 +297,6 @@ class GoogleCancellationHandler {
           await this.ensureActiveSubscriptionRecord(userId, nextEnd);
         }
 
-        this.logDebug("Active status handled", {
-          userId,
-          prevEnd,
-          nextEnd,
-          expiryChanged
-        });
-
         return true;
       }
 
@@ -384,21 +341,8 @@ class GoogleCancellationHandler {
         user.promptGenerationCredits = currentPrompt + num(planDoc.promptGenerationCredits, 0);
         user.lastCreditReset = new Date();
 
-        this.logDebug("Credits appended on expiry change", {
-          userId,
-          add: {
-            total: num(planDoc.totalCredits, 0),
-            image: num(planDoc.imageGenerationCredits, 0),
-            prompt: num(planDoc.promptGenerationCredits, 0)
-          },
-          newTotals: {
-            total: user.totalCredits,
-            image: user.imageGenerationCredits,
-            prompt: user.promptGenerationCredits
-          }
-        });
       } else {
-        this.logDebug("Expiry unchanged, credits not modified", { userId });
+
       }
 
       user.isSubscribed = true;
@@ -546,7 +490,6 @@ class GoogleCancellationHandler {
         });
       }
 
-      this.logDebug("User downgraded to free", { userId, cancellationType });
     } catch (error) {
       this.logError("Error downgrading to free plan:", error);
       throw error;

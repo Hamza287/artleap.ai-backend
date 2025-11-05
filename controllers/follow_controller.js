@@ -20,7 +20,6 @@ const toggleFollowUser = async (req, res) => {
     const isFollowing = user.following.some((id) => id.toString() === followId);
 
     if (isFollowing) {
-      // 🔹 Unfollow logic
       user.following = user.following.filter((id) => id.toString() !== followId);
       followUser.followers = followUser.followers.filter((id) => id.toString() !== userId);
       await user.save();
@@ -31,13 +30,11 @@ const toggleFollowUser = async (req, res) => {
         message: `You have unfollowed ${followUser.username}`,
       });
     } else {
-      // 🔹 Follow logic
       user.following.push(followId);
       followUser.followers.push(userId);
       await user.save();
       await followUser.save();
 
-      // ✅ Send notification (only if you’re not following yourself)
       try {
         const deviceTokens = await getDeviceTokens(followId);
 
@@ -57,9 +54,6 @@ const toggleFollowUser = async (req, res) => {
           followerId: userId,
           tokenCount: deviceTokens?.length || 0,
         };
-
-        console.log("[Push Debug] Starting sendPushNotification");
-        console.log("[Push Debug] Context:", contextInfo);
 
         if (deviceTokens && deviceTokens.length > 0) {
           await sendPushNotification(deviceTokens, notifData, contextInfo);
