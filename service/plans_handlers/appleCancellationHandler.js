@@ -43,14 +43,12 @@ class AppleCancellationHandler {
         }
       );
     } catch (error) {
-      this.logError("Failed to generate JWT:", error);
       throw new Error("Failed to generate App Store Connect API token");
     }
   }
 
   async getSubscriptionStatus(originalTransactionId) {
     try {
-      // Validate transaction ID format first
       if (!this.isValidTransactionId(originalTransactionId)) {
         return { status: "INVALID_ID" };
       }
@@ -77,12 +75,6 @@ class AppleCancellationHandler {
       if (error.response?.status === 401) {
         throw new Error("Invalid App Store Connect API credentials");
       }
-
-      this.logError("Error fetching subscription status:", error);
-      return { 
-        status: "ERROR", 
-        error: error.message 
-      };
     }
   }
 
@@ -91,7 +83,6 @@ class AppleCancellationHandler {
     if (typeof transactionId !== 'string') return false;
     if (transactionId.length < 10) return false;
     
-    // Apple transaction IDs are typically numeric
     return /^\d+$/.test(transactionId);
   }
 
@@ -142,14 +133,12 @@ class AppleCancellationHandler {
           
         } catch (error) {
           results.errors++;
-          this.logError(`Error processing payment record ${paymentRecord._id}:`, error);
         }
       }
 
       return results;
 
     } catch (error) {
-      this.logError("Error fetching all subscriptions from App Store:", error);
       throw error;
     }
   }
@@ -193,7 +182,6 @@ class AppleCancellationHandler {
       };
 
     } catch (error) {
-      this.logError("Error getting subscription status from App Store:", error);
       return null;
     }
   }
@@ -221,7 +209,6 @@ class AppleCancellationHandler {
       
       return daysSinceCreation > 60;
     } catch (error) {
-      this.logError("Error checking if should downgrade not found subscription:", error);
       return false;
     }
   }
@@ -341,7 +328,6 @@ class AppleCancellationHandler {
       return true;
 
     } catch (error) {
-      this.logError("Error comparing and updating local records:", error);
       return false;
     }
   }
@@ -356,7 +342,7 @@ class AppleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error updating user for active subscription:", error);
+      throw error;
     }
   }
 
@@ -369,7 +355,7 @@ class AppleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error updating user for grace period:", error);
+       throw error;
     }
   }
 
@@ -383,7 +369,7 @@ class AppleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error updating user for cancelled but active:", error);
+      throw error;
     }
   }
 
@@ -480,7 +466,6 @@ class AppleCancellationHandler {
 
       return false;
     } catch (error) {
-      this.logError("Error processing Apple cancellation:", error);
       return false;
     }
   }
@@ -495,7 +480,6 @@ class AppleCancellationHandler {
       });
 
       if (!paymentRecord) {
-        this.logError("Payment record not found for transaction:", { originalTransactionId });
         return;
       }
 
@@ -503,7 +487,6 @@ class AppleCancellationHandler {
       const user = await User.findOne({ _id: userId });
 
       if (!user) {
-        this.logError("User not found:", { userId });
         return;
       }
 
@@ -564,7 +547,6 @@ class AppleCancellationHandler {
       }
 
     } catch (error) {
-      this.logError("Error handling Apple cancellation:", error);
       throw error;
     }
   }
@@ -598,7 +580,6 @@ class AppleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error downgrading to free plan:", error);
       throw error;
     }
   }
@@ -621,12 +602,11 @@ class AppleCancellationHandler {
             await this.processAppleSubscriptionCancellation(transactionId);
           }
         } catch (error) {
-          this.logError(`Error checking payment ${payment._id}:`, error);
+           throw error;
         }
       }
 
     } catch (error) {
-      this.logError("Error checking all Apple subscriptions:", error);
       throw error;
     }
   }
@@ -654,7 +634,6 @@ class AppleCancellationHandler {
         gracePeriod: gracePeriodSubscriptions
       };
     } catch (error) {
-      this.logError("Error getting subscription stats:", error);
       return {};
     }
   }

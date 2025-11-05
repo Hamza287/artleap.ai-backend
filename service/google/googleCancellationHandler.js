@@ -46,7 +46,6 @@ class GoogleCancellationHandler {
       await this.auth.getClient();
       return androidpublisher;
     } catch (error) {
-      this.logError("Failed to fetch billing client:", error);
       throw new Error("Failed to initialize Google Play Billing client.");
     }
   }
@@ -86,12 +85,10 @@ class GoogleCancellationHandler {
           await new Promise((r) => setTimeout(r, 50));
         } catch (error) {
           results.errors++;
-          this.logError(`Error processing payment record ${paymentRecord._id}:`, error);
         }
       }
       return results;
     } catch (error) {
-      this.logError("Error fetching all subscriptions from Play Store:", error);
       throw error;
     }
   }
@@ -114,7 +111,6 @@ class GoogleCancellationHandler {
       return this.analyzePlayStoreSubscriptionStatus(lineItem, subscription);
     } catch (error) {
       const message = error.response?.data?.error?.message || error.message;
-      this.logError("PlayStore status fetch error", error);
       if (message.includes("not found") || message.includes("invalid")) {
         return {
           isCancelledOrExpired: true,
@@ -302,7 +298,6 @@ class GoogleCancellationHandler {
 
       return false;
     } catch (error) {
-      this.logError("Error comparing and updating local records:", error);
       return false;
     }
   }
@@ -356,7 +351,7 @@ class GoogleCancellationHandler {
         );
       }
     } catch (error) {
-      this.logError("Error updating user for active with expiry check:", error);
+      throw error;
     }
   }
 
@@ -388,7 +383,7 @@ class GoogleCancellationHandler {
       });
       await sub.save();
     } catch (error) {
-      this.logError("Error ensuring active subscription record:", error);
+     throw error;
     }
   }
 
@@ -400,7 +395,7 @@ class GoogleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error updating user for grace period:", error);
+      
     }
   }
 
@@ -414,7 +409,7 @@ class GoogleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError("Error updating user for cancelled but active:", error);
+      
     }
   }
 
@@ -491,7 +486,6 @@ class GoogleCancellationHandler {
       }
 
     } catch (error) {
-      this.logError("Error downgrading to free plan:", error);
       throw error;
     }
   }
