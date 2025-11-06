@@ -377,7 +377,7 @@ class SubscriptionManagement {
         remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
       }
 
-      user.currentSubscription = subscription ? subscription._id : null;
+      user.currentSubscription = subscription ? subscription._id : plan._id;
       user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
       user.isSubscribed = isSubscribed;
       user.watermarkEnabled = plan.type === "free";
