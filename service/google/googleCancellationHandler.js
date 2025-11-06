@@ -287,7 +287,7 @@ class GoogleCancellationHandler {
           );
         }
 
-        await this.updateUserForActiveWithExpiryCheck(userId, userSubscription, expiryChanged);
+        await this.updateUserForActiveSubscription(userId, userSubscription, expiryChanged);
 
         if (!userSubscription) {
           await this.ensureActiveSubscriptionRecord(userId, nextEnd);
@@ -302,7 +302,7 @@ class GoogleCancellationHandler {
     }
   }
 
-  async updateUserForActiveWithExpiryCheck(userId, userSubscriptionDoc, expiryChanged) {
+  async updateUserForActiveSubscription(userId, userSubscriptionDoc, expiryChanged) {
     try {
       const user = await User.findById(userId);
       if (!user) return;
@@ -326,22 +326,29 @@ class GoogleCancellationHandler {
 
       const snap = buildPlanSnapshot(planDoc);
 
-      if (expiryChanged) {
-        const currentTotal = num(user.totalCredits, 0);
-        const currentImg = num(user.imageGenerationCredits, 0);
-        const currentPrompt = num(user.promptGenerationCredits, 0);
+      if (expiryChanged && user.lastCreditReset) {
+        const resetDate = new Date(user.lastCreditReset);
+        const now = new Date();
+        const timeDiff = now.getTime() - resetDate.getTime();
+        const hoursDiff = timeDiff / (1000 * 60 * 60);
 
-        user.totalCredits = currentTotal + num(planDoc.totalCredits, 0);
-        user.imageGenerationCredits = currentImg + num(planDoc.imageGenerationCredits, 0);
-        user.promptGenerationCredits = currentPrompt + num(planDoc.promptGenerationCredits, 0);
+        if (hoursDiff >= 24) {
+          user.totalCredits = num(planDoc.totalCredits, 0);
+          user.imageGenerationCredits = num(planDoc.imageGenerationCredits, 0);
+          user.promptGenerationCredits = num(planDoc.promptGenerationCredits, 0);
+          user.lastCreditReset = now;
+        }
+      } else if (!user.lastCreditReset) {
+        user.totalCredits = num(planDoc.totalCredits, 0);
+        user.imageGenerationCredits = num(planDoc.imageGenerationCredits, 0);
+        user.promptGenerationCredits = num(planDoc.promptGenerationCredits, 0);
         user.lastCreditReset = new Date();
-
-      } else {
-
       }
 
       user.isSubscribed = true;
       user.subscriptionStatus = "active";
+      user.planName = planDoc.name || "";
+      user.planType = planDoc.type || "";
       await user.save();
 
       if (userSubscriptionDoc) {
@@ -399,13 +406,14 @@ class GoogleCancellationHandler {
     }
   }
 
-  async updateUserForCancelledButActive(userId, cancellationType) {
+  async updateUserForCancelledButActive(userId, cancellationType, expiryTime) {
     try {
       const user = await User.findOne({ _id: userId });
       if (user) {
         user.subscriptionStatus = "cancelled";
         user.cancellationReason = cancellationType;
         user.isSubscribed = true;
+        user.subscriptionExpiry = expiryTime;
         await user.save();
       }
     } catch (error) {
@@ -448,42 +456,34 @@ class GoogleCancellationHandler {
         }
       );
 
-      const latest = await UserSubscription.findOne({ userId }).sort({
-        endDate: -1,
-        createdAt: -1
-      });
-
-      if (latest) {
-        await UserSubscription.updateOne(
-          { _id: latest._id },
-          {
-            $set: {
-              planId: freePlan._id,
-              status: "cancelled",
-              isActive: true,
-              autoRenew: false,
-              cancelledAt: now,
-              endDate: now,
-              planSnapshot: freeSnapshot,
-              lastUpdated: now
-            }
+      await UserSubscription.updateMany(
+        { userId: userId, isActive: true },
+        {
+          $set: {
+            isActive: true,
+            status: "cancelled",
+            autoRenew: false,
+            cancelledAt: now,
+            endDate: now,
+            lastUpdated: now
           }
-        );
-      } else {
-        await UserSubscription.create({
-          userId,
-          planId: freePlan._id,
-          startDate: now,
-          endDate: now,
-          isTrial: false,
-          isActive: true,
-          paymentMethod: "google_play",
-          autoRenew: false,
-          status: "cancelled",
-          planSnapshot: freeSnapshot,
-          lastUpdated: now
-        });
-      }
+        }
+      );
+
+      const newFreeSub = new UserSubscription({
+        userId,
+        planId: freePlan._id,
+        startDate: now,
+        endDate: now,
+        isTrial: false,
+        isActive: true,
+        paymentMethod: "system",
+        autoRenew: false,
+        status: "active",
+        planSnapshot: freeSnapshot,
+        lastUpdated: now
+      });
+      await newFreeSub.save();
 
     } catch (error) {
       throw error;
