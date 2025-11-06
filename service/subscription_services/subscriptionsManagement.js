@@ -20,7 +20,7 @@ class SubscriptionManagement {
     this.paymentProcessing = new PaymentProcessing(this);
   }
 
-  
+
 
   async syncLocalSubscriptionStatus() {
     try {
@@ -35,7 +35,7 @@ class SubscriptionManagement {
         try {
           const now = new Date();
           const user = await User.findById(subscription.userId._id);
-          
+
           if (!user) {
             continue;
           }
@@ -126,10 +126,10 @@ class SubscriptionManagement {
 
       let fixed = 0;
       for (const group of duplicateSubscriptions) {
-        const sortedSubscriptions = group.subscriptions.sort((a, b) => 
+        const sortedSubscriptions = group.subscriptions.sort((a, b) =>
           new Date(b.startDate) - new Date(a.startDate)
         );
-        
+
         for (let i = 1; i < sortedSubscriptions.length; i++) {
           await UserSubscription.updateOne(
             { _id: sortedSubscriptions[i]._id },
@@ -161,7 +161,7 @@ class SubscriptionManagement {
       }
 
       const activeSubscription = await this.getUserActiveSubscription(userId);
-      
+
       if (activeSubscription && !user.isSubscribed) {
         user.isSubscribed = true;
         user.subscriptionStatus = 'active';
@@ -187,20 +187,20 @@ class SubscriptionManagement {
   async getSubscriptionStats() {
     try {
       const totalSubscriptions = await UserSubscription.countDocuments();
-      const activeSubscriptions = await UserSubscription.countDocuments({ 
+      const activeSubscriptions = await UserSubscription.countDocuments({
         isActive: true,
         endDate: { $gt: new Date() }
       });
-      const expiredSubscriptions = await UserSubscription.countDocuments({ 
+      const expiredSubscriptions = await UserSubscription.countDocuments({
         isActive: true,
         endDate: { $lte: new Date() }
       });
-      const gracePeriodSubscriptions = await UserSubscription.countDocuments({ 
+      const gracePeriodSubscriptions = await UserSubscription.countDocuments({
         isActive: true,
         autoRenew: false,
         cancelledAt: { $exists: true }
       });
-      const trialSubscriptions = await UserSubscription.countDocuments({ 
+      const trialSubscriptions = await UserSubscription.countDocuments({
         isActive: true,
         isTrial: true
       });
@@ -329,103 +329,103 @@ class SubscriptionManagement {
   }
 
   async updateUserData(
-  userId,
-  plan,
-  subscription = null,
-  isSubscribed = true,
-  isTrial = false,
-  carryOverCredits = false
-) {
-  try {
-    const user = await User.findOne({
-      _id: mongoose.Types.ObjectId.isValid(userId)
-        ? mongoose.Types.ObjectId(userId)
-        : userId,
-    });
+    userId,
+    plan,
+    subscription = null,
+    isSubscribed = true,
+    isTrial = false,
+    carryOverCredits = false
+  ) {
+    try {
+      const user = await User.findOne({
+        _id: mongoose.Types.ObjectId.isValid(userId)
+          ? mongoose.Types.ObjectId(userId)
+          : userId,
+      });
 
-    if (!user) throw new Error("User not found");
+      if (!user) throw new Error("User not found");
 
-    const userSubscription = await UserSubscription.findOne({
-      userId,
-      isActive: true,
-      endDate: { $gt: new Date() },
-      isTrial: false,
-    }).populate("planId").populate({ path: "userId" });
+      const userSubscription = await UserSubscription.findOne({
+        userId,
+        isActive: true,
+        endDate: { $gt: new Date() },
+        isTrial: false,
+      }).populate("planId").populate({ path: "userId" });
 
-    // Safely convert numbers
-    const planImg = num(plan?.imageGenerationCredits);
-    const planPr = num(plan?.promptGenerationCredits);
-    const planTot = num(plan?.totalCredits);
+      // Safely convert numbers
+      const planImg = num(plan?.imageGenerationCredits);
+      const planPr = num(plan?.promptGenerationCredits);
+      const planTot = num(plan?.totalCredits);
 
-    const uImg = num(user.imageGenerationCredits);
-    const uPr = num(user.promptGenerationCredits);
-    const uTot = num(user.totalCredits);
-    const uUsedI = num(user.usedImageCredits);
-    const uUsedP = num(user.usedPromptCredits);
+      const uImg = num(user.imageGenerationCredits);
+      const uPr = num(user.promptGenerationCredits);
+      const uTot = num(user.totalCredits);
+      const uUsedI = num(user.usedImageCredits);
+      const uUsedP = num(user.usedPromptCredits);
 
-    // ✅ New: prevent carry-over if user was on Free plan
-    const isUpgradingFromFree = user.planType === "free" && plan.type !== "free";
-    if (isUpgradingFromFree) carryOverCredits = false;
+      // ✅ New: prevent carry-over if user was on Free plan
+      const isUpgradingFromFree = user.planType === "free" && plan.type !== "free";
+      if (isUpgradingFromFree) carryOverCredits = false;
 
-    let remainingImageCredits = 0;
-    let remainingPromptCredits = 0;
-    let remainingTotalCredits = 0;
+      let remainingImageCredits = 0;
+      let remainingPromptCredits = 0;
+      let remainingTotalCredits = 0;
 
-    if (carryOverCredits && user.isSubscribed && user.planType !== "free") {
-      remainingImageCredits = Math.max(0, uImg - uUsedI);
-      remainingPromptCredits = Math.max(0, uPr - uUsedP);
-      remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
-    }
-
-    user.currentSubscription = subscription ? subscription._id : null;
-    user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
-    user.isSubscribed = isSubscribed;
-    user.watermarkEnabled = plan.type === "free";
-    user.hasActiveTrial = isTrial;
-    user.planName = plan.name;
-    user.planType = plan.type;
-
-    if (plan.type === "free") {
-      // ✅ Always reset for free plan
-      user.totalCredits = 4;
-      user.dailyCredits = 4;
-      user.imageGenerationCredits = 0;
-      user.promptGenerationCredits = 4;
-      user.usedImageCredits = 0;
-      user.usedPromptCredits = 0;
-      user.lastCreditReset = new Date();
-    } else {
-      if (carryOverCredits) {
-        user.imageGenerationCredits = num(remainingImageCredits + planImg);
-        user.promptGenerationCredits = num(remainingPromptCredits + planPr);
-        user.totalCredits = num(remainingTotalCredits + planTot);
-
-        if (userSubscription && userSubscription.planSnapshot) {
-          userSubscription.cancelledAt = null;
-          userSubscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
-          userSubscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
-          userSubscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
-          await userSubscription.save();
-        }
-      } else {
-        // ✅ Reset all credits when switching to new paid plan
-        user.imageGenerationCredits = num(planImg);
-        user.promptGenerationCredits = num(planPr);
-        user.totalCredits = num(planTot);
-        user.usedImageCredits = 0;
-        user.usedPromptCredits = 0;
+      if (carryOverCredits && user.isSubscribed && user.planType !== "free") {
+        remainingImageCredits = Math.max(0, uImg - uUsedI);
+        remainingPromptCredits = Math.max(0, uPr - uUsedP);
+        remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
       }
 
-      user.dailyCredits = 0;
-    }
+      user.currentSubscription = subscription ? subscription._id : null;
+      user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
+      user.isSubscribed = isSubscribed;
+      user.watermarkEnabled = plan.type === "free";
+      user.hasActiveTrial = isTrial;
+      user.planName = plan.name;
+      user.planType = plan.type;
 
-    await user.save();
-    return user;
-  } catch (error) {
-    console.error("[SubscriptionManagement] updateUserData failed:", error);
-    throw error;
+      if (plan.type === "free") {
+        // ✅ Always reset for free plan
+        user.totalCredits = 4;
+        user.dailyCredits = 4;
+        user.imageGenerationCredits = 0;
+        user.promptGenerationCredits = 4;
+        user.usedImageCredits = 0;
+        user.usedPromptCredits = 0;
+        user.lastCreditReset = new Date();
+      } else {
+        if (carryOverCredits) {
+          user.imageGenerationCredits = num(remainingImageCredits + planImg);
+          user.promptGenerationCredits = num(remainingPromptCredits + planPr);
+          user.totalCredits = num(remainingTotalCredits + planTot);
+
+          if (userSubscription && userSubscription.planSnapshot) {
+            userSubscription.cancelledAt = null;
+            userSubscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
+            userSubscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
+            userSubscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
+            await userSubscription.save();
+          }
+        } else {
+          // ✅ Reset all credits when switching to new paid plan
+          user.imageGenerationCredits = num(planImg);
+          user.promptGenerationCredits = num(planPr);
+          user.totalCredits = num(planTot);
+          user.usedImageCredits = 0;
+          user.usedPromptCredits = 0;
+        }
+
+        user.dailyCredits = 0;
+      }
+
+      await user.save();
+      return user;
+    } catch (error) {
+      console.error("[SubscriptionManagement] updateUserData failed:", error);
+      throw error;
+    }
   }
-}
 
 
 
@@ -660,7 +660,7 @@ class SubscriptionManagement {
         try {
           const gracePeriodEnd = new Date(sub.endDate);
           gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
-          
+
           if (now > gracePeriodEnd) {
             sub.isActive = false;
             await sub.save();
@@ -695,14 +695,14 @@ class SubscriptionManagement {
   async processExpiredSubscriptions() {
     try {
       const now = new Date();
-      
+
       await this.processGracePeriodSubscriptions();
 
       const invalidSubscriptions = await UserSubscription.find({
         planId: null,
         isActive: true
       });
-      
+
       for (const sub of invalidSubscriptions) {
         const freePlan = await this.planManagement.getPlanByType("free");
         if (freePlan) {
@@ -749,17 +749,6 @@ class SubscriptionManagement {
 
       for (const sub of expiredSubs) {
         try {
-          if (!sub.planId) {
-            continue;
-          }
-
-          const price = sub.planSnapshot?.price || (sub.planId ? sub.planId.price : 0);
-          
-          if (!price && price !== 0) {
-            await this.cancelSubscription(sub.userId._id, true, true);
-            continue;
-          }
-
           const paymentSuccess = await this.paymentProcessing.processPayment(
             sub.userId._id,
             sub.paymentMethod,
@@ -790,6 +779,7 @@ class SubscriptionManagement {
             };
 
             await sub.save();
+
             await this.updateUserData(
               sub.userId._id,
               plan,
@@ -798,6 +788,7 @@ class SubscriptionManagement {
               false,
               true
             );
+
             await this.notificationService.sendSubscriptionNotification(
               sub.userId._id,
               "renewed",
@@ -811,6 +802,7 @@ class SubscriptionManagement {
           await this.cancelSubscription(sub.userId._id, true, true);
         }
       }
+
 
       const expiredNonAutoRenew = await UserSubscription.find({
         endDate: { $lte: now },
