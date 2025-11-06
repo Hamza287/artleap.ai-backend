@@ -196,7 +196,7 @@ class ApplePlanSyncService {
           deactivations.push(
             SubscriptionPlan.updateOne(
               { _id: plan._id },
-              { $set: { isActive: true, updatedAt: new Date() } }
+              { $set: { isActive: false, updatedAt: new Date() } }
             )
           );
         }
