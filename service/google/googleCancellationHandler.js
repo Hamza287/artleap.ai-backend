@@ -232,14 +232,6 @@ class GoogleCancellationHandler {
       finalStatus = "active";
     }
 
-    console.log("📦 Analyzed Play Store Status:", {
-      autoRenewing,
-      expiryTime,
-      isExpired,
-      finalStatus,
-      cancellationType
-    });
-
     return {
       isCancelledOrExpired: finalStatus !== "active",
       cancellationType,
