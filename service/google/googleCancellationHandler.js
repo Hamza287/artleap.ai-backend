@@ -339,7 +339,7 @@ class GoogleCancellationHandler {
           );
         }
 
-        await this.updateUserForActiveSubscription(userId, userSubscription, expiryChanged, playStoreStatus);
+        await this.updateUserForActiveSubscription(userId, userSubscription, expiryChanged);
 
         if (!userSubscription) {
           await this.ensureActiveSubscriptionRecord(userId, nextEnd);
@@ -355,7 +355,7 @@ class GoogleCancellationHandler {
     }
   }
 
-  async updateUserForActiveSubscription(userId, userSubscriptionDoc, expiryChanged, playStoreStatus) {
+  async updateUserForActiveSubscription(userId, userSubscriptionDoc, expiryChanged) {
     try {
       const user = await User.findById(userId);
       if (!user) return;
@@ -379,19 +379,23 @@ class GoogleCancellationHandler {
 
       const snap = buildPlanSnapshot(planDoc);
 
-      const now = new Date();
-      const shouldResetCredits = await this.shouldResetCredits(user, now);
+      if (expiryChanged && user.lastCreditReset) {
+        const resetDate = new Date(user.lastCreditReset);
+        const now = new Date();
+        const timeDiff = now.getTime() - resetDate.getTime();
+        const hoursDiff = timeDiff / (1000 * 60 * 60);
 
-      if (shouldResetCredits) {
-        user.totalCredits = num(planDoc.totalCredits, 0);
-        user.imageGenerationCredits = num(planDoc.imageGenerationCredits, 0);
-        user.promptGenerationCredits = num(planDoc.promptGenerationCredits, 0);
-        user.lastCreditReset = now;
+        if (hoursDiff >= 24) {
+          user.totalCredits = num(planDoc.totalCredits, 0);
+          user.imageGenerationCredits = num(planDoc.imageGenerationCredits, 0);
+          user.promptGenerationCredits = num(planDoc.promptGenerationCredits, 0);
+          user.lastCreditReset = now;
+        }
       } else if (!user.lastCreditReset) {
         user.totalCredits = num(planDoc.totalCredits, 0);
         user.imageGenerationCredits = num(planDoc.imageGenerationCredits, 0);
         user.promptGenerationCredits = num(planDoc.promptGenerationCredits, 0);
-        user.lastCreditReset = now;
+        user.lastCreditReset = new Date();
       }
 
       user.isSubscribed = true;
@@ -409,16 +413,6 @@ class GoogleCancellationHandler {
     } catch (error) {
       throw error;
     }
-  }
-
-  async shouldResetCredits(user, currentTime) {
-    if (!user.lastCreditReset) return true;
-    
-    const lastReset = new Date(user.lastCreditReset);
-    const timeDiff = currentTime.getTime() - lastReset.getTime();
-    const hoursDiff = timeDiff / (1000 * 60 * 60);
-    
-    return hoursDiff >= 24;
   }
 
   async ensureActiveSubscriptionRecord(userId, endDate) {
@@ -493,29 +487,28 @@ class GoogleCancellationHandler {
       const now = new Date();
       const freeSnapshot = buildPlanSnapshot(freePlan);
 
-      const shouldResetCredits = await this.shouldResetCredits(user, now);
-
-      const updateData = {
-        isSubscribed: false,
-        subscriptionStatus: "cancelled",
-        cancellationReason: cancellationType,
-        planName: freePlan.name || "Free",
-        planType: "free",
-        watermarkEnabled: true,
-        planDowngradedAt: now
-      };
-
-      if (shouldResetCredits) {
-        updateData.totalCredits = 4;
-        updateData.dailyCredits = 4;
-        updateData.imageGenerationCredits = 0;
-        updateData.promptGenerationCredits = 4;
-        updateData.usedImageCredits = 0;
-        updateData.usedPromptCredits = 0;
-        updateData.lastCreditReset = now;
-      }
-
-      await User.updateOne({ _id: userId }, { $set: updateData });
+      await User.updateOne(
+        { _id: userId },
+        {
+          $set: {
+            isSubscribed: false,
+            subscriptionStatus: "cancelled",
+            cancellationReason: cancellationType,
+            planName: freePlan.name || "Free",
+            planType: "free",
+            watermarkEnabled: true,
+            totalCredits: 4,
+            dailyCredits: 4,
+            imageGenerationCredits: 0,
+            promptGenerationCredits: 4,
+            usedImageCredits: 0,
+            usedPromptCredits: 0,
+            lastCreditReset: now,
+            planDowngradedAt: now,
+          
+          }
+        }
+      );
 
       await UserSubscription.updateMany(
         { userId: userId, isActive: true },

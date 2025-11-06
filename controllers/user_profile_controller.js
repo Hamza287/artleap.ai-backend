@@ -145,14 +145,14 @@ const deductCredits = async (req, res) => {
 
     // Validate input
     if (!userId || typeof creditsToDeduct !== 'number' || !generationType) {
-      return res.status(400).json({ 
-        error: "❌ userId, creditsToDeduct, and generationType are required" 
+      return res.status(400).json({
+        error: "❌ userId, creditsToDeduct, and generationType are required"
       });
     }
 
     if (num_images < 1) {
-      return res.status(400).json({ 
-        error: "❌ num_images must be at least 1" 
+      return res.status(400).json({
+        error: "❌ num_images must be at least 1"
       });
     }
 
@@ -171,38 +171,38 @@ const deductCredits = async (req, res) => {
 
     if (activeSub) {
       // Calculate max credits based on plan
-      const maxCredits = generationType === 'image' ? 
-        (activeSub.planId.imageGenerationCredits * 24) : 
+      const maxCredits = generationType === 'image' ?
+        (activeSub.planId.imageGenerationCredits * 24) :
         (activeSub.planId.promptGenerationCredits * 2);
 
       // Check if user has enough credits
-      if (generationType === 'image' && 
-          (user.usedImageCredits + totalCreditsToDeduct) > maxCredits) {
-        return res.status(400).json({ 
+      if (generationType === 'image' &&
+        (user.usedImageCredits + totalCreditsToDeduct) > maxCredits) {
+        return res.status(400).json({
           error: `❌ Not enough image generation credits in your plan. 
                   Requested: ${totalCreditsToDeduct}, 
-                  Available: ${maxCredits - user.usedImageCredits}` 
+                  Available: ${maxCredits - user.usedImageCredits}`
         });
       }
 
-      if (generationType === 'prompt' && 
-          (user.usedPromptCredits + totalCreditsToDeduct) > maxCredits) {
-        return res.status(400).json({ 
+      if (generationType === 'prompt' &&
+        (user.usedPromptCredits + totalCreditsToDeduct) > maxCredits) {
+        return res.status(400).json({
           error: `❌ Not enough prompt generation credits in your plan. 
                   Requested: ${totalCreditsToDeduct}, 
-                  Available: ${maxCredits - user.usedPromptCredits}` 
+                  Available: ${maxCredits - user.usedPromptCredits}`
         });
       }
     } else {
       // Free user logic
       if (user.dailyCredits < totalCreditsToDeduct) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: `❌ Not enough daily credits. 
                   Requested: ${totalCreditsToDeduct}, 
-                  Available: ${user.dailyCredits}` 
+                  Available: ${user.dailyCredits}`
         });
       }
-      
+
       user.dailyCredits -= totalCreditsToDeduct;
       user.totalCredits -= totalCreditsToDeduct;
     }
@@ -212,7 +212,7 @@ const deductCredits = async (req, res) => {
     // Calculate remaining credits for response
     let remainingCredits;
     if (activeSub) {
-      remainingCredits = generationType === 'image' 
+      remainingCredits = generationType === 'image'
         ? (activeSub.planId.imageGenerationCredits * 24 - user.usedImageCredits)
         : (activeSub.planId.promptGenerationCredits * 2 - user.usedPromptCredits);
     } else {
@@ -231,9 +231,9 @@ const deductCredits = async (req, res) => {
 
   } catch (error) {
     console.error('❌ Error deducting credits:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to deduct credits",
-      details: error.message 
+      details: error.message
     });
   }
 };
@@ -243,8 +243,8 @@ const userSubscription = async (req, res) => {
     const { userId, planId, paymentMethod } = req.body;
 
     if (!userId || !planId || !paymentMethod) {
-      return res.status(400).json({ 
-        error: "❌ userId, planId, and paymentMethod are required" 
+      return res.status(400).json({
+        error: "❌ userId, planId, and paymentMethod are required"
       });
     }
 
@@ -260,8 +260,8 @@ const userSubscription = async (req, res) => {
 
     res.json({
       success: true,
-      message: subscription.cancelledAt ? 
-        `✅ ${user.username}'s subscription upgraded to ${plan.name} plan.` : 
+      message: subscription.cancelledAt ?
+        `✅ ${user.username}'s subscription upgraded to ${plan.name} plan.` :
         `✅ ${user.username} is now subscribed to ${plan.name} plan.`,
       subscription
     });
@@ -288,8 +288,8 @@ const unSubscribeUser = async (req, res) => {
 
     res.json({
       success: true,
-      message: immediate ? 
-        `✅ ${user.username}'s subscription cancelled immediately.` : 
+      message: immediate ?
+        `✅ ${user.username}'s subscription cancelled immediately.` :
         `✅ ${user.username}'s subscription set to not renew.`,
       subscription
     });
@@ -299,11 +299,11 @@ const unSubscribeUser = async (req, res) => {
   }
 };
 
-module.exports = { 
-  updateUserProfile, 
-  upload, 
-  updateUserCredits, 
-  deductCredits, 
-  userSubscription, 
-  unSubscribeUser 
+module.exports = {
+  updateUserProfile,
+  upload,
+  updateUserCredits,
+  deductCredits,
+  userSubscription,
+  unSubscribeUser
 };

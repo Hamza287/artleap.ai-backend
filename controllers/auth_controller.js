@@ -279,7 +279,25 @@ const deleteAccount = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        await UserHistory.deleteOne({ userId });
+        if (user.isSubscribed && user.planType !== 'free') {
+            return res.status(400).json({ 
+                message: "You must cancel your active subscription before deleting your account" 
+            });
+        }
+
+        const activePaidSubscription = await UserSubscription.findOne({
+            userId: userId,
+            isActive: true,
+            status: 'active'
+        }).populate('planId');
+
+        if (activePaidSubscription && activePaidSubscription.planId?.type !== 'free') {
+            return res.status(400).json({ 
+                message: "You must cancel your active subscription before deleting your account" 
+            });
+        }
+
+        // await UserHistory.deleteOne({ userId });
 
         await UserSubscription.deleteMany({ userId });
         
