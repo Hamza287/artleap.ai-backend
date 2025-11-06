@@ -52,10 +52,12 @@ class GoogleCancellationHandler {
   async getAllSubscriptionsFromPlayStore(packageName = "com.XrDIgital.ImaginaryVerse") {
     try {
       await this.getBillingClient();
-      const allPaymentRecords = await PaymentRecord.find({
-        platform: "android",
-        receiptData: { $exists: true, $ne: null }
-      });
+      const allPaymentRecords = await PaymentRecord.aggregate([
+        { $match: { platform: "android", receiptData: { $exists: true, $ne: null } } },
+        { $sort: { createdAt: -1 } },
+        { $group: { _id: "$userId", latestRecord: { $first: "$$ROOT" } } }
+      ]);
+
 
       const results = { processed: 0, updated: 0, errors: 0, details: [] };
 
@@ -281,6 +283,17 @@ class GoogleCancellationHandler {
       }).populate("planId");
 
       if (playStoreStatus.finalStatus === "cancelled" && playStoreStatus.isExpired) {
+        const activeRecord = await PaymentRecord.findOne({
+          userId,
+          platform: "android",
+          status: { $in: ["active", "grace_period"] }
+        });
+
+        if (activeRecord) {
+          console.log(`⏩ Skipping downgrade: user ${userId} has another active subscription`);
+          return false;
+        }
+
         if (userSubscription) {
           await UserSubscription.updateOne(
             { _id: userSubscription._id },
@@ -297,9 +310,11 @@ class GoogleCancellationHandler {
             }
           );
         }
+
         await this.downgradeToFreePlan(userId, playStoreStatus.cancellationType);
         return true;
       }
+
 
       if (playStoreStatus.finalStatus === "cancelled" && !playStoreStatus.isExpired) {
         if (userSubscription) {
