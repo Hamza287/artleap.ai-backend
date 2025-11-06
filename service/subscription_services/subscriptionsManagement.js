@@ -386,7 +386,6 @@ class SubscriptionManagement {
       user.planType = plan.type;
 
       if (plan.type === "free") {
-        // ✅ Always reset for free plan
         user.totalCredits = 4;
         user.dailyCredits = 4;
         user.imageGenerationCredits = 0;
