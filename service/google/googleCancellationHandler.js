@@ -56,7 +56,7 @@ class GoogleCancellationHandler {
         platform: "android",
         receiptData: { $exists: true, $ne: null }
       });
-      
+
       const results = { processed: 0, updated: 0, errors: 0, details: [] };
 
       for (const paymentRecord of allPaymentRecords) {
@@ -93,7 +93,7 @@ class GoogleCancellationHandler {
           }
         }
       }
-      
+
       return results;
     } catch (error) {
       this.logError("Failed to sync subscriptions", error);
@@ -147,6 +147,9 @@ class GoogleCancellationHandler {
         auth: this.auth
       });
 
+      console.log("\n🟢 [PlayStore Response for Token]:", purchaseToken);
+      console.log(JSON.stringify(response.data, null, 2));
+
       const subscription = response.data;
 
       if (!subscription) return null;
@@ -156,7 +159,7 @@ class GoogleCancellationHandler {
       return this.analyzePlayStoreSubscriptionStatus(lineItem, subscription);
     } catch (error) {
       const message = error.response?.data?.error?.message || error.message;
-      
+
       if (message.includes("not found") || message.includes("invalid")) {
         return {
           isCancelledOrExpired: true,
@@ -169,29 +172,41 @@ class GoogleCancellationHandler {
           foundInPlayStore: false
         };
       }
-      
+
       if (message.includes("expired for too long")) {
-        throw new Error('expired for too long');
+        throw new Error("expired for too long");
       }
-      
+
       this.logError("Error fetching subscription status", error);
       return null;
     }
   }
 
+
   analyzePlayStoreSubscriptionStatus(lineItem, subscription) {
     const now = new Date();
+
+    const expiryRaw = lineItem.expiryTime;
+    let expiryTime = null;
+
+    if (expiryRaw) {
+      expiryTime =
+        typeof expiryRaw === "number"
+          ? new Date(expiryRaw > 1e12 ? expiryRaw : expiryRaw * 1000)
+          : new Date(expiryRaw);
+    }
+
     const autoRenewing = lineItem.autoRenewingPlan?.autoRenewEnabled ?? false;
-    const expiryTime = lineItem.expiryTime ? new Date(lineItem.expiryTime) : null;
-    const isExpired = expiryTime ? expiryTime < now : true;
+    const isExpired = expiryTime ? expiryTime.getTime() < now.getTime() : true;
     const cancellationReason = lineItem.canceledReason;
     const userCancellationTime = lineItem.userCancellationTime ? new Date(lineItem.userCancellationTime) : null;
+    const isRefunded = lineItem.refunded ?? false;
+    const isRevoked = !!subscription.revocationReason;
+
     const isInGracePeriod =
       !!userCancellationTime && !isExpired && expiryTime
         ? now <= new Date(new Date(expiryTime).setDate(expiryTime.getDate() + 7))
         : false;
-    const isRefunded = lineItem.refunded ?? false;
-    const isRevoked = !!subscription.revocationReason;
 
     let cancellationType = "active";
     let finalStatus = "active";
@@ -215,6 +230,14 @@ class GoogleCancellationHandler {
       finalStatus = "active";
     }
 
+    console.log("📦 Analyzed Play Store Status:", {
+      autoRenewing,
+      expiryTime,
+      isExpired,
+      finalStatus,
+      cancellationType
+    });
+
     return {
       isCancelledOrExpired: finalStatus !== "active",
       cancellationType,
@@ -230,6 +253,7 @@ class GoogleCancellationHandler {
       foundInPlayStore: true
     };
   }
+
 
   async compareAndUpdateLocalRecords(paymentRecord, playStoreStatus) {
     try {
@@ -443,7 +467,7 @@ class GoogleCancellationHandler {
       });
       await sub.save();
     } catch (error) {
-     throw error;
+      throw error;
     }
   }
 
@@ -505,7 +529,7 @@ class GoogleCancellationHandler {
             usedPromptCredits: 0,
             lastCreditReset: now,
             planDowngradedAt: now,
-          
+
           }
         }
       );
