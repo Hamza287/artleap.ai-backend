@@ -147,8 +147,8 @@ class GoogleCancellationHandler {
         auth: this.auth
       });
 
-      console.log("\n🟢 [PlayStore Response for Token]:", purchaseToken);
-      console.log(JSON.stringify(response.data, null, 2));
+      // console.log("\n🟢 [PlayStore Response for Token]:", purchaseToken);
+      // console.log(JSON.stringify(response.data, null, 2));
 
       const subscription = response.data;
 
