@@ -147,7 +147,6 @@ class GoogleCancellationHandler {
       if (!purchaseToken) {
           console.error("[GoogleCancellationHandler] ❌ Missing purchaseToken in receiptData", {
             userId,
-            planId,
             purchaseToken,
           });
           return {
