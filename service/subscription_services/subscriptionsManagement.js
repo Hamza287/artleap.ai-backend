@@ -343,6 +343,8 @@ class SubscriptionManagement {
         : userId,
     });
 
+    if (!user) throw new Error("User not found");
+
     const userSubscription = await UserSubscription.findOne({
       userId,
       isActive: true,
@@ -350,18 +352,20 @@ class SubscriptionManagement {
       isTrial: false,
     }).populate("planId").populate({ path: "userId" });
 
-    if (!user) throw new Error("User not found");
-
-    // Coerce all inputs to safe numbers once
+    // Safely convert numbers
     const planImg = num(plan?.imageGenerationCredits);
-    const planPr  = num(plan?.promptGenerationCredits);
+    const planPr = num(plan?.promptGenerationCredits);
     const planTot = num(plan?.totalCredits);
 
-    const uImg   = num(user.imageGenerationCredits);
-    const uPr    = num(user.promptGenerationCredits);
-    const uTot   = num(user.totalCredits);
+    const uImg = num(user.imageGenerationCredits);
+    const uPr = num(user.promptGenerationCredits);
+    const uTot = num(user.totalCredits);
     const uUsedI = num(user.usedImageCredits);
     const uUsedP = num(user.usedPromptCredits);
+
+    // ✅ New: prevent carry-over if user was on Free plan
+    const isUpgradingFromFree = user.planType === "free" && plan.type !== "free";
+    if (isUpgradingFromFree) carryOverCredits = false;
 
     let remainingImageCredits = 0;
     let remainingPromptCredits = 0;
@@ -382,6 +386,7 @@ class SubscriptionManagement {
     user.planType = plan.type;
 
     if (plan.type === "free") {
+      // ✅ Always reset for free plan
       user.totalCredits = 4;
       user.dailyCredits = 4;
       user.imageGenerationCredits = 0;
@@ -391,26 +396,27 @@ class SubscriptionManagement {
       user.lastCreditReset = new Date();
     } else {
       if (carryOverCredits) {
-        user.imageGenerationCredits   = num(remainingImageCredits + planImg);
-        user.promptGenerationCredits  = num(remainingPromptCredits + planPr);
-        user.totalCredits             = num(remainingTotalCredits + planTot);
+        user.imageGenerationCredits = num(remainingImageCredits + planImg);
+        user.promptGenerationCredits = num(remainingPromptCredits + planPr);
+        user.totalCredits = num(remainingTotalCredits + planTot);
 
         if (userSubscription && userSubscription.planSnapshot) {
           userSubscription.cancelledAt = null;
-          userSubscription.planSnapshot.totalCredits            = num(remainingTotalCredits + planTot);
-          userSubscription.planSnapshot.imageGenerationCredits  = num(remainingImageCredits + planImg);
+          userSubscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
+          userSubscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
           userSubscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
           await userSubscription.save();
         }
       } else {
-        user.imageGenerationCredits  = num(planImg);
+        // ✅ Reset all credits when switching to new paid plan
+        user.imageGenerationCredits = num(planImg);
         user.promptGenerationCredits = num(planPr);
-        user.totalCredits            = num(planTot);
+        user.totalCredits = num(planTot);
+        user.usedImageCredits = 0;
+        user.usedPromptCredits = 0;
       }
 
       user.dailyCredits = 0;
-      user.usedImageCredits = 0;
-      user.usedPromptCredits = 0;
     }
 
     await user.save();
@@ -420,6 +426,7 @@ class SubscriptionManagement {
     throw error;
   }
 }
+
 
 
   async createSubscription(userId, planId, paymentMethod, isTrial = false) {
