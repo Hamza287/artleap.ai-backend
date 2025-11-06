@@ -64,8 +64,9 @@ class GoogleCancellationHandler {
       for (const paymentRecord of allPaymentRecords) {
         try {
           const playStoreStatus = await this.getSubscriptionStatusFromPlayStore(
+            packageName,
             paymentRecord.receiptData,
-            packageName
+            paymentRecord.userId,
           );
 
           if (playStoreStatus) {
@@ -140,9 +141,22 @@ class GoogleCancellationHandler {
     }
   }
 
-  async getSubscriptionStatusFromPlayStore(purchaseToken, packageName = "com.XrDIgital.ImaginaryVerse") {
+  async getSubscriptionStatusFromPlayStore(packageName = "com.XrDIgital.ImaginaryVerse",purchaseToken,userId) {
     try {
       const client = await this.getBillingClient();
+      if (!purchaseToken) {
+          console.error("[GoogleCancellationHandler] ❌ Missing purchaseToken in receiptData", {
+            userId,
+            planId,
+            purchaseToken,
+          });
+          return {
+            finalStatus: "error",
+            error: "Missing purchaseToken",
+            isExpired: true
+          };
+        }
+
       const response = await client.purchases.subscriptionsv2.get({
         packageName,
         token: purchaseToken,
