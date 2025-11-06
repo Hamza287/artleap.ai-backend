@@ -57,6 +57,9 @@ class GoogleCancellationHandler {
         platform: "android",
         receiptData: { $exists: true, $ne: null }
       });
+      
+      console.log(`[GoogleSync] Found ${allPaymentRecords.length} payment records to check`);
+      
       const results = { processed: 0, updated: 0, errors: 0, details: [] };
 
       for (const paymentRecord of allPaymentRecords) {
@@ -85,10 +88,14 @@ class GoogleCancellationHandler {
           await new Promise((r) => setTimeout(r, 50));
         } catch (error) {
           results.errors++;
+          console.log(`[GoogleSync] Error processing payment record ${paymentRecord._id}: ${error.message}`);
         }
       }
+      
+      console.log(`[GoogleSync] Completed: ${results.processed} processed, ${results.updated} updated, ${results.errors} errors`);
       return results;
     } catch (error) {
+      console.error(`[GoogleSync] Failed to sync subscriptions: ${error.message}`);
       throw error;
     }
   }
@@ -112,6 +119,7 @@ class GoogleCancellationHandler {
     } catch (error) {
       const message = error.response?.data?.error?.message || error.message;
       if (message.includes("not found") || message.includes("invalid")) {
+        console.log(`[GoogleSync] Subscription not found for token: ${purchaseToken.substring(0, 10)}...`);
         return {
           isCancelledOrExpired: true,
           cancellationType: "expired",
@@ -123,6 +131,7 @@ class GoogleCancellationHandler {
           foundInPlayStore: false
         };
       }
+      console.log(`[GoogleSync] Error fetching subscription status: ${message}`);
       return null;
     }
   }
@@ -183,6 +192,10 @@ class GoogleCancellationHandler {
     try {
       const userId = paymentRecord.userId;
 
+      if (paymentRecord.status !== playStoreStatus.finalStatus) {
+        console.log(`[GoogleSync] Updating payment ${paymentRecord._id}: ${paymentRecord.status} -> ${playStoreStatus.finalStatus}`);
+      }
+
       await PaymentRecord.updateOne(
         { _id: paymentRecord._id },
         {
@@ -205,13 +218,14 @@ class GoogleCancellationHandler {
       }).populate("planId");
 
       if (playStoreStatus.finalStatus === "cancelled" && playStoreStatus.isExpired) {
+        console.log(`[GoogleSync] Downgrading user ${userId} to free plan (expired)`);
         if (userSubscription) {
           await UserSubscription.updateOne(
             { _id: userSubscription._id },
             {
               $set: {
                 autoRenew: false,
-                isActive: true,
+                isActive: false,
                 cancelledAt: new Date(),
                 cancellationReason: playStoreStatus.cancellationType,
                 status: "cancelled",
@@ -226,6 +240,7 @@ class GoogleCancellationHandler {
       }
 
       if (playStoreStatus.finalStatus === "cancelled" && !playStoreStatus.isExpired) {
+        console.log(`[GoogleSync] User ${userId} cancelled but active until ${playStoreStatus.expiryTime}`);
         if (userSubscription) {
           await UserSubscription.updateOne(
             { _id: userSubscription._id },
@@ -247,6 +262,7 @@ class GoogleCancellationHandler {
       }
 
       if (playStoreStatus.finalStatus === "grace_period") {
+        console.log(`[GoogleSync] User ${userId} in grace period`);
         if (userSubscription) {
           await UserSubscription.updateOne(
             { _id: userSubscription._id },
@@ -271,6 +287,10 @@ class GoogleCancellationHandler {
         const prevEnd = userSubscription?.endDate ? new Date(userSubscription.endDate) : null;
         const nextEnd = playStoreStatus.expiryTime ? new Date(playStoreStatus.expiryTime) : null;
         const expiryChanged = !!(prevEnd && nextEnd && nextEnd.getTime() !== prevEnd.getTime());
+
+        if (expiryChanged) {
+          console.log(`[GoogleSync] User ${userId} subscription extended to ${nextEnd}`);
+        }
 
         if (userSubscription) {
           await UserSubscription.updateOne(
@@ -298,6 +318,7 @@ class GoogleCancellationHandler {
 
       return false;
     } catch (error) {
+      console.error(`[GoogleSync] Error updating records for user ${paymentRecord.userId}: ${error.message}`);
       return false;
     }
   }
@@ -460,7 +481,7 @@ class GoogleCancellationHandler {
         { userId: userId, isActive: true },
         {
           $set: {
-            isActive: true,
+            isActive: false,
             status: "cancelled",
             autoRenew: false,
             cancelledAt: now,
@@ -485,7 +506,10 @@ class GoogleCancellationHandler {
       });
       await newFreeSub.save();
 
+      console.log(`[GoogleSync] Successfully downgraded user ${userId} to free plan`);
+
     } catch (error) {
+      console.error(`[GoogleSync] Failed to downgrade user ${userId}: ${error.message}`);
       throw error;
     }
   }
