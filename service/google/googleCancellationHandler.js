@@ -50,59 +50,67 @@ class GoogleCancellationHandler {
   }
 
   async getAllSubscriptionsFromPlayStore(packageName = "com.XrDIgital.ImaginaryVerse") {
-    try {
-      await this.getBillingClient();
-      const allPaymentRecords = await PaymentRecord.aggregate([
-        { $match: { platform: "android", receiptData: { $exists: true, $ne: null } } },
-        { $sort: { createdAt: -1 } },
-        { $group: { _id: "$userId", latestRecord: { $first: "$$ROOT" } } }
-      ]);
-
-
-      const results = { processed: 0, updated: 0, errors: 0, details: [] };
-
-      for (const paymentRecord of allPaymentRecords) {
-        try {
-          const playStoreStatus = await this.getSubscriptionStatusFromPlayStore(
-            packageName,
-            paymentRecord.receiptData,
-            paymentRecord.userId,
-          );
-
-          if (playStoreStatus) {
-            const needsUpdate = await this.compareAndUpdateLocalRecords(
-              paymentRecord,
-              playStoreStatus
-            );
-            if (needsUpdate) results.updated++;
-            results.details.push({
-              paymentId: paymentRecord._id,
-              purchaseToken: paymentRecord.receiptData,
-              localStatus: paymentRecord.status,
-              playStoreStatus: playStoreStatus.finalStatus,
-              updated: needsUpdate
-            });
-          }
-
-          results.processed++;
-          await new Promise((r) => setTimeout(r, 50));
-        } catch (error) {
-          if (error.message.includes('expired for too long')) {
-            await this.handleExpiredSubscription(paymentRecord);
-            results.updated++;
-          } else {
-            results.errors++;
-            this.logError(`Error processing payment record ${paymentRecord._id}`, error);
-          }
+  try {
+    await this.getBillingClient();
+    const allPaymentRecords = await PaymentRecord.aggregate([
+      {
+        $match: {
+          platform: "android",
+          receiptData: { $exists: true, $ne: null, $nin: ["", " "] }
         }
+      },
+      { $sort: { createdAt: -1 } },
+      { $group: { _id: "$userId", latestRecord: { $first: "$$ROOT" } } }
+    ]);
+
+    const results = { processed: 0, updated: 0, errors: 0, details: [], skipped: 0 };
+
+    for (const record of allPaymentRecords) {
+      const paymentRecord = record.latestRecord;
+      if (!paymentRecord || !paymentRecord.userId || !paymentRecord.receiptData || !paymentRecord.receiptData.trim()) {
+        results.skipped++;
+        continue;
       }
 
-      return results;
-    } catch (error) {
-      this.logError("Failed to sync subscriptions", error);
-      throw error;
+      try {
+        const playStoreStatus = await this.getSubscriptionStatusFromPlayStore(
+          packageName,
+          paymentRecord.receiptData,
+          paymentRecord.userId
+        );
+
+        if (playStoreStatus) {
+          const needsUpdate = await this.compareAndUpdateLocalRecords(paymentRecord, playStoreStatus);
+          if (needsUpdate) results.updated++;
+          results.details.push({
+            paymentId: paymentRecord._id,
+            purchaseToken: paymentRecord.receiptData,
+            localStatus: paymentRecord.status,
+            playStoreStatus: playStoreStatus.finalStatus,
+            updated: needsUpdate
+          });
+        }
+
+        results.processed++;
+        await new Promise((r) => setTimeout(r, 50));
+      } catch (error) {
+        if (error.message.includes("expired for too long")) {
+          await this.handleExpiredSubscription(paymentRecord);
+          results.updated++;
+        } else {
+          results.errors++;
+          this.logError(`Error processing payment record ${paymentRecord._id}`, error);
+        }
+      }
     }
+
+    return results;
+  } catch (error) {
+    this.logError("Failed to sync subscriptions", error);
+    throw error;
   }
+}
+
 
   async handleExpiredSubscription(paymentRecord) {
     try {
@@ -141,20 +149,20 @@ class GoogleCancellationHandler {
     }
   }
 
-  async getSubscriptionStatusFromPlayStore(packageName = "com.XrDIgital.ImaginaryVerse",purchaseToken,userId) {
+  async getSubscriptionStatusFromPlayStore(packageName = "com.XrDIgital.ImaginaryVerse", purchaseToken, userId) {
     try {
       const client = await this.getBillingClient();
       if (!purchaseToken) {
-          console.error("[GoogleCancellationHandler] ❌ Missing purchaseToken in receiptData", {
-            userId,
-            purchaseToken,
-          });
-          return {
-            finalStatus: "error",
-            error: "Missing purchaseToken",
-            isExpired: true
-          };
-        }
+        console.error("[GoogleCancellationHandler] ❌ Missing purchaseToken in receiptData", {
+          userId,
+          purchaseToken,
+        });
+        return {
+          finalStatus: "error",
+          error: "Missing purchaseToken",
+          isExpired: true
+        };
+      }
 
       const response = await client.purchases.subscriptionsv2.get({
         packageName,
