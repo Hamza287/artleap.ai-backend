@@ -84,8 +84,13 @@ class GoogleCancellationHandler {
           results.processed++;
           await new Promise((r) => setTimeout(r, 50));
         } catch (error) {
-          results.errors++;
-          this.logError(`Error processing payment record ${paymentRecord._id}`, error);
+          if (error.message.includes('expired for too long')) {
+            await this.handleExpiredSubscription(paymentRecord);
+            results.updated++;
+          } else {
+            results.errors++;
+            this.logError(`Error processing payment record ${paymentRecord._id}`, error);
+          }
         }
       }
       
@@ -93,6 +98,43 @@ class GoogleCancellationHandler {
     } catch (error) {
       this.logError("Failed to sync subscriptions", error);
       throw error;
+    }
+  }
+
+  async handleExpiredSubscription(paymentRecord) {
+    try {
+      await PaymentRecord.updateOne(
+        { _id: paymentRecord._id },
+        {
+          $set: {
+            status: "cancelled",
+            cancelledAt: new Date(),
+            cancellationType: "expired_too_long",
+            lastChecked: new Date()
+          }
+        }
+      );
+
+      const user = await User.findById(paymentRecord.userId);
+      if (!user) return;
+
+      await UserSubscription.updateMany(
+        { userId: paymentRecord.userId, isActive: true },
+        {
+          $set: {
+            isActive: true,
+            status: "cancelled",
+            autoRenew: false,
+            cancelledAt: new Date(),
+            endDate: new Date(),
+            lastUpdated: new Date()
+          }
+        }
+      );
+
+      await this.downgradeToFreePlan(paymentRecord.userId, "expired_too_long");
+    } catch (error) {
+      this.logError(`Error handling expired subscription for user ${paymentRecord.userId}`, error);
     }
   }
 
@@ -114,6 +156,7 @@ class GoogleCancellationHandler {
       return this.analyzePlayStoreSubscriptionStatus(lineItem, subscription);
     } catch (error) {
       const message = error.response?.data?.error?.message || error.message;
+      
       if (message.includes("not found") || message.includes("invalid")) {
         return {
           isCancelledOrExpired: true,
@@ -126,6 +169,11 @@ class GoogleCancellationHandler {
           foundInPlayStore: false
         };
       }
+      
+      if (message.includes("expired for too long")) {
+        throw new Error('expired for too long');
+      }
+      
       this.logError("Error fetching subscription status", error);
       return null;
     }
@@ -215,7 +263,7 @@ class GoogleCancellationHandler {
             {
               $set: {
                 autoRenew: false,
-                isActive: false,
+                isActive: true,
                 cancelledAt: new Date(),
                 cancellationReason: playStoreStatus.cancellationType,
                 status: "cancelled",
