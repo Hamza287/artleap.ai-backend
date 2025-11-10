@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const NotificationService = require("./notificationService");
 const PlanManagement = require("./plansManagement");
 const PaymentProcessing = require("./paymentProcessing");
-
+const userSubscription = require('./../../models/user_subscription');
 
 function num(v, fallback = 0) {
   const n = Number(v);
@@ -382,21 +382,19 @@ class SubscriptionManagement {
     user.planType = plan.type;
 
     if (plan.type === "free") {
-      // ✅ Only reset daily credits once per day
       if (shouldResetCredits) {
         user.totalCredits = 4;
         user.dailyCredits = 4;
         user.promptGenerationCredits = 4;
         user.usedImageCredits = 0;
         user.usedPromptCredits = 0;
-        user.lastCreditReset = now; // Only update when actually resetting
-        console.log(`[CreditReset] Reset daily credits for user ${userId}`);
+        user.lastCreditReset = now;
+       
       } else {
-        // Keep existing credits if not resetting
-        console.log(`[CreditReset] Credits already reset today for user ${userId}`);
+       
       }
       
-      user.imageGenerationCredits = 0; // Free users don't get image credits
+      user.imageGenerationCredits = 0;
     } else {
       if (carryOverCredits) {
         user.imageGenerationCredits = num(remainingImageCredits + planImg);
@@ -411,7 +409,6 @@ class SubscriptionManagement {
           await userSubscription.save();
         }
       } else {
-        // ✅ Reset all credits when switching to new paid plan
         user.imageGenerationCredits = num(planImg);
         user.promptGenerationCredits = num(planPr);
         user.totalCredits = num(planTot);
@@ -419,7 +416,7 @@ class SubscriptionManagement {
         user.usedPromptCredits = 0;
       }
 
-      user.dailyCredits = 0; // Paid users don't use daily credits
+      user.dailyCredits = 0;
     }
 
     await user.save();
