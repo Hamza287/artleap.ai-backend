@@ -81,7 +81,7 @@ class SubscriptionManagement {
     let session = null;
     try {
       session = await mongoose.startSession();
-      
+
       let deleted = 0;
       let fixed = 0;
 
@@ -110,13 +110,13 @@ class SubscriptionManagement {
       for (let i = 0; i < orphanedSubscriptions.length; i += batchSize) {
         const batch = orphanedSubscriptions.slice(i, i + batchSize);
         const idsToDelete = batch.map(sub => sub._id);
-        
+
         await UserSubscription.deleteMany(
           { _id: { $in: idsToDelete } },
           { session }
         );
         deleted += batch.length;
-        
+
         if (i + batchSize < orphanedSubscriptions.length) {
           await new Promise(resolve => setTimeout(resolve, 100));
         }
@@ -153,11 +153,11 @@ class SubscriptionManagement {
         const idsToDeactivate = group.subscriptionIds.filter(
           id => !id.equals(group.latestSubscription._id)
         );
-        
+
         if (idsToDeactivate.length > 0) {
           await UserSubscription.updateMany(
             { _id: { $in: idsToDeactivate } },
-            { 
+            {
               $set: {
                 isActive: false,
                 cancelledAt: new Date(),
@@ -177,12 +177,12 @@ class SubscriptionManagement {
       if (session) {
         await session.abortTransaction();
       }
-      
+
       if (error.name === 'MongoNetworkTimeoutError' || error.name === 'MongoServerSelectionError') {
         console.error("[SubscriptionManagement] MongoDB timeout during cleanup - retrying with simpler query");
         return await this.simpleCleanupOrphanedSubscriptions();
       }
-      
+
       console.error("[SubscriptionManagement] Error cleaning up orphaned subscriptions:", error);
       throw error;
     } finally {
@@ -203,7 +203,7 @@ class SubscriptionManagement {
         .limit(1000);
 
       const orphanedIds = [];
-      
+
       for (const sub of allSubscriptions) {
         const userExists = await User.exists({ _id: sub.userId }).maxTimeMS(5000);
         if (!userExists) {
@@ -429,25 +429,6 @@ class SubscriptionManagement {
       const planPr = num(plan?.promptGenerationCredits);
       const planTot = num(plan?.totalCredits);
 
-      const uImg = num(user.imageGenerationCredits);
-      const uPr = num(user.promptGenerationCredits);
-      const uTot = num(user.totalCredits);
-      const uUsedI = num(user.usedImageCredits);
-      const uUsedP = num(user.usedPromptCredits);
-
-      const isUpgradingFromFree = user.planType === "free" && plan.type !== "free";
-      if (isUpgradingFromFree) carryOverCredits = false;
-
-      let remainingImageCredits = 0;
-      let remainingPromptCredits = 0;
-      let remainingTotalCredits = 0;
-
-      if (carryOverCredits && user.isSubscribed && user.planType !== "free") {
-        remainingImageCredits = Math.max(0, uImg - uUsedI);
-        remainingPromptCredits = Math.max(0, uPr - uUsedP);
-        remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
-      }
-
       user.currentSubscription = subscription ? subscription._id : plan._id;
       user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
       user.isSubscribed = isSubscribed;
@@ -468,6 +449,16 @@ class SubscriptionManagement {
         user.imageGenerationCredits = 0;
       } else {
         if (carryOverCredits) {
+          const uImg = num(user.imageGenerationCredits);
+          const uPr = num(user.promptGenerationCredits);
+          const uTot = num(user.totalCredits);
+          const uUsedI = num(user.usedImageCredits);
+          const uUsedP = num(user.usedPromptCredits);
+
+          const remainingImageCredits = Math.max(0, uImg - uUsedI);
+          const remainingPromptCredits = Math.max(0, uPr - uUsedP);
+          const remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
+
           user.imageGenerationCredits = num(remainingImageCredits + planImg);
           user.promptGenerationCredits = num(remainingPromptCredits + planPr);
           user.totalCredits = num(remainingTotalCredits + planTot);
@@ -505,7 +496,7 @@ class SubscriptionManagement {
 
     const lastReset = new Date(lastResetDate);
     const current = new Date(currentDate);
-    
+
     return (
       lastReset.getDate() !== current.getDate() ||
       lastReset.getMonth() !== current.getMonth() ||
