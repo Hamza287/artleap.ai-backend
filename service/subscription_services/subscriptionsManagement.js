@@ -329,102 +329,121 @@ class SubscriptionManagement {
   }
 
   async updateUserData(
-    userId,
-    plan,
-    subscription = null,
-    isSubscribed = true,
-    isTrial = false,
-    carryOverCredits = false
-  ) {
-    try {
-      const user = await User.findOne({
-        _id: mongoose.Types.ObjectId.isValid(userId)
-          ? mongoose.Types.ObjectId(userId)
-          : userId,
-      });
+  userId,
+  plan,
+  subscription = null,
+  isSubscribed = true,
+  isTrial = false,
+  carryOverCredits = false
+) {
+  try {
+    const user = await User.findOne({
+      _id: mongoose.Types.ObjectId.isValid(userId)
+        ? mongoose.Types.ObjectId(userId)
+        : userId,
+    });
 
-      if (!user) throw new Error("User not found");
+    if (!user) throw new Error("User not found");
 
-      const userSubscription = await UserSubscription.findOne({
-        userId,
-        isActive: true,
-        endDate: { $gt: new Date() },
-        isTrial: false,
-      }).populate("planId").populate({ path: "userId" });
+    const now = new Date();
+    const shouldResetCredits = this.shouldResetDailyCredits(user.lastCreditReset, now);
 
-      // Safely convert numbers
-      const planImg = num(plan?.imageGenerationCredits);
-      const planPr = num(plan?.promptGenerationCredits);
-      const planTot = num(plan?.totalCredits);
+    // Safely convert numbers
+    const planImg = num(plan?.imageGenerationCredits);
+    const planPr = num(plan?.promptGenerationCredits);
+    const planTot = num(plan?.totalCredits);
 
-      const uImg = num(user.imageGenerationCredits);
-      const uPr = num(user.promptGenerationCredits);
-      const uTot = num(user.totalCredits);
-      const uUsedI = num(user.usedImageCredits);
-      const uUsedP = num(user.usedPromptCredits);
+    const uImg = num(user.imageGenerationCredits);
+    const uPr = num(user.promptGenerationCredits);
+    const uTot = num(user.totalCredits);
+    const uUsedI = num(user.usedImageCredits);
+    const uUsedP = num(user.usedPromptCredits);
 
-      // ✅ New: prevent carry-over if user was on Free plan
-      const isUpgradingFromFree = user.planType === "free" && plan.type !== "free";
-      if (isUpgradingFromFree) carryOverCredits = false;
+    // ✅ New: prevent carry-over if user was on Free plan
+    const isUpgradingFromFree = user.planType === "free" && plan.type !== "free";
+    if (isUpgradingFromFree) carryOverCredits = false;
 
-      let remainingImageCredits = 0;
-      let remainingPromptCredits = 0;
-      let remainingTotalCredits = 0;
+    let remainingImageCredits = 0;
+    let remainingPromptCredits = 0;
+    let remainingTotalCredits = 0;
 
-      if (carryOverCredits && user.isSubscribed && user.planType !== "free") {
-        remainingImageCredits = Math.max(0, uImg - uUsedI);
-        remainingPromptCredits = Math.max(0, uPr - uUsedP);
-        remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
-      }
+    if (carryOverCredits && user.isSubscribed && user.planType !== "free") {
+      remainingImageCredits = Math.max(0, uImg - uUsedI);
+      remainingPromptCredits = Math.max(0, uPr - uUsedP);
+      remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
+    }
 
-      user.currentSubscription = subscription ? subscription._id : plan._id;
-      user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
-      user.isSubscribed = isSubscribed;
-      user.watermarkEnabled = plan.type === "free";
-      user.hasActiveTrial = isTrial;
-      user.planName = plan.name;
-      user.planType = plan.type;
+    user.currentSubscription = subscription ? subscription._id : plan._id;
+    user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
+    user.isSubscribed = isSubscribed;
+    user.watermarkEnabled = plan.type === "free";
+    user.hasActiveTrial = isTrial;
+    user.planName = plan.name;
+    user.planType = plan.type;
 
-      if (plan.type === "free") {
+    if (plan.type === "free") {
+      // ✅ Only reset daily credits once per day
+      if (shouldResetCredits) {
         user.totalCredits = 4;
         user.dailyCredits = 4;
-        user.imageGenerationCredits = 0;
         user.promptGenerationCredits = 4;
         user.usedImageCredits = 0;
         user.usedPromptCredits = 0;
-        user.lastCreditReset = new Date();
+        user.lastCreditReset = now; // Only update when actually resetting
+        console.log(`[CreditReset] Reset daily credits for user ${userId}`);
       } else {
-        if (carryOverCredits) {
-          user.imageGenerationCredits = num(remainingImageCredits + planImg);
-          user.promptGenerationCredits = num(remainingPromptCredits + planPr);
-          user.totalCredits = num(remainingTotalCredits + planTot);
+        // Keep existing credits if not resetting
+        console.log(`[CreditReset] Credits already reset today for user ${userId}`);
+      }
+      
+      user.imageGenerationCredits = 0; // Free users don't get image credits
+    } else {
+      if (carryOverCredits) {
+        user.imageGenerationCredits = num(remainingImageCredits + planImg);
+        user.promptGenerationCredits = num(remainingPromptCredits + planPr);
+        user.totalCredits = num(remainingTotalCredits + planTot);
 
-          if (userSubscription && userSubscription.planSnapshot) {
-            userSubscription.cancelledAt = null;
-            userSubscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
-            userSubscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
-            userSubscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
-            await userSubscription.save();
-          }
-        } else {
-          // ✅ Reset all credits when switching to new paid plan
-          user.imageGenerationCredits = num(planImg);
-          user.promptGenerationCredits = num(planPr);
-          user.totalCredits = num(planTot);
-          user.usedImageCredits = 0;
-          user.usedPromptCredits = 0;
+        if (userSubscription && userSubscription.planSnapshot) {
+          userSubscription.cancelledAt = null;
+          userSubscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
+          userSubscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
+          userSubscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
+          await userSubscription.save();
         }
-
-        user.dailyCredits = 0;
+      } else {
+        // ✅ Reset all credits when switching to new paid plan
+        user.imageGenerationCredits = num(planImg);
+        user.promptGenerationCredits = num(planPr);
+        user.totalCredits = num(planTot);
+        user.usedImageCredits = 0;
+        user.usedPromptCredits = 0;
       }
 
-      await user.save();
-      return user;
-    } catch (error) {
-      console.error("[SubscriptionManagement] updateUserData failed:", error);
-      throw error;
+      user.dailyCredits = 0; // Paid users don't use daily credits
     }
+
+    await user.save();
+    return user;
+  } catch (error) {
+    console.error("[SubscriptionManagement] updateUserData failed:", error);
+    throw error;
   }
+}
+
+shouldResetDailyCredits(lastResetDate, currentDate) {
+  if (!lastResetDate) {
+    return true;
+  }
+
+  const lastReset = new Date(lastResetDate);
+  const current = new Date(currentDate);
+  
+  return (
+    lastReset.getDate() !== current.getDate() ||
+    lastReset.getMonth() !== current.getMonth() ||
+    lastReset.getFullYear() !== current.getFullYear()
+  );
+}
 
 
 
