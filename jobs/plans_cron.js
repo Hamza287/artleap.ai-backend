@@ -24,7 +24,6 @@ const connectToMongoDB = async () => {
 };
 
 const ensureConnection = async () => {
-  // Don't attempt connection if shutdown is in progress
   if (shutdownInProgress) {
     throw new Error('Shutdown in progress');
   }
@@ -44,7 +43,6 @@ const ensureConnection = async () => {
 };
 
 const executeWithConnection = async (operation) => {
-  // Skip if shutdown is in progress
   if (shutdownInProgress) {
     return;
   }
@@ -120,7 +118,6 @@ const initializeCron = async () => {
   isInitialized = true;
 };
 
-// Store the cron task reference so we can stop it
 const cronTask = cron.schedule('* * * * *', runAllTasksOnce, {
   scheduled: true,
   timezone: "Asia/Karachi"
@@ -136,18 +133,15 @@ const gracefulShutdown = async (signal) => {
   
   console.log(`Received ${signal}, shutting down gracefully...`);
   
-  // Stop the cron job first
   cronTask.stop();
   
-  // Wait for any ongoing tasks to complete
   let waitCount = 0;
-  const maxWait = 30; // 30 * 100ms = 3 seconds max wait
+  const maxWait = 30; 
   while (isRunning && waitCount < maxWait) {
     await new Promise(resolve => setTimeout(resolve, 100));
     waitCount++;
   }
   
-  // Close MongoDB connection only if it's open
   if (mongoose.connection.readyState === 1) {
     try {
       await mongoose.connection.close();

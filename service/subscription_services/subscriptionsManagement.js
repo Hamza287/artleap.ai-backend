@@ -406,103 +406,78 @@ class SubscriptionManagement {
   }
 
   async updateUserData(
-    userId,
-    plan,
-    subscription = null,
-    isSubscribed = true,
-    isTrial = false,
-    carryOverCredits = false
-  ) {
-    try {
-      const user = await User.findOne({
-        _id: mongoose.Types.ObjectId.isValid(userId)
-          ? mongoose.Types.ObjectId(userId)
-          : userId,
-      });
+  userId,
+  plan,
+  subscription = null,
+  isSubscribed = true,
+  isTrial = false,
+  carryOverCredits = false
+) {
+  try {
+    const user = await User.findOne({
+      _id: mongoose.Types.ObjectId.isValid(userId)
+        ? mongoose.Types.ObjectId(userId)
+        : userId,
+    });
 
-      if (!user) throw new Error("User not found");
+    if (!user) throw new Error("User not found");
 
-      const now = new Date();
-      const shouldResetCredits = this.shouldResetDailyCredits(user.lastCreditReset, now);
+    const planImg = num(plan?.imageGenerationCredits);
+    const planPr = num(plan?.promptGenerationCredits);
+    const planTot = num(plan?.totalCredits);
 
-      const planImg = num(plan?.imageGenerationCredits);
-      const planPr = num(plan?.promptGenerationCredits);
-      const planTot = num(plan?.totalCredits);
+    user.currentSubscription = subscription ? subscription._id : plan._id;
+    user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
+    user.isSubscribed = isSubscribed;
+    user.watermarkEnabled = plan.type === "free";
+    user.hasActiveTrial = isTrial;
+    user.planName = plan.name;
+    user.planType = plan.type;
 
-      user.currentSubscription = subscription ? subscription._id : plan._id;
-      user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
-      user.isSubscribed = isSubscribed;
-      user.watermarkEnabled = plan.type === "free";
-      user.hasActiveTrial = isTrial;
-      user.planName = plan.name;
-      user.planType = plan.type;
+    if (plan.type === "free") {
+      // Removed daily credit reset logic for free plan
+      user.imageGenerationCredits = 0;
+    } else {
+      if (carryOverCredits) {
+        const uImg = num(user.imageGenerationCredits);
+        const uPr = num(user.promptGenerationCredits);
+        const uTot = num(user.totalCredits);
+        const uUsedI = num(user.usedImageCredits);
+        const uUsedP = num(user.usedPromptCredits);
 
-      if (plan.type === "free") {
-        if (shouldResetCredits) {
-          user.totalCredits = 4;
-          user.dailyCredits = 4;
-          user.promptGenerationCredits = 4;
-          user.usedImageCredits = 0;
-          user.usedPromptCredits = 0;
-          user.lastCreditReset = now;
+        const remainingImageCredits = Math.max(0, uImg - uUsedI);
+        const remainingPromptCredits = Math.max(0, uPr - uUsedP);
+        const remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
+
+        user.imageGenerationCredits = num(remainingImageCredits + planImg);
+        user.promptGenerationCredits = num(remainingPromptCredits + planPr);
+        user.totalCredits = num(remainingTotalCredits + planTot);
+
+        if (userSubscription && userSubscription.planSnapshot) {
+          userSubscription.cancelledAt = null;
+          userSubscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
+          userSubscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
+          userSubscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
+          await userSubscription.save();
         }
-        user.imageGenerationCredits = 0;
       } else {
-        if (carryOverCredits) {
-          const uImg = num(user.imageGenerationCredits);
-          const uPr = num(user.promptGenerationCredits);
-          const uTot = num(user.totalCredits);
-          const uUsedI = num(user.usedImageCredits);
-          const uUsedP = num(user.usedPromptCredits);
-
-          const remainingImageCredits = Math.max(0, uImg - uUsedI);
-          const remainingPromptCredits = Math.max(0, uPr - uUsedP);
-          const remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
-
-          user.imageGenerationCredits = num(remainingImageCredits + planImg);
-          user.promptGenerationCredits = num(remainingPromptCredits + planPr);
-          user.totalCredits = num(remainingTotalCredits + planTot);
-
-          if (userSubscription && userSubscription.planSnapshot) {
-            userSubscription.cancelledAt = null;
-            userSubscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
-            userSubscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
-            userSubscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
-            await userSubscription.save();
-          }
-        } else {
-          user.imageGenerationCredits = num(planImg);
-          user.promptGenerationCredits = num(planPr);
-          user.totalCredits = num(planTot);
-          user.usedImageCredits = 0;
-          user.usedPromptCredits = 0;
-        }
-
-        user.dailyCredits = 0;
+        user.imageGenerationCredits = num(planImg);
+        user.promptGenerationCredits = num(planPr);
+        user.totalCredits = num(planTot);
+        user.usedImageCredits = 0;
+        user.usedPromptCredits = 0;
       }
 
-      await user.save();
-      return user;
-    } catch (error) {
-      console.error("[SubscriptionManagement] updateUserData failed:", error);
-      throw error;
-    }
-  }
-
-  shouldResetDailyCredits(lastResetDate, currentDate) {
-    if (!lastResetDate) {
-      return true;
+      user.dailyCredits = 0;
     }
 
-    const lastReset = new Date(lastResetDate);
-    const current = new Date(currentDate);
-
-    return (
-      lastReset.getDate() !== current.getDate() ||
-      lastReset.getMonth() !== current.getMonth() ||
-      lastReset.getFullYear() !== current.getFullYear()
-    );
+    await user.save();
+    return user;
+  } catch (error) {
+    console.error("[SubscriptionManagement] updateUserData failed:", error);
+    throw error;
   }
+}
 
   async createSubscription(userId, planId, paymentMethod, isTrial = false) {
     try {
