@@ -532,9 +532,9 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
     if (!freePlan) throw new Error("Free plan not configured");
     if (!user) throw new Error("User not found");
 
-    const isAlreadyOnFreePlan = user.planType === "free" && 
-                               user.subscriptionStatus === "cancelled" && 
-                               user.planName === "Free";
+    const isAlreadyOnFreePlan = user.subscriptionStatus === "cancelled" ||
+    user.subscriptionStatus === "active" && 
+    ( user.planType === "free" &&  user.planName === "Free");
 
     const lastDowngrade = user.planDowngradedAt ? new Date(user.planDowngradedAt) : null;
     const today = new Date();
