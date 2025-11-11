@@ -522,10 +522,8 @@ class GoogleCancellationHandler {
     }
   }
 
- async downgradeToFreePlan(userId, cancellationType = "unknown") {
+async downgradeToFreePlan(userId, cancellationType = "unknown") {
   try {
-    console.log(`[GoogleCancellationHandler] 🔄 Starting downgradeToFreePlan for user ${userId}`);
-    
     const [freePlan, user] = await Promise.all([
       SubscriptionPlan.findOne({ type: "free" }),
       User.findById(userId)
@@ -534,17 +532,23 @@ class GoogleCancellationHandler {
     if (!freePlan) throw new Error("Free plan not configured");
     if (!user) throw new Error("User not found");
 
-    // Check if user is already on free plan
-    if (user.planType === "free" && user.subscriptionStatus === "cancelled") {
-      console.log(`[GoogleCancellationHandler] ⏩ User ${userId} is already on free plan, skipping credit reset`);
+    const isAlreadyOnFreePlan = user.planType === "free" && 
+                               user.subscriptionStatus === "cancelled" && 
+                               user.planName === "Free";
+
+    const lastDowngrade = user.planDowngradedAt ? new Date(user.planDowngradedAt) : null;
+    const today = new Date();
+    const isSameDay = lastDowngrade && 
+                     lastDowngrade.getDate() === today.getDate() &&
+                     lastDowngrade.getMonth() === today.getMonth() &&
+                     lastDowngrade.getFullYear() === today.getFullYear();
+
+    if (isAlreadyOnFreePlan && isSameDay) {
       return;
     }
 
     const now = new Date();
     const freeSnapshot = buildPlanSnapshot(freePlan);
-
-    console.log(`[GoogleCancellationHandler] 💳 Resetting credits for user ${userId} during downgrade to free plan`);
-    console.log(`[GoogleCancellationHandler] 📊 Before reset - Plan: ${user.planName}, DailyCredits: ${user.dailyCredits}, TotalCredits: ${user.totalCredits}`);
 
     await User.updateOne(
       { _id: userId },
@@ -567,8 +571,6 @@ class GoogleCancellationHandler {
         }
       }
     );
-
-    console.log(`[GoogleCancellationHandler] ✅ Credits reset for user ${userId} - New DailyCredits: 4, TotalCredits: 4`);
 
     await UserSubscription.updateMany(
       { userId: userId, isActive: true },
@@ -599,10 +601,8 @@ class GoogleCancellationHandler {
     });
     await newFreeSub.save();
 
-    console.log(`[GoogleCancellationHandler] 🎯 Downgrade completed for user ${userId}`);
-
   } catch (error) {
-    console.error(`[GoogleCancellationHandler] ❌ Failed to downgrade user ${userId}:`, error);
+    this.logError(`Failed to downgrade user ${userId}`, error);
     throw error;
   }
 }
