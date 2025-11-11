@@ -522,76 +522,90 @@ class GoogleCancellationHandler {
     }
   }
 
-  async downgradeToFreePlan(userId, cancellationType = "unknown") {
-    try {
-      const [freePlan, user] = await Promise.all([
-        SubscriptionPlan.findOne({ type: "free" }),
-        User.findById(userId)
-      ]);
+ async downgradeToFreePlan(userId, cancellationType = "unknown") {
+  try {
+    console.log(`[GoogleCancellationHandler] 🔄 Starting downgradeToFreePlan for user ${userId}`);
+    
+    const [freePlan, user] = await Promise.all([
+      SubscriptionPlan.findOne({ type: "free" }),
+      User.findById(userId)
+    ]);
 
-      if (!freePlan) throw new Error("Free plan not configured");
-      if (!user) throw new Error("User not found");
+    if (!freePlan) throw new Error("Free plan not configured");
+    if (!user) throw new Error("User not found");
 
-      const now = new Date();
-      const freeSnapshot = buildPlanSnapshot(freePlan);
-
-      await User.updateOne(
-        { _id: userId },
-        {
-          $set: {
-            isSubscribed: false,
-            subscriptionStatus: "cancelled",
-            cancellationReason: cancellationType,
-            planName: freePlan.name || "Free",
-            planType: "free",
-            watermarkEnabled: true,
-            totalCredits: 4,
-            dailyCredits: 4,
-            imageGenerationCredits: 0,
-            promptGenerationCredits: 4,
-            usedImageCredits: 0,
-            usedPromptCredits: 0,
-            lastCreditReset: now,
-            planDowngradedAt: now,
-
-          }
-        }
-      );
-
-      await UserSubscription.updateMany(
-        { userId: userId, isActive: true },
-        {
-          $set: {
-            isActive: true,
-            status: "cancelled",
-            autoRenew: false,
-            cancelledAt: now,
-            endDate: now,
-            lastUpdated: now
-          }
-        }
-      );
-
-      const newFreeSub = new UserSubscription({
-        userId,
-        planId: freePlan._id,
-        startDate: now,
-        endDate: now,
-        isTrial: false,
-        isActive: true,
-        paymentMethod: "system",
-        autoRenew: false,
-        status: "active",
-        planSnapshot: freeSnapshot,
-        lastUpdated: now
-      });
-      await newFreeSub.save();
-
-    } catch (error) {
-      this.logError(`Failed to downgrade user ${userId}`, error);
-      throw error;
+    // Check if user is already on free plan
+    if (user.planType === "free" && user.subscriptionStatus === "cancelled") {
+      console.log(`[GoogleCancellationHandler] ⏩ User ${userId} is already on free plan, skipping credit reset`);
+      return;
     }
+
+    const now = new Date();
+    const freeSnapshot = buildPlanSnapshot(freePlan);
+
+    console.log(`[GoogleCancellationHandler] 💳 Resetting credits for user ${userId} during downgrade to free plan`);
+    console.log(`[GoogleCancellationHandler] 📊 Before reset - Plan: ${user.planName}, DailyCredits: ${user.dailyCredits}, TotalCredits: ${user.totalCredits}`);
+
+    await User.updateOne(
+      { _id: userId },
+      {
+        $set: {
+          isSubscribed: false,
+          subscriptionStatus: "cancelled",
+          cancellationReason: cancellationType,
+          planName: freePlan.name || "Free",
+          planType: "free",
+          watermarkEnabled: true,
+          totalCredits: 4,
+          dailyCredits: 4,
+          imageGenerationCredits: 0,
+          promptGenerationCredits: 4,
+          usedImageCredits: 0,
+          usedPromptCredits: 0,
+          lastCreditReset: now,
+          planDowngradedAt: now,
+        }
+      }
+    );
+
+    console.log(`[GoogleCancellationHandler] ✅ Credits reset for user ${userId} - New DailyCredits: 4, TotalCredits: 4`);
+
+    await UserSubscription.updateMany(
+      { userId: userId, isActive: true },
+      {
+        $set: {
+          isActive: true,
+          status: "cancelled",
+          autoRenew: false,
+          cancelledAt: now,
+          endDate: now,
+          lastUpdated: now
+        }
+      }
+    );
+
+    const newFreeSub = new UserSubscription({
+      userId,
+      planId: freePlan._id,
+      startDate: now,
+      endDate: now,
+      isTrial: false,
+      isActive: true,
+      paymentMethod: "system",
+      autoRenew: false,
+      status: "active",
+      planSnapshot: freeSnapshot,
+      lastUpdated: now
+    });
+    await newFreeSub.save();
+
+    console.log(`[GoogleCancellationHandler] 🎯 Downgrade completed for user ${userId}`);
+
+  } catch (error) {
+    console.error(`[GoogleCancellationHandler] ❌ Failed to downgrade user ${userId}:`, error);
+    throw error;
   }
+}
 
   isInGracePeriod(expiryTime, isExpired) {
     if (isExpired) return false;
