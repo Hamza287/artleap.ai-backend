@@ -78,119 +78,104 @@ class SubscriptionManagement {
   }
 
   async cleanupOrphanedSubscriptions() {
-    let session = null;
-    try {
-      session = await mongoose.startSession();
+  try {
+    let deleted = 0;
+    let fixed = 0;
 
-      let deleted = 0;
-      let fixed = 0;
-
-      const orphanedSubscriptions = await UserSubscription.aggregate([
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "user"
-          }
-        },
-        {
-          $match: {
-            "user.0": { $exists: false }
-          }
-        },
-        {
-          $project: {
-            _id: 1
-          }
+    const orphanedSubscriptions = await UserSubscription.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user"
         }
-      ]).maxTimeMS(30000);
-
-      const batchSize = 100;
-      for (let i = 0; i < orphanedSubscriptions.length; i += batchSize) {
-        const batch = orphanedSubscriptions.slice(i, i + batchSize);
-        const idsToDelete = batch.map(sub => sub._id);
-
-        await UserSubscription.deleteMany(
-          { _id: { $in: idsToDelete } },
-          { session }
-        );
-        deleted += batch.length;
-
-        if (i + batchSize < orphanedSubscriptions.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+      },
+      {
+        $match: {
+          "user.0": { $exists: false }
+        }
+      },
+      {
+        $project: {
+          _id: 1
         }
       }
+    ]).maxTimeMS(30000);
 
-      const duplicateSubscriptions = await UserSubscription.aggregate([
-        {
-          $match: {
-            isActive: true
-          }
-        },
-        {
-          $group: {
-            _id: "$userId",
-            count: { $sum: 1 },
-            latestSubscription: { $first: "$$ROOT" },
-            subscriptionIds: { $push: "$_id" }
-          }
-        },
-        {
-          $match: {
-            count: { $gt: 1 }
-          }
-        },
-        {
-          $project: {
-            latestSubscription: 1,
-            subscriptionIds: 1
-          }
-        }
-      ]).maxTimeMS(30000);
+    const batchSize = 100;
+    for (let i = 0; i < orphanedSubscriptions.length; i += batchSize) {
+      const batch = orphanedSubscriptions.slice(i, i + batchSize);
+      const idsToDelete = batch.map(sub => sub._id);
 
-      for (const group of duplicateSubscriptions) {
-        const idsToDeactivate = group.subscriptionIds.filter(
-          id => !id.equals(group.latestSubscription._id)
-        );
+      await UserSubscription.deleteMany({ _id: { $in: idsToDelete } });
+      deleted += batch.length;
 
-        if (idsToDeactivate.length > 0) {
-          await UserSubscription.updateMany(
-            { _id: { $in: idsToDeactivate } },
-            {
-              $set: {
-                isActive: false,
-                cancelledAt: new Date(),
-                autoRenew: false
-              }
-            },
-            { session }
-          );
-          fixed += idsToDeactivate.length;
-        }
-      }
-
-      await session.commitTransaction();
-      return { deleted, fixed };
-
-    } catch (error) {
-      if (session) {
-        await session.abortTransaction();
-      }
-
-      if (error.name === 'MongoNetworkTimeoutError' || error.name === 'MongoServerSelectionError') {
-        console.error("[SubscriptionManagement] MongoDB timeout during cleanup - retrying with simpler query");
-        return await this.simpleCleanupOrphanedSubscriptions();
-      }
-
-      console.error("[SubscriptionManagement] Error cleaning up orphaned subscriptions:", error);
-      throw error;
-    } finally {
-      if (session) {
-        await session.endSession();
+      if (i + batchSize < orphanedSubscriptions.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
+
+    const duplicateSubscriptions = await UserSubscription.aggregate([
+      {
+        $match: {
+          isActive: true
+        }
+      },
+      {
+        $group: {
+          _id: "$userId",
+          count: { $sum: 1 },
+          latestSubscription: { $first: "$$ROOT" },
+          subscriptionIds: { $push: "$_id" }
+        }
+      },
+      {
+        $match: {
+          count: { $gt: 1 }
+        }
+      },
+      {
+        $project: {
+          latestSubscription: 1,
+          subscriptionIds: 1
+        }
+      }
+    ]).maxTimeMS(30000);
+
+    for (const group of duplicateSubscriptions) {
+      const idsToDeactivate = group.subscriptionIds.filter(
+        id => !id.equals(group.latestSubscription._id)
+      );
+
+      if (idsToDeactivate.length > 0) {
+        await UserSubscription.updateMany(
+          { _id: { $in: idsToDeactivate } },
+          {
+            $set: {
+              isActive: false,
+              cancelledAt: new Date(),
+              autoRenew: false
+            }
+          }
+        );
+        fixed += idsToDeactivate.length;
+      }
+    }
+
+    console.log(`[SubscriptionManagement] Cleanup completed - deleted: ${deleted}, fixed: ${fixed}`);
+    return { deleted, fixed };
+
+  } catch (error) {
+    if (error.name === 'MongoNetworkTimeoutError' || error.name === 'MongoServerSelectionError') {
+      console.error("[SubscriptionManagement] MongoDB timeout during cleanup - retrying with simpler query");
+      return await this.simpleCleanupOrphanedSubscriptions();
+    }
+
+    console.error("[SubscriptionManagement] Error cleaning up orphaned subscriptions:", error);
+    return { deleted: 0, fixed: 0 };
   }
+}
 
   async simpleCleanupOrphanedSubscriptions() {
     try {
