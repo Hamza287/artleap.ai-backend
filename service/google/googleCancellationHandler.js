@@ -524,8 +524,6 @@ class GoogleCancellationHandler {
 
 async downgradeToFreePlan(userId, cancellationType = "unknown") {
   try {
-    console.log("🟡 [DOWNGRADE] Started for user:", userId, "with reason:", cancellationType);
-
     const [freePlan, user] = await Promise.all([
       SubscriptionPlan.findOne({ type: "free" }),
       User.findById(userId)
@@ -534,19 +532,8 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
     if (!freePlan) throw new Error("Free plan not configured");
     if (!user) throw new Error("User not found");
 
-    console.log("📦 User current plan:", {
-      planName: user.planName,
-      planType: user.planType,
-      subscriptionStatus: user.subscriptionStatus,
-      planDowngradedAt: user.planDowngradedAt
-    });
-
     const isAlreadyOnFreePlan =
-      (user.subscriptionStatus === "cancelled" || user.subscriptionStatus === "active") &&
-      user.planType === "free" &&
-      user.planName === "Free";
-
-    console.log("🧩 isAlreadyOnFreePlan:", isAlreadyOnFreePlan);
+      (user.subscriptionStatus === "cancelled" || user.subscriptionStatus === "active") && user.planName === "Free";
 
     const lastDowngrade = user.planDowngradedAt ? new Date(user.planDowngradedAt) : null;
     const now = new Date();
@@ -557,60 +544,33 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
       lastDowngrade.getUTCMonth() === now.getUTCMonth() &&
       lastDowngrade.getUTCDate() === now.getUTCDate();
 
-    console.log("🕒 Date check:", {
-      lastDowngrade,
-      now,
-      isSameDay,
-      "UTC Date Compare": {
-        lastYear: lastDowngrade?.getUTCFullYear(),
-        nowYear: now.getUTCFullYear(),
-        lastMonth: lastDowngrade?.getUTCMonth(),
-        nowMonth: now.getUTCMonth(),
-        lastDate: lastDowngrade?.getUTCDate(),
-        nowDate: now.getUTCDate()
-      }
-    });
-
-    // Skip if same day and already free
     if (isAlreadyOnFreePlan && isSameDay) {
-      console.log("✅ [SKIP] User already on Free plan today. No downgrade performed.");
       return;
     }
-
-    console.log("⚠️ [DOWNGRADE TRIGGERED] Proceeding with downgrade/reset...");
 
     const freeSnapshot = buildPlanSnapshot(freePlan);
 
     const updateData = {
       isSubscribed: false,
-      subscriptionStatus: "cancelled",
+      subscriptionStatus: "active",
       cancellationReason: cancellationType,
       planName: freePlan.name || "Free",
-      planType: "free",
       watermarkEnabled: true,
-      planDowngradedAt: now
     };
 
-    // Only reset credits if not free already or new day
-    if (!isAlreadyOnFreePlan || !isSameDay) {
-      console.log("💳 Resetting free plan credits...");
-      Object.assign(updateData, {
-        totalCredits: 4,
-        dailyCredits: 4,
-        imageGenerationCredits: 0,
-        promptGenerationCredits: 4,
-        usedImageCredits: 0,
-        usedPromptCredits: 0,
-        lastCreditReset: now
-      });
-    } else {
-      console.log("⏸ Credits NOT reset (already reset today).");
+    if (!isAlreadyOnFreePlan && !isSameDay) {
+      updateData.totalCredits = 4;
+      updateData.dailyCredits = 4;
+      updateData.imageGenerationCredits = 0;
+      updateData.promptGenerationCredits = 4;
+      updateData.usedImageCredits = 0;
+      updateData.usedPromptCredits = 0;
+      updateData.lastCreditReset = now;
     }
 
-    const updateRes = await User.updateOne({ _id: userId }, { $set: updateData });
-    console.log("✅ User updated:", updateRes);
+    await User.updateOne({ _id: userId }, { $set: updateData });
 
-    const cancelRes = await UserSubscription.updateMany(
+    await UserSubscription.updateMany(
       { userId: userId, isActive: true },
       {
         $set: {
@@ -623,11 +583,8 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
         }
       }
     );
-    console.log("📄 Active subscriptions cancelled:", cancelRes.modifiedCount);
 
-    // Only create free sub if not already on free
     if (!isAlreadyOnFreePlan) {
-      console.log("🆕 Creating new free subscription record...");
       const newFreeSub = new UserSubscription({
         userId,
         planId: freePlan._id,
@@ -642,20 +599,13 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
         lastUpdated: now
       });
       await newFreeSub.save();
-      console.log("✅ New free subscription saved.");
-    } else {
-      console.log("⏸ No new free subscription needed (already exists).");
     }
 
-    console.log("🎯 [DONE] Downgrade check complete for user:", userId);
-
   } catch (error) {
-    console.error("❌ [ERROR] Failed to downgrade user", userId, error);
     this.logError(`Failed to downgrade user ${userId}`, error);
     throw error;
   }
 }
-
 
 
   isInGracePeriod(expiryTime, isExpired) {
