@@ -532,45 +532,51 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
     if (!freePlan) throw new Error("Free plan not configured");
     if (!user) throw new Error("User not found");
 
-    const isAlreadyOnFreePlan = user.subscriptionStatus === "cancelled" ||
-    user.subscriptionStatus === "active" && 
-    ( user.planType === "free" &&  user.planName === "Free");
+    const isAlreadyOnFreePlan =
+      (user.subscriptionStatus === "cancelled" || user.subscriptionStatus === "active") &&
+      user.planType === "free" &&
+      user.planName === "Free";
 
     const lastDowngrade = user.planDowngradedAt ? new Date(user.planDowngradedAt) : null;
-    const today = new Date();
-    const isSameDay = lastDowngrade && 
-                     lastDowngrade.getDate() === today.getDate() &&
-                     lastDowngrade.getMonth() === today.getMonth() &&
-                     lastDowngrade.getFullYear() === today.getFullYear();
+    const now = new Date();
 
+    // Check if downgrade already happened today (UTC safe)
+    const isSameDay =
+      lastDowngrade &&
+      lastDowngrade.getUTCFullYear() === now.getUTCFullYear() &&
+      lastDowngrade.getUTCMonth() === now.getUTCMonth() &&
+      lastDowngrade.getUTCDate() === now.getUTCDate();
+
+    // ✅ Skip downgrade if already free and same day
     if (isAlreadyOnFreePlan && isSameDay) {
       return;
     }
 
-    const now = new Date();
     const freeSnapshot = buildPlanSnapshot(freePlan);
 
-    await User.updateOne(
-      { _id: userId },
-      {
-        $set: {
-          isSubscribed: false,
-          subscriptionStatus: "cancelled",
-          cancellationReason: cancellationType,
-          planName: freePlan.name || "Free",
-          planType: "free",
-          watermarkEnabled: true,
-          totalCredits: 4,
-          dailyCredits: 4,
-          imageGenerationCredits: 0,
-          promptGenerationCredits: 4,
-          usedImageCredits: 0,
-          usedPromptCredits: 0,
-          lastCreditReset: now,
-          planDowngradedAt: now,
-        }
-      }
-    );
+    // ✅ If user is already free, only reset credits if it's a new day
+    const updateData = {
+      isSubscribed: false,
+      subscriptionStatus: "cancelled",
+      cancellationReason: cancellationType,
+      planName: freePlan.name || "Free",
+      planType: "free",
+      watermarkEnabled: true,
+      planDowngradedAt: now
+    };
+
+    // Only reset credits if not free already OR new day
+    if (!isAlreadyOnFreePlan || !isSameDay) {
+      updateData.totalCredits = 4;
+      updateData.dailyCredits = 4;
+      updateData.imageGenerationCredits = 0;
+      updateData.promptGenerationCredits = 4;
+      updateData.usedImageCredits = 0;
+      updateData.usedPromptCredits = 0;
+      updateData.lastCreditReset = now;
+    }
+
+    await User.updateOne({ _id: userId }, { $set: updateData });
 
     await UserSubscription.updateMany(
       { userId: userId, isActive: true },
@@ -586,26 +592,30 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
       }
     );
 
-    const newFreeSub = new UserSubscription({
-      userId,
-      planId: freePlan._id,
-      startDate: now,
-      endDate: now,
-      isTrial: false,
-      isActive: true,
-      paymentMethod: "system",
-      autoRenew: false,
-      status: "active",
-      planSnapshot: freeSnapshot,
-      lastUpdated: now
-    });
-    await newFreeSub.save();
+    // Only create a new subscription if not already on free plan
+    if (!isAlreadyOnFreePlan) {
+      const newFreeSub = new UserSubscription({
+        userId,
+        planId: freePlan._id,
+        startDate: now,
+        endDate: now,
+        isTrial: false,
+        isActive: true,
+        paymentMethod: "system",
+        autoRenew: false,
+        status: "active",
+        planSnapshot: freeSnapshot,
+        lastUpdated: now
+      });
+      await newFreeSub.save();
+    }
 
   } catch (error) {
     this.logError(`Failed to downgrade user ${userId}`, error);
     throw error;
   }
 }
+
 
   isInGracePeriod(expiryTime, isExpired) {
     if (isExpired) return false;
