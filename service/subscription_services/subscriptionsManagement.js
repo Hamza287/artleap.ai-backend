@@ -101,7 +101,7 @@ class SubscriptionManagement {
           _id: 1
         }
       }
-    ]).maxTimeMS(30000);
+    ]).option({ maxTimeMS: 30000 });
 
     const batchSize = 100;
     for (let i = 0; i < orphanedSubscriptions.length; i += batchSize) {
@@ -141,7 +141,7 @@ class SubscriptionManagement {
           subscriptionIds: 1
         }
       }
-    ]).maxTimeMS(30000);
+    ]).option({ maxTimeMS: 30000 });
 
     for (const group of duplicateSubscriptions) {
       const idsToDeactivate = group.subscriptionIds.filter(
@@ -163,7 +163,6 @@ class SubscriptionManagement {
       }
     }
 
-    console.log(`[SubscriptionManagement] Cleanup completed - deleted: ${deleted}, fixed: ${fixed}`);
     return { deleted, fixed };
 
   } catch (error) {
