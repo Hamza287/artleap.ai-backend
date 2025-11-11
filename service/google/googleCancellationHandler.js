@@ -540,24 +540,21 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
     const lastDowngrade = user.planDowngradedAt ? new Date(user.planDowngradedAt) : null;
     const now = new Date();
 
-    // Check if downgrade already happened today (UTC safe)
     const isSameDay =
       lastDowngrade &&
       lastDowngrade.getUTCFullYear() === now.getUTCFullYear() &&
       lastDowngrade.getUTCMonth() === now.getUTCMonth() &&
       lastDowngrade.getUTCDate() === now.getUTCDate();
 
-    // ✅ Skip downgrade if already free and same day
     if (isAlreadyOnFreePlan && isSameDay) {
       return;
     }
 
     const freeSnapshot = buildPlanSnapshot(freePlan);
 
-    // ✅ If user is already free, only reset credits if it's a new day
     const updateData = {
       isSubscribed: false,
-      subscriptionStatus: "cancelled",
+      subscriptionStatus: "active",
       cancellationReason: cancellationType,
       planName: freePlan.name || "Free",
       planType: "free",
@@ -565,8 +562,7 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
       planDowngradedAt: now
     };
 
-    // Only reset credits if not free already OR new day
-    if (!isAlreadyOnFreePlan || !isSameDay) {
+    if (!isAlreadyOnFreePlan && !isSameDay) {
       updateData.totalCredits = 4;
       updateData.dailyCredits = 4;
       updateData.imageGenerationCredits = 0;
@@ -592,7 +588,6 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
       }
     );
 
-    // Only create a new subscription if not already on free plan
     if (!isAlreadyOnFreePlan) {
       const newFreeSub = new UserSubscription({
         userId,
