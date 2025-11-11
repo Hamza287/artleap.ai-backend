@@ -169,10 +169,6 @@ class GoogleCancellationHandler {
         token: purchaseToken,
         auth: this.auth
       });
-
-      // console.log("\n🟢 [PlayStore Response for Token]:", purchaseToken);
-      // console.log(JSON.stringify(response.data, null, 2));
-
       const subscription = response.data;
 
       if (!subscription) return null;
@@ -431,7 +427,7 @@ class GoogleCancellationHandler {
 
       const snap = buildPlanSnapshot(planDoc);
 
-      if (expiryChanged && user.lastCreditReset) {
+      if (expiryChanged && user.lastCreditReset && user.planName != 'Free') {
         const resetDate = new Date(user.lastCreditReset);
         const now = new Date();
         const timeDiff = now.getTime() - resetDate.getTime();
