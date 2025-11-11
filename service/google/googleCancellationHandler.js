@@ -426,7 +426,7 @@ class GoogleCancellationHandler {
       if (!planDoc) return;
 
       const snap = buildPlanSnapshot(planDoc);
-
+       console.log("plans reset to " + user.planName)
       if (expiryChanged && user.lastCreditReset && user.planName != 'Free') {
         const resetDate = new Date(user.lastCreditReset);
         const now = new Date();
