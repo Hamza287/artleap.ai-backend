@@ -5,7 +5,6 @@ const mongoose = require("mongoose");
 const NotificationService = require("./notificationService");
 const PlanManagement = require("./plansManagement");
 const PaymentProcessing = require("./paymentProcessing");
-const userSubscription = require('./../../models/user_subscription');
 
 function num(v, fallback = 0) {
   const n = Number(v);
@@ -35,6 +34,13 @@ class SubscriptionManagement {
 
           if (!user) {
             continue;
+          }
+
+          // FIX: Check and fix null endDate before processing
+          if (!subscription.endDate) {
+            console.log(`[SubscriptionManagement] Fixing null endDate for subscription ${subscription._id}`);
+            subscription.endDate = new Date();
+            await subscription.save();
           }
 
           if (subscription.endDate < now && subscription.isActive) {
@@ -77,104 +83,161 @@ class SubscriptionManagement {
     }
   }
 
-  async cleanupOrphanedSubscriptions() {
-  try {
-    let deleted = 0;
-    let fixed = 0;
+  async fixNullEndDates() {
+    try {
+      const subscriptionsWithNullEndDate = await UserSubscription.find({
+        endDate: null
+      });
 
-    const orphanedSubscriptions = await UserSubscription.aggregate([
-      {
-        $lookup: {
-          from: "users",
-          localField: "userId",
-          foreignField: "_id",
-          as: "user"
-        }
-      },
-      {
-        $match: {
-          "user.0": { $exists: false }
-        }
-      },
-      {
-        $project: {
-          _id: 1
-        }
-      }
-    ]).option({ maxTimeMS: 30000 });
+      let fixed = 0;
+      let errors = 0;
 
-    const batchSize = 100;
-    for (let i = 0; i < orphanedSubscriptions.length; i += batchSize) {
-      const batch = orphanedSubscriptions.slice(i, i + batchSize);
-      const idsToDelete = batch.map(sub => sub._id);
-
-      await UserSubscription.deleteMany({ _id: { $in: idsToDelete } });
-      deleted += batch.length;
-
-      if (i + batchSize < orphanedSubscriptions.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-
-    const duplicateSubscriptions = await UserSubscription.aggregate([
-      {
-        $match: {
-          isActive: true
-        }
-      },
-      {
-        $group: {
-          _id: "$userId",
-          count: { $sum: 1 },
-          latestSubscription: { $first: "$$ROOT" },
-          subscriptionIds: { $push: "$_id" }
-        }
-      },
-      {
-        $match: {
-          count: { $gt: 1 }
-        }
-      },
-      {
-        $project: {
-          latestSubscription: 1,
-          subscriptionIds: 1
-        }
-      }
-    ]).option({ maxTimeMS: 30000 });
-
-    for (const group of duplicateSubscriptions) {
-      const idsToDeactivate = group.subscriptionIds.filter(
-        id => !id.equals(group.latestSubscription._id)
-      );
-
-      if (idsToDeactivate.length > 0) {
-        await UserSubscription.updateMany(
-          { _id: { $in: idsToDeactivate } },
-          {
-            $set: {
-              isActive: false,
-              cancelledAt: new Date(),
-              autoRenew: false
+      for (const subscription of subscriptionsWithNullEndDate) {
+        try {
+          // Set endDate based on subscription type or default to current date
+          let newEndDate = new Date();
+          
+          if (subscription.planSnapshot && subscription.planSnapshot.type) {
+            switch (subscription.planSnapshot.type) {
+              case 'basic':
+                newEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                break;
+              case 'standard':
+                newEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+                break;
+              case 'premium':
+                newEndDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+                break;
+              case 'trial':
+                newEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+                break;
+              default:
+                newEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
             }
           }
-        );
-        fixed += idsToDeactivate.length;
+
+          await UserSubscription.updateOne(
+            { _id: subscription._id },
+            { 
+              $set: { 
+                endDate: newEndDate,
+                isActive: newEndDate > new Date()
+              } 
+            }
+          );
+          fixed++;
+        } catch (error) {
+          errors++;
+          console.error(`[SubscriptionManagement] Error fixing subscription ${subscription._id}:`, error);
+        }
       }
+
+      console.log(`[SubscriptionManagement] Fixed ${fixed} subscriptions with null endDate, ${errors} errors`);
+      return { fixed, errors };
+    } catch (error) {
+      console.error("[SubscriptionManagement] Error fixing null endDates:", error);
+      throw error;
     }
-
-    return { deleted, fixed };
-
-  } catch (error) {
-    if (error.name === 'MongoNetworkTimeoutError' || error.name === 'MongoServerSelectionError') {
-      console.error("[SubscriptionManagement] MongoDB timeout during cleanup - retrying with simpler query");
-      return await this.simpleCleanupOrphanedSubscriptions();
-    }
-
-    console.error("[SubscriptionManagement] Error cleaning up orphaned subscriptions:", error);
-    return { deleted: 0, fixed: 0 };
   }
-}
+
+  async cleanupOrphanedSubscriptions() {
+    try {
+      let deleted = 0;
+      let fixed = 0;
+
+      const orphanedSubscriptions = await UserSubscription.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "user"
+          }
+        },
+        {
+          $match: {
+            "user.0": { $exists: false }
+          }
+        },
+        {
+          $project: {
+            _id: 1
+          }
+        }
+      ]).option({ maxTimeMS: 30000 });
+
+      const batchSize = 100;
+      for (let i = 0; i < orphanedSubscriptions.length; i += batchSize) {
+        const batch = orphanedSubscriptions.slice(i, i + batchSize);
+        const idsToDelete = batch.map(sub => sub._id);
+
+        await UserSubscription.deleteMany({ _id: { $in: idsToDelete } });
+        deleted += batch.length;
+
+        if (i + batchSize < orphanedSubscriptions.length) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+
+      const duplicateSubscriptions = await UserSubscription.aggregate([
+        {
+          $match: {
+            isActive: true
+          }
+        },
+        {
+          $group: {
+            _id: "$userId",
+            count: { $sum: 1 },
+            latestSubscription: { $first: "$$ROOT" },
+            subscriptionIds: { $push: "$_id" }
+          }
+        },
+        {
+          $match: {
+            count: { $gt: 1 }
+          }
+        },
+        {
+          $project: {
+            latestSubscription: 1,
+            subscriptionIds: 1
+          }
+        }
+      ]).option({ maxTimeMS: 30000 });
+
+      for (const group of duplicateSubscriptions) {
+        const idsToDeactivate = group.subscriptionIds.filter(
+          id => !id.equals(group.latestSubscription._id)
+        );
+
+        if (idsToDeactivate.length > 0) {
+          await UserSubscription.updateMany(
+            { _id: { $in: idsToDeactivate } },
+            {
+              $set: {
+                isActive: false,
+                cancelledAt: new Date(),
+                autoRenew: false
+              }
+            }
+          );
+          fixed += idsToDeactivate.length;
+        }
+      }
+
+      return { deleted, fixed };
+
+    } catch (error) {
+      if (error.name === 'MongoNetworkTimeoutError' || error.name === 'MongoServerSelectionError') {
+        console.error("[SubscriptionManagement] MongoDB timeout during cleanup - retrying with simpler query");
+        return await this.simpleCleanupOrphanedSubscriptions();
+      }
+
+      console.error("[SubscriptionManagement] Error cleaning up orphaned subscriptions:", error);
+      return { deleted: 0, fixed: 0 };
+    }
+  }
 
   async simpleCleanupOrphanedSubscriptions() {
     try {
@@ -320,6 +383,18 @@ class SubscriptionManagement {
         });
       }
 
+      const nullEndDateSubs = await UserSubscription.countDocuments({
+        endDate: null
+      });
+
+      if (nullEndDateSubs > 0) {
+        issues.push({
+          type: "null_endDate",
+          count: nullEndDateSubs,
+          message: `Found ${nullEndDateSubs} subscriptions with null endDate`
+        });
+      }
+
       const mismatchedUsers = await User.aggregate([
         {
           $lookup: {
@@ -390,78 +465,77 @@ class SubscriptionManagement {
   }
 
   async updateUserData(
-  userId,
-  plan,
-  subscription = null,
-  isSubscribed = true,
-  isTrial = false,
-  carryOverCredits = false
-) {
-  try {
-    const user = await User.findOne({
-      _id: mongoose.Types.ObjectId.isValid(userId)
-        ? mongoose.Types.ObjectId(userId)
-        : userId,
-    });
+    userId,
+    plan,
+    subscription = null,
+    isSubscribed = true,
+    isTrial = false,
+    carryOverCredits = false
+  ) {
+    try {
+      const user = await User.findOne({
+        _id: mongoose.Types.ObjectId.isValid(userId)
+          ? mongoose.Types.ObjectId(userId)
+          : userId,
+      });
 
-    if (!user) throw new Error("User not found");
+      if (!user) throw new Error("User not found");
 
-    const planImg = num(plan?.imageGenerationCredits);
-    const planPr = num(plan?.promptGenerationCredits);
-    const planTot = num(plan?.totalCredits);
+      const planImg = num(plan?.imageGenerationCredits);
+      const planPr = num(plan?.promptGenerationCredits);
+      const planTot = num(plan?.totalCredits);
 
-    user.currentSubscription = subscription ? subscription._id : plan._id;
-    user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
-    user.isSubscribed = isSubscribed;
-    user.watermarkEnabled = plan.type === "free";
-    user.hasActiveTrial = isTrial;
-    user.planName = plan.name;
-    user.planType = plan.type;
+      user.currentSubscription = subscription ? subscription._id : plan._id;
+      user.subscriptionStatus = isSubscribed ? "active" : "cancelled";
+      user.isSubscribed = isSubscribed;
+      user.watermarkEnabled = plan.type === "free";
+      user.hasActiveTrial = isTrial;
+      user.planName = plan.name;
+      user.planType = plan.type;
 
-    if (plan.type === "free") {
-      // Removed daily credit reset logic for free plan
-      user.imageGenerationCredits = 0;
-    } else {
-      if (carryOverCredits) {
-        const uImg = num(user.imageGenerationCredits);
-        const uPr = num(user.promptGenerationCredits);
-        const uTot = num(user.totalCredits);
-        const uUsedI = num(user.usedImageCredits);
-        const uUsedP = num(user.usedPromptCredits);
-
-        const remainingImageCredits = Math.max(0, uImg - uUsedI);
-        const remainingPromptCredits = Math.max(0, uPr - uUsedP);
-        const remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
-
-        user.imageGenerationCredits = num(remainingImageCredits + planImg);
-        user.promptGenerationCredits = num(remainingPromptCredits + planPr);
-        user.totalCredits = num(remainingTotalCredits + planTot);
-
-        if (userSubscription && userSubscription.planSnapshot) {
-          userSubscription.cancelledAt = null;
-          userSubscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
-          userSubscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
-          userSubscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
-          await userSubscription.save();
-        }
+      if (plan.type === "free") {
+        user.imageGenerationCredits = 0;
       } else {
-        user.imageGenerationCredits = num(planImg);
-        user.promptGenerationCredits = num(planPr);
-        user.totalCredits = num(planTot);
-        user.usedImageCredits = 0;
-        user.usedPromptCredits = 0;
+        if (carryOverCredits) {
+          const uImg = num(user.imageGenerationCredits);
+          const uPr = num(user.promptGenerationCredits);
+          const uTot = num(user.totalCredits);
+          const uUsedI = num(user.usedImageCredits);
+          const uUsedP = num(user.usedPromptCredits);
+
+          const remainingImageCredits = Math.max(0, uImg - uUsedI);
+          const remainingPromptCredits = Math.max(0, uPr - uUsedP);
+          const remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
+
+          user.imageGenerationCredits = num(remainingImageCredits + planImg);
+          user.promptGenerationCredits = num(remainingPromptCredits + planPr);
+          user.totalCredits = num(remainingTotalCredits + planTot);
+
+          if (subscription && subscription.planSnapshot) {
+            subscription.cancelledAt = null;
+            subscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
+            subscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
+            subscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
+            await subscription.save();
+          }
+        } else {
+          user.imageGenerationCredits = num(planImg);
+          user.promptGenerationCredits = num(planPr);
+          user.totalCredits = num(planTot);
+          user.usedImageCredits = 0;
+          user.usedPromptCredits = 0;
+        }
+
+        user.dailyCredits = 0;
       }
 
-      user.dailyCredits = 0;
+      await user.save();
+      return user;
+    } catch (error) {
+      console.error("[SubscriptionManagement] updateUserData failed:", error);
+      throw error;
     }
-
-    await user.save();
-    return user;
-  } catch (error) {
-    console.error("[SubscriptionManagement] updateUserData failed:", error);
-    throw error;
   }
-}
 
   async createSubscription(userId, planId, paymentMethod, isTrial = false) {
     try {
@@ -491,6 +565,7 @@ class SubscriptionManagement {
         subscription.planId = planId;
         subscription.startDate = new Date();
 
+        // FIX: Ensure endDate is always set with proper validation
         if (plan.type === "basic") {
           subscription.endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         } else if (plan.type === "standard") {
@@ -504,7 +579,10 @@ class SubscriptionManagement {
         } else if (plan.type === "trial") {
           subscription.endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         } else if (plan.type === "free") {
-          subscription.endDate = new Date();
+          subscription.endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+        } else {
+          // Default fallback
+          subscription.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
         }
 
         subscription.paymentMethod = paymentMethod;
@@ -543,6 +621,7 @@ class SubscriptionManagement {
         const startDate = new Date();
         let endDate = new Date();
 
+        // FIX: Ensure endDate is always set with proper validation
         if (plan.type === "basic") {
           endDate.setDate(startDate.getDate() + 7);
         } else if (plan.type === "standard") {
@@ -551,6 +630,11 @@ class SubscriptionManagement {
           endDate.setFullYear(startDate.getFullYear() + 1);
         } else if (plan.type === "trial") {
           endDate.setDate(startDate.getDate() + 7);
+        } else if (plan.type === "free") {
+          endDate.setFullYear(startDate.getFullYear() + 1);
+        } else {
+          // Default fallback
+          endDate.setMonth(startDate.getMonth() + 1);
         }
 
         subscription = new UserSubscription({
@@ -692,6 +776,13 @@ class SubscriptionManagement {
 
       for (const sub of gracePeriodSubs) {
         try {
+          // FIX: Check for null endDate before processing grace period
+          if (!sub.endDate) {
+            console.log(`[SubscriptionManagement] Fixing null endDate in grace period for subscription ${sub._id}`);
+            sub.endDate = new Date();
+            await sub.save();
+          }
+
           const gracePeriodEnd = new Date(sub.endDate);
           gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
 
@@ -786,7 +877,7 @@ class SubscriptionManagement {
           const paymentSuccess = await this.paymentProcessing.processPayment(
             sub.userId._id,
             sub.paymentMethod,
-            price
+            sub.planSnapshot?.price || 0
           );
 
           if (paymentSuccess) {

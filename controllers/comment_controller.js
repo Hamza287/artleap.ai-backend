@@ -39,7 +39,7 @@ const commentController = {
       await Image.findByIdAndUpdate(imageId, { $inc: { commentCount: 1 } });
       await newComment.populate("user", "username profilePic");
 
-      if (String(image.userId._id) !== String(userId)) {
+      if (image.userId && image.userId._id && String(image.userId._id) !== String(userId)) {
         await SendNotificationService.sendCustomNotification(
           image.userId._id,
           userId,
