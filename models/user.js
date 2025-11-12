@@ -34,7 +34,17 @@ const UserSchema = new mongoose.Schema({
     details: { type: mongoose.Schema.Types.Mixed },
     isDefault: { type: Boolean, default: false }
   }],
-  watermarkEnabled: { type: Boolean, default: true }
+  watermarkEnabled: { type: Boolean, default: true },
+  privacyPolicyAccepted: {
+    accepted: { type: Boolean, default: false },
+    acceptedAt: { type: Date, default: null },
+    version: { type: String, default: "1.0" }
+  },
+  interests: {
+    selected: { type: [String], default: [] }, 
+    categories: { type: [String], default: [] },
+    lastUpdated: { type: Date, default: Date.now }
+  }
 });
 
 module.exports = mongoose.model("User", UserSchema);
