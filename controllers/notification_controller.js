@@ -15,7 +15,7 @@ const isValidObjectId = (id) => {
 const getUserNotifications = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { page = 1, limit = 20 } = req.query;
+    const { page = 1, limit = 40 } = req.query;
 
 
     if (!userId) {

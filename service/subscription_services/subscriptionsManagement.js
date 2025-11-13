@@ -181,7 +181,7 @@ class SubscriptionManagement {
           },
           { $skip: skip },
           { $limit: batchSize }
-        ]).maxTimeMS(15000);
+        ]).option({ maxTimeMS: 15000 });
 
         if (orphanedSubscriptions.length === 0) {
           hasMore = false;
@@ -227,7 +227,7 @@ class SubscriptionManagement {
           }
         },
         { $limit: 100 }
-      ]).maxTimeMS(15000);
+      ]).option({ maxTimeMS: 15000 });
 
       for (const group of duplicateSubscriptions) {
         const sortedDocs = group.docs.sort((a, b) => 
@@ -274,17 +274,17 @@ class SubscriptionManagement {
 
       for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
         const subscriptionsBatch = await UserSubscription.find({})
-          .select('userId _id isActive startDate')
-          .skip(batchNum * batchSize)
-          .limit(batchSize)
-          .maxTimeMS(10000);
+        .select('userId _id isActive startDate')
+        .skip(batchNum * batchSize)
+        .limit(batchSize)
+        .maxTime(10000)
 
         const orphanedIds = [];
         const userSubscriptionsMap = new Map();
 
         for (const sub of subscriptionsBatch) {
           try {
-            const userExists = await User.exists({ _id: sub.userId }).maxTimeMS(5000);
+            const userExists = await User.exists({ _id: sub.userId }).maxTime(5000);
             if (!userExists) {
               orphanedIds.push(sub._id);
             } else {
