@@ -16,6 +16,19 @@ class SubscriptionManagement {
     this.notificationService = new NotificationService();
     this.planManagement = new PlanManagement();
     this.paymentProcessing = new PaymentProcessing(this);
+    this.createSubscriptionIndexes().catch(console.error);
+  }
+
+  async createSubscriptionIndexes() {
+    try {
+      await UserSubscription.collection.createIndex({ userId: 1 });
+      await UserSubscription.collection.createIndex({ isActive: 1 });
+      await UserSubscription.collection.createIndex({ endDate: 1 });
+      await UserSubscription.collection.createIndex({ userId: 1, isActive: 1 });
+      await User.collection.createIndex({ _id: 1 });
+    } catch (error) {
+      console.error("[SubscriptionManagement] Error creating indexes:", error);
+    }
   }
 
   async syncLocalSubscriptionStatus() {
@@ -36,9 +49,7 @@ class SubscriptionManagement {
             continue;
           }
 
-          // FIX: Check and fix null endDate before processing
           if (!subscription.endDate) {
-            console.log(`[SubscriptionManagement] Fixing null endDate for subscription ${subscription._id}`);
             subscription.endDate = new Date();
             await subscription.save();
           }
@@ -94,7 +105,6 @@ class SubscriptionManagement {
 
       for (const subscription of subscriptionsWithNullEndDate) {
         try {
-          // Set endDate based on subscription type or default to current date
           let newEndDate = new Date();
           
           if (subscription.planSnapshot && subscription.planSnapshot.type) {
@@ -132,7 +142,6 @@ class SubscriptionManagement {
         }
       }
 
-      console.log(`[SubscriptionManagement] Fixed ${fixed} subscriptions with null endDate, ${errors} errors`);
       return { fixed, errors };
     } catch (error) {
       console.error("[SubscriptionManagement] Error fixing null endDates:", error);
@@ -145,37 +154,51 @@ class SubscriptionManagement {
       let deleted = 0;
       let fixed = 0;
 
-      const orphanedSubscriptions = await UserSubscription.aggregate([
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: "user"
-          }
-        },
-        {
-          $match: {
-            "user.0": { $exists: false }
-          }
-        },
-        {
-          $project: {
-            _id: 1
-          }
+      const batchSize = 50;
+      let skip = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        const orphanedSubscriptions = await UserSubscription.aggregate([
+          {
+            $lookup: {
+              from: "users",
+              localField: "userId",
+              foreignField: "_id",
+              as: "user"
+            }
+          },
+          {
+            $match: {
+              "user.0": { $exists: false }
+            }
+          },
+          {
+            $project: {
+              _id: 1,
+              userId: 1
+            }
+          },
+          { $skip: skip },
+          { $limit: batchSize }
+        ]).maxTimeMS(15000);
+
+        if (orphanedSubscriptions.length === 0) {
+          hasMore = false;
+          break;
         }
-      ]).option({ maxTimeMS: 30000 });
 
-      const batchSize = 100;
-      for (let i = 0; i < orphanedSubscriptions.length; i += batchSize) {
-        const batch = orphanedSubscriptions.slice(i, i + batchSize);
-        const idsToDelete = batch.map(sub => sub._id);
+        const idsToDelete = orphanedSubscriptions.map(sub => sub._id);
+        
+        if (idsToDelete.length > 0) {
+          await UserSubscription.deleteMany({ _id: { $in: idsToDelete } });
+          deleted += idsToDelete.length;
+        }
 
-        await UserSubscription.deleteMany({ _id: { $in: idsToDelete } });
-        deleted += batch.length;
-
-        if (i + batchSize < orphanedSubscriptions.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+        skip += batchSize;
+        
+        if (hasMore) {
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
 
@@ -189,8 +212,7 @@ class SubscriptionManagement {
           $group: {
             _id: "$userId",
             count: { $sum: 1 },
-            latestSubscription: { $first: "$$ROOT" },
-            subscriptionIds: { $push: "$_id" }
+            docs: { $push: "$$ROOT" }
           }
         },
         {
@@ -200,16 +222,19 @@ class SubscriptionManagement {
         },
         {
           $project: {
-            latestSubscription: 1,
-            subscriptionIds: 1
+            userId: "$_id",
+            docs: 1
           }
-        }
-      ]).option({ maxTimeMS: 30000 });
+        },
+        { $limit: 100 }
+      ]).maxTimeMS(15000);
 
       for (const group of duplicateSubscriptions) {
-        const idsToDeactivate = group.subscriptionIds.filter(
-          id => !id.equals(group.latestSubscription._id)
+        const sortedDocs = group.docs.sort((a, b) => 
+          new Date(b.startDate || b.createdAt) - new Date(a.startDate || a.createdAt)
         );
+        
+        const idsToDeactivate = sortedDocs.slice(1).map(doc => doc._id);
 
         if (idsToDeactivate.length > 0) {
           await UserSubscription.updateMany(
@@ -229,8 +254,7 @@ class SubscriptionManagement {
       return { deleted, fixed };
 
     } catch (error) {
-      if (error.name === 'MongoNetworkTimeoutError' || error.name === 'MongoServerSelectionError') {
-        console.error("[SubscriptionManagement] MongoDB timeout during cleanup - retrying with simpler query");
+      if (error.name === 'MongoNetworkTimeoutError' || error.name === 'MongoServerSelectionError' || error.codeName === 'MaxTimeMSExpired') {
         return await this.simpleCleanupOrphanedSubscriptions();
       }
 
@@ -244,36 +268,113 @@ class SubscriptionManagement {
       let deleted = 0;
       let fixed = 0;
 
-      const allSubscriptions = await UserSubscription.find({})
-        .select('userId')
-        .maxTimeMS(15000)
-        .limit(1000);
+      const totalSubscriptions = await UserSubscription.countDocuments().maxTimeMS(10000);
+      const batchSize = 100;
+      const totalBatches = Math.ceil(totalSubscriptions / batchSize);
 
-      const orphanedIds = [];
+      for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
+        const subscriptionsBatch = await UserSubscription.find({})
+          .select('userId _id isActive startDate')
+          .skip(batchNum * batchSize)
+          .limit(batchSize)
+          .maxTimeMS(10000);
 
-      for (const sub of allSubscriptions) {
-        const userExists = await User.exists({ _id: sub.userId }).maxTimeMS(5000);
-        if (!userExists) {
-          orphanedIds.push(sub._id);
+        const orphanedIds = [];
+        const userSubscriptionsMap = new Map();
+
+        for (const sub of subscriptionsBatch) {
+          try {
+            const userExists = await User.exists({ _id: sub.userId }).maxTimeMS(5000);
+            if (!userExists) {
+              orphanedIds.push(sub._id);
+            } else {
+              if (!userSubscriptionsMap.has(sub.userId.toString())) {
+                userSubscriptionsMap.set(sub.userId.toString(), []);
+              }
+              userSubscriptionsMap.get(sub.userId.toString()).push(sub);
+            }
+          } catch (error) {
+            console.warn(`[SubscriptionManagement] Error checking user for subscription ${sub._id}:`, error.message);
+          }
         }
-        await new Promise(resolve => setTimeout(resolve, 10));
+
+        if (orphanedIds.length > 0) {
+          await UserSubscription.deleteMany({ _id: { $in: orphanedIds } });
+          deleted += orphanedIds.length;
+        }
+
+        for (const [userId, subscriptions] of userSubscriptionsMap) {
+          if (subscriptions.length > 1) {
+            const activeSubscriptions = subscriptions.filter(sub => sub.isActive);
+            if (activeSubscriptions.length > 1) {
+              const sortedSubs = activeSubscriptions.sort((a, b) => 
+                new Date(b.startDate || b.createdAt) - new Date(a.startDate || a.createdAt)
+              );
+              
+              const idsToDeactivate = sortedSubs.slice(1).map(sub => sub._id);
+              
+              await UserSubscription.updateMany(
+                { _id: { $in: idsToDeactivate } },
+                {
+                  $set: {
+                    isActive: false,
+                    cancelledAt: new Date(),
+                    autoRenew: false
+                  }
+                }
+              );
+              fixed += idsToDeactivate.length;
+            }
+          }
+        }
+
+        if (batchNum < totalBatches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
 
-      if (orphanedIds.length > 0) {
-        const batchSize = 50;
-        for (let i = 0; i < orphanedIds.length; i += batchSize) {
-          const batch = orphanedIds.slice(i, i + batchSize);
-          await UserSubscription.deleteMany({ _id: { $in: batch } });
-          deleted += batch.length;
-        }
-      }
-
-      console.log(`[SubscriptionManagement] Simple cleanup completed - deleted: ${deleted}, fixed: ${fixed}`);
       return { deleted, fixed };
 
     } catch (error) {
       console.error("[SubscriptionManagement] Error in simple cleanup:", error);
       return { deleted: 0, fixed: 0 };
+    }
+  }
+
+  async preventiveCleanupMeasures() {
+    try {
+      const invalidUserRefs = await UserSubscription.find({
+        userId: { $exists: true, $ne: null },
+        isActive: true
+      });
+
+      for (const sub of invalidUserRefs) {
+        try {
+          const user = await User.findById(sub.userId);
+          if (!user) {
+            sub.isActive = false;
+            sub.cancelledAt = new Date();
+            await sub.save();
+          }
+        } catch (error) {
+          console.warn(`[SubscriptionManagement] Error verifying user reference for subscription ${sub._id}:`, error.message);
+        }
+      }
+    } catch (error) {
+      console.error("[SubscriptionManagement] Error in preventive cleanup:", error);
+    }
+  }
+
+  async runCleanup() {
+    try {
+      const currentHour = new Date().getHours();
+      if (currentHour >= 2 && currentHour <= 5) {
+        await this.cleanupOrphanedSubscriptions();
+      } else {
+        await this.simpleCleanupOrphanedSubscriptions();
+      }
+    } catch (error) {
+      console.error("[SubscriptionManagement] Cleanup failed:", error);
     }
   }
 
@@ -565,7 +666,6 @@ class SubscriptionManagement {
         subscription.planId = planId;
         subscription.startDate = new Date();
 
-        // FIX: Ensure endDate is always set with proper validation
         if (plan.type === "basic") {
           subscription.endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         } else if (plan.type === "standard") {
@@ -581,7 +681,6 @@ class SubscriptionManagement {
         } else if (plan.type === "free") {
           subscription.endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
         } else {
-          // Default fallback
           subscription.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
         }
 
@@ -621,7 +720,6 @@ class SubscriptionManagement {
         const startDate = new Date();
         let endDate = new Date();
 
-        // FIX: Ensure endDate is always set with proper validation
         if (plan.type === "basic") {
           endDate.setDate(startDate.getDate() + 7);
         } else if (plan.type === "standard") {
@@ -633,7 +731,6 @@ class SubscriptionManagement {
         } else if (plan.type === "free") {
           endDate.setFullYear(startDate.getFullYear() + 1);
         } else {
-          // Default fallback
           endDate.setMonth(startDate.getMonth() + 1);
         }
 
@@ -776,9 +873,7 @@ class SubscriptionManagement {
 
       for (const sub of gracePeriodSubs) {
         try {
-          // FIX: Check for null endDate before processing grace period
           if (!sub.endDate) {
-            console.log(`[SubscriptionManagement] Fixing null endDate in grace period for subscription ${sub._id}`);
             sub.endDate = new Date();
             await sub.save();
           }
