@@ -1,6 +1,5 @@
 const UserSubscription = require("../../models/user_subscription");
 const User = require("../../models/user");
-const PaymentRecord = require("../../models/recordPayment_model");
 const mongoose = require("mongoose");
 const NotificationService = require("./notificationService");
 const PlanManagement = require("./plansManagement");
@@ -34,7 +33,7 @@ class SubscriptionManagement {
   async syncLocalSubscriptionStatus() {
     try {
       const allSubscriptions = await UserSubscription.find({
-        isActive: true
+        isActive: true,
       }).populate("userId planId");
 
       let updated = 0;
@@ -55,7 +54,7 @@ class SubscriptionManagement {
           }
 
           if (subscription.endDate < now && subscription.isActive) {
-            subscription.isActive = false;
+            subscription.isActive = true;
             subscription.cancelledAt = new Date();
             await subscription.save();
 
@@ -75,21 +74,27 @@ class SubscriptionManagement {
 
           if (user.isSubscribed !== subscription.isActive) {
             user.isSubscribed = subscription.isActive;
-            user.subscriptionStatus = subscription.isActive ? 'active' : 'cancelled';
+            user.subscriptionStatus = subscription.isActive
+              ? "active"
+              : "cancelled";
             await user.save();
             updated++;
           }
-
         } catch (error) {
           errors++;
-          console.error(`[SubscriptionManagement] Error syncing subscription ${subscription._id}:`, error);
+          console.error(
+            `[SubscriptionManagement] Error syncing subscription ${subscription._id}:`,
+            error
+          );
         }
       }
 
       return { updated, errors };
-
     } catch (error) {
-      console.error("[SubscriptionManagement] Error syncing local subscription status:", error);
+      console.error(
+        "[SubscriptionManagement] Error syncing local subscription status:",
+        error
+      );
       throw error;
     }
   }
@@ -97,7 +102,7 @@ class SubscriptionManagement {
   async fixNullEndDates() {
     try {
       const subscriptionsWithNullEndDate = await UserSubscription.find({
-        endDate: null
+        endDate: null,
       });
 
       let fixed = 0;
@@ -106,19 +111,19 @@ class SubscriptionManagement {
       for (const subscription of subscriptionsWithNullEndDate) {
         try {
           let newEndDate = new Date();
-          
+
           if (subscription.planSnapshot && subscription.planSnapshot.type) {
             switch (subscription.planSnapshot.type) {
-              case 'basic':
+              case "basic":
                 newEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
                 break;
-              case 'standard':
+              case "standard":
                 newEndDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
                 break;
-              case 'premium':
+              case "premium":
                 newEndDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
                 break;
-              case 'trial':
+              case "trial":
                 newEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
                 break;
               default:
@@ -128,23 +133,29 @@ class SubscriptionManagement {
 
           await UserSubscription.updateOne(
             { _id: subscription._id },
-            { 
-              $set: { 
+            {
+              $set: {
                 endDate: newEndDate,
-                isActive: newEndDate > new Date()
-              } 
+                isActive: newEndDate > new Date(),
+              },
             }
           );
           fixed++;
         } catch (error) {
           errors++;
-          console.error(`[SubscriptionManagement] Error fixing subscription ${subscription._id}:`, error);
+          console.error(
+            `[SubscriptionManagement] Error fixing subscription ${subscription._id}:`,
+            error
+          );
         }
       }
 
       return { fixed, errors };
     } catch (error) {
-      console.error("[SubscriptionManagement] Error fixing null endDates:", error);
+      console.error(
+        "[SubscriptionManagement] Error fixing null endDates:",
+        error
+      );
       throw error;
     }
   }
@@ -165,22 +176,22 @@ class SubscriptionManagement {
               from: "users",
               localField: "userId",
               foreignField: "_id",
-              as: "user"
-            }
+              as: "user",
+            },
           },
           {
             $match: {
-              "user.0": { $exists: false }
-            }
+              "user.0": { $exists: false },
+            },
           },
           {
             $project: {
               _id: 1,
-              userId: 1
-            }
+              userId: 1,
+            },
           },
           { $skip: skip },
-          { $limit: batchSize }
+          { $limit: batchSize },
         ]).option({ maxTimeMS: 15000 });
 
         if (orphanedSubscriptions.length === 0) {
@@ -188,63 +199,65 @@ class SubscriptionManagement {
           break;
         }
 
-        const idsToDelete = orphanedSubscriptions.map(sub => sub._id);
-        
+        const idsToDelete = orphanedSubscriptions.map((sub) => sub._id);
+
         if (idsToDelete.length > 0) {
           await UserSubscription.deleteMany({ _id: { $in: idsToDelete } });
           deleted += idsToDelete.length;
         }
 
         skip += batchSize;
-        
+
         if (hasMore) {
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise((resolve) => setTimeout(resolve, 200));
         }
       }
 
       const duplicateSubscriptions = await UserSubscription.aggregate([
         {
           $match: {
-            isActive: true
-          }
+            isActive: true,
+          },
         },
         {
           $group: {
             _id: "$userId",
             count: { $sum: 1 },
-            docs: { $push: "$$ROOT" }
-          }
+            docs: { $push: "$$ROOT" },
+          },
         },
         {
           $match: {
-            count: { $gt: 1 }
-          }
+            count: { $gt: 1 },
+          },
         },
         {
           $project: {
             userId: "$_id",
-            docs: 1
-          }
+            docs: 1,
+          },
         },
-        { $limit: 100 }
+        { $limit: 100 },
       ]).option({ maxTimeMS: 15000 });
 
       for (const group of duplicateSubscriptions) {
-        const sortedDocs = group.docs.sort((a, b) => 
-          new Date(b.startDate || b.createdAt) - new Date(a.startDate || a.createdAt)
+        const sortedDocs = group.docs.sort(
+          (a, b) =>
+            new Date(b.startDate || b.createdAt) -
+            new Date(a.startDate || a.createdAt)
         );
-        
-        const idsToDeactivate = sortedDocs.slice(1).map(doc => doc._id);
+
+        const idsToDeactivate = sortedDocs.slice(1).map((doc) => doc._id);
 
         if (idsToDeactivate.length > 0) {
           await UserSubscription.updateMany(
             { _id: { $in: idsToDeactivate } },
             {
               $set: {
-                isActive: false,
+                isActive: true,
                 cancelledAt: new Date(),
-                autoRenew: false
-              }
+                autoRenew: false,
+              },
             }
           );
           fixed += idsToDeactivate.length;
@@ -252,13 +265,19 @@ class SubscriptionManagement {
       }
 
       return { deleted, fixed };
-
     } catch (error) {
-      if (error.name === 'MongoNetworkTimeoutError' || error.name === 'MongoServerSelectionError' || error.codeName === 'MaxTimeMSExpired') {
+      if (
+        error.name === "MongoNetworkTimeoutError" ||
+        error.name === "MongoServerSelectionError" ||
+        error.codeName === "MaxTimeMSExpired"
+      ) {
         return await this.simpleCleanupOrphanedSubscriptions();
       }
 
-      console.error("[SubscriptionManagement] Error cleaning up orphaned subscriptions:", error);
+      console.error(
+        "[SubscriptionManagement] Error cleaning up orphaned subscriptions:",
+        error
+      );
       return { deleted: 0, fixed: 0 };
     }
   }
@@ -268,23 +287,26 @@ class SubscriptionManagement {
       let deleted = 0;
       let fixed = 0;
 
-      const totalSubscriptions = await UserSubscription.countDocuments().maxTimeMS(10000);
+      const totalSubscriptions =
+        await UserSubscription.countDocuments().maxTimeMS(10000);
       const batchSize = 100;
       const totalBatches = Math.ceil(totalSubscriptions / batchSize);
 
       for (let batchNum = 0; batchNum < totalBatches; batchNum++) {
         const subscriptionsBatch = await UserSubscription.find({})
-        .select('userId _id isActive startDate')
-        .skip(batchNum * batchSize)
-        .limit(batchSize)
-        .maxTime(10000)
+          .select("userId _id isActive startDate")
+          .skip(batchNum * batchSize)
+          .limit(batchSize)
+          .maxTime(10000);
 
         const orphanedIds = [];
         const userSubscriptionsMap = new Map();
 
         for (const sub of subscriptionsBatch) {
           try {
-            const userExists = await User.exists({ _id: sub.userId }).maxTime(5000);
+            const userExists = await User.exists({ _id: sub.userId }).maxTime(
+              5000
+            );
             if (!userExists) {
               orphanedIds.push(sub._id);
             } else {
@@ -294,7 +316,10 @@ class SubscriptionManagement {
               userSubscriptionsMap.get(sub.userId.toString()).push(sub);
             }
           } catch (error) {
-            console.warn(`[SubscriptionManagement] Error checking user for subscription ${sub._id}:`, error.message);
+            console.warn(
+              `[SubscriptionManagement] Error checking user for subscription ${sub._id}:`,
+              error.message
+            );
           }
         }
 
@@ -305,22 +330,26 @@ class SubscriptionManagement {
 
         for (const [userId, subscriptions] of userSubscriptionsMap) {
           if (subscriptions.length > 1) {
-            const activeSubscriptions = subscriptions.filter(sub => sub.isActive);
+            const activeSubscriptions = subscriptions.filter(
+              (sub) => sub.isActive
+            );
             if (activeSubscriptions.length > 1) {
-              const sortedSubs = activeSubscriptions.sort((a, b) => 
-                new Date(b.startDate || b.createdAt) - new Date(a.startDate || a.createdAt)
+              const sortedSubs = activeSubscriptions.sort(
+                (a, b) =>
+                  new Date(b.startDate || b.createdAt) -
+                  new Date(a.startDate || a.createdAt)
               );
-              
-              const idsToDeactivate = sortedSubs.slice(1).map(sub => sub._id);
-              
+
+              const idsToDeactivate = sortedSubs.slice(1).map((sub) => sub._id);
+
               await UserSubscription.updateMany(
                 { _id: { $in: idsToDeactivate } },
                 {
                   $set: {
-                    isActive: false,
+                    isActive: true,
                     cancelledAt: new Date(),
-                    autoRenew: false
-                  }
+                    autoRenew: false,
+                  },
                 }
               );
               fixed += idsToDeactivate.length;
@@ -329,12 +358,11 @@ class SubscriptionManagement {
         }
 
         if (batchNum < totalBatches - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
 
       return { deleted, fixed };
-
     } catch (error) {
       console.error("[SubscriptionManagement] Error in simple cleanup:", error);
       return { deleted: 0, fixed: 0 };
@@ -345,23 +373,29 @@ class SubscriptionManagement {
     try {
       const invalidUserRefs = await UserSubscription.find({
         userId: { $exists: true, $ne: null },
-        isActive: true
+        isActive: true,
       });
 
       for (const sub of invalidUserRefs) {
         try {
           const user = await User.findById(sub.userId);
           if (!user) {
-            sub.isActive = false;
+            sub.isActive = true;
             sub.cancelledAt = new Date();
             await sub.save();
           }
         } catch (error) {
-          console.warn(`[SubscriptionManagement] Error verifying user reference for subscription ${sub._id}:`, error.message);
+          console.warn(
+            `[SubscriptionManagement] Error verifying user reference for subscription ${sub._id}:`,
+            error.message
+          );
         }
       }
     } catch (error) {
-      console.error("[SubscriptionManagement] Error in preventive cleanup:", error);
+      console.error(
+        "[SubscriptionManagement] Error in preventive cleanup:",
+        error
+      );
     }
   }
 
@@ -389,22 +423,24 @@ class SubscriptionManagement {
 
       if (activeSubscription && !user.isSubscribed) {
         user.isSubscribed = true;
-        user.subscriptionStatus = 'active';
+        user.subscriptionStatus = "active";
         await user.save();
         return { fixed: true, previousStatus: false, newStatus: true };
       }
 
       if (!activeSubscription && user.isSubscribed) {
         user.isSubscribed = false;
-        user.subscriptionStatus = 'cancelled';
+        user.subscriptionStatus = "cancelled";
         await user.save();
         return { fixed: true, previousStatus: true, newStatus: false };
       }
 
       return { fixed: false, currentStatus: user.isSubscribed };
-
     } catch (error) {
-      console.error("[SubscriptionManagement] Error verifying user subscription status:", error);
+      console.error(
+        "[SubscriptionManagement] Error verifying user subscription status:",
+        error
+      );
       throw error;
     }
   }
@@ -414,20 +450,20 @@ class SubscriptionManagement {
       const totalSubscriptions = await UserSubscription.countDocuments();
       const activeSubscriptions = await UserSubscription.countDocuments({
         isActive: true,
-        endDate: { $gt: new Date() }
+        endDate: { $gt: new Date() },
       });
       const expiredSubscriptions = await UserSubscription.countDocuments({
         isActive: true,
-        endDate: { $lte: new Date() }
+        endDate: { $lte: new Date() },
       });
       const gracePeriodSubscriptions = await UserSubscription.countDocuments({
         isActive: true,
         autoRenew: false,
-        cancelledAt: { $exists: true }
+        cancelledAt: { $exists: true },
       });
       const trialSubscriptions = await UserSubscription.countDocuments({
         isActive: true,
-        isTrial: true
+        isTrial: true,
       });
 
       return {
@@ -435,10 +471,13 @@ class SubscriptionManagement {
         active: activeSubscriptions,
         expired: expiredSubscriptions,
         gracePeriod: gracePeriodSubscriptions,
-        trial: trialSubscriptions
+        trial: trialSubscriptions,
       };
     } catch (error) {
-      console.error("[SubscriptionManagement] Error getting subscription stats:", error);
+      console.error(
+        "[SubscriptionManagement] Error getting subscription stats:",
+        error
+      );
       return {};
     }
   }
@@ -453,46 +492,46 @@ class SubscriptionManagement {
             from: "users",
             localField: "userId",
             foreignField: "_id",
-            as: "user"
-          }
+            as: "user",
+          },
         },
         {
           $match: {
-            "user.0": { $exists: false }
-          }
-        }
+            "user.0": { $exists: false },
+          },
+        },
       ]);
 
       if (orphanedSubs.length > 0) {
         issues.push({
           type: "orphaned_subscriptions",
           count: orphanedSubs.length,
-          message: `Found ${orphanedSubs.length} subscriptions without valid users`
+          message: `Found ${orphanedSubs.length} subscriptions without valid users`,
         });
       }
 
       const expiredActiveSubs = await UserSubscription.countDocuments({
         isActive: true,
-        endDate: { $lte: new Date() }
+        endDate: { $lte: new Date() },
       });
 
       if (expiredActiveSubs > 0) {
         issues.push({
           type: "expired_but_active",
           count: expiredActiveSubs,
-          message: `Found ${expiredActiveSubs} subscriptions that are expired but still marked as active`
+          message: `Found ${expiredActiveSubs} subscriptions that are expired but still marked as active`,
         });
       }
 
       const nullEndDateSubs = await UserSubscription.countDocuments({
-        endDate: null
+        endDate: null,
       });
 
       if (nullEndDateSubs > 0) {
         issues.push({
           type: "null_endDate",
           count: nullEndDateSubs,
-          message: `Found ${nullEndDateSubs} subscriptions with null endDate`
+          message: `Found ${nullEndDateSubs} subscriptions with null endDate`,
         });
       }
 
@@ -502,49 +541,51 @@ class SubscriptionManagement {
             from: "usersubscriptions",
             localField: "_id",
             foreignField: "userId",
-            as: "subscriptions"
-          }
+            as: "subscriptions",
+          },
         },
         {
           $match: {
             $or: [
               {
                 isSubscribed: true,
-                "subscriptions": {
+                subscriptions: {
                   $not: {
                     $elemMatch: {
                       isActive: true,
-                      endDate: { $gt: new Date() }
-                    }
-                  }
-                }
+                      endDate: { $gt: new Date() },
+                    },
+                  },
+                },
               },
               {
                 isSubscribed: false,
-                "subscriptions": {
+                subscriptions: {
                   $elemMatch: {
                     isActive: true,
-                    endDate: { $gt: new Date() }
-                  }
-                }
-              }
-            ]
-          }
-        }
+                    endDate: { $gt: new Date() },
+                  },
+                },
+              },
+            ],
+          },
+        },
       ]);
 
       if (mismatchedUsers.length > 0) {
         issues.push({
           type: "status_mismatch",
           count: mismatchedUsers.length,
-          message: `Found ${mismatchedUsers.length} users with mismatched subscription status`
+          message: `Found ${mismatchedUsers.length} users with mismatched subscription status`,
         });
       }
 
       return issues;
-
     } catch (error) {
-      console.error("[SubscriptionManagement] Error getting subscription issues:", error);
+      console.error(
+        "[SubscriptionManagement] Error getting subscription issues:",
+        error
+      );
       return [];
     }
   }
@@ -556,11 +597,16 @@ class SubscriptionManagement {
         isActive: true,
         endDate: { $gt: new Date() },
         isTrial: false,
-      }).populate("planId").populate({ path: "userId" });
+      })
+        .populate("planId")
+        .populate({ path: "userId" });
 
       return paidSubscription || null;
     } catch (error) {
-      console.error("[SubscriptionManagement] getUserActiveSubscription failed:", error);
+      console.error(
+        "[SubscriptionManagement] getUserActiveSubscription failed:",
+        error
+      );
       throw error;
     }
   }
@@ -598,31 +644,47 @@ class SubscriptionManagement {
         user.imageGenerationCredits = 0;
       } else {
         if (carryOverCredits) {
-          const uImg = num(user.imageGenerationCredits);
-          const uPr = num(user.promptGenerationCredits);
-          const uTot = num(user.totalCredits);
-          const uUsedI = num(user.usedImageCredits);
-          const uUsedP = num(user.usedPromptCredits);
+          const previouslyFree = user.planType === "free";
 
-          const remainingImageCredits = Math.max(0, uImg - uUsedI);
-          const remainingPromptCredits = Math.max(0, uPr - uUsedP);
-          const remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
+          if (!previouslyFree) {
+            // carry over only from paid → paid
+            const uImg = num(user.imageGenerationCredits);
+            const uPr = num(user.promptGenerationCredits);
+            const uTot = num(user.totalCredits);
+            const uUsedI = num(user.usedImageCredits);
+            const uUsedP = num(user.usedPromptCredits);
 
-          user.imageGenerationCredits = num(remainingImageCredits + planImg);
-          user.promptGenerationCredits = num(remainingPromptCredits + planPr);
-          user.totalCredits = num(remainingTotalCredits + planTot);
+            const remainingImageCredits = Math.max(0, uImg - uUsedI);
+            const remainingPromptCredits = Math.max(0, uPr - uUsedP);
+            const remainingTotalCredits = Math.max(0, uTot - (uUsedI + uUsedP));
 
-          if (subscription && subscription.planSnapshot) {
-            subscription.cancelledAt = null;
-            subscription.planSnapshot.totalCredits = num(remainingTotalCredits + planTot);
-            subscription.planSnapshot.imageGenerationCredits = num(remainingImageCredits + planImg);
-            subscription.planSnapshot.promptGenerationCredits = num(remainingPromptCredits + planPr);
-            await subscription.save();
+            user.imageGenerationCredits = remainingImageCredits + planImg;
+            user.promptGenerationCredits = remainingPromptCredits + planPr;
+            user.totalCredits = remainingTotalCredits + planTot;
+
+            if (subscription && subscription.planSnapshot) {
+              subscription.cancelledAt = null;
+              subscription.planSnapshot.totalCredits =
+                remainingTotalCredits + planTot;
+              subscription.planSnapshot.imageGenerationCredits =
+                remainingImageCredits + planImg;
+              subscription.planSnapshot.promptGenerationCredits =
+                remainingPromptCredits + planPr;
+              await subscription.save();
+            }
+          } else {
+            // If previous plan was FREE → reset credits fully
+            user.imageGenerationCredits = planImg;
+            user.promptGenerationCredits = planPr;
+            user.totalCredits = planTot;
+            user.usedImageCredits = 0;
+            user.usedPromptCredits = 0;
           }
         } else {
-          user.imageGenerationCredits = num(planImg);
-          user.promptGenerationCredits = num(planPr);
-          user.totalCredits = num(planTot);
+          // No carry over → full reset
+          user.imageGenerationCredits = planImg;
+          user.promptGenerationCredits = planPr;
+          user.totalCredits = planTot;
           user.usedImageCredits = 0;
           user.usedPromptCredits = 0;
         }
@@ -679,9 +741,13 @@ class SubscriptionManagement {
         } else if (plan.type === "trial") {
           subscription.endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
         } else if (plan.type === "free") {
-          subscription.endDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+          subscription.endDate = new Date(
+            Date.now() + 365 * 24 * 60 * 60 * 1000
+          );
         } else {
-          subscription.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          subscription.endDate = new Date(
+            Date.now() + 30 * 24 * 60 * 60 * 1000
+          );
         }
 
         subscription.paymentMethod = paymentMethod;
@@ -773,7 +839,10 @@ class SubscriptionManagement {
 
       return subscription;
     } catch (error) {
-      console.error("[SubscriptionManagement] createSubscription failed:", error);
+      console.error(
+        "[SubscriptionManagement] createSubscription failed:",
+        error
+      );
       throw error;
     }
   }
@@ -799,7 +868,14 @@ class SubscriptionManagement {
         }
         const freePlan = await this.planManagement.getPlanByType("free");
         if (freePlan) {
-          await this.updateUserData(userId, freePlan, null, false, false, false);
+          await this.updateUserData(
+            userId,
+            freePlan,
+            null,
+            false,
+            false,
+            false
+          );
           await this.notificationService.sendSubscriptionNotification(
             userId,
             "cancelled",
@@ -836,7 +912,14 @@ class SubscriptionManagement {
 
         const freePlan = await this.planManagement.getPlanByType("free");
         if (freePlan) {
-          await this.updateUserData(userId, freePlan, null, false, false, false);
+          await this.updateUserData(
+            userId,
+            freePlan,
+            null,
+            false,
+            false,
+            false
+          );
         }
         await this.notificationService.sendSubscriptionNotification(
           userId,
@@ -856,7 +939,11 @@ class SubscriptionManagement {
 
       return subscription;
     } catch (error) {
-      console.error("[SubscriptionManagement] cancelSubscription failed for user:", userId, error);
+      console.error(
+        "[SubscriptionManagement] cancelSubscription failed for user:",
+        userId,
+        error
+      );
       throw error;
     }
   }
@@ -868,7 +955,7 @@ class SubscriptionManagement {
         isActive: true,
         autoRenew: false,
         cancelledAt: { $exists: true },
-        endDate: { $lte: now }
+        endDate: { $lte: now },
       }).populate("userId planId");
 
       for (const sub of gracePeriodSubs) {
@@ -903,11 +990,17 @@ class SubscriptionManagement {
             }
           }
         } catch (error) {
-          console.error(`[SubscriptionManagement] Error processing grace period subscription: ${sub._id}`, error);
+          console.error(
+            `[SubscriptionManagement] Error processing grace period subscription: ${sub._id}`,
+            error
+          );
         }
       }
     } catch (error) {
-      console.error("[SubscriptionManagement] processGracePeriodSubscriptions failed:", error);
+      console.error(
+        "[SubscriptionManagement] processGracePeriodSubscriptions failed:",
+        error
+      );
       throw error;
     }
   }
@@ -920,7 +1013,7 @@ class SubscriptionManagement {
 
       const invalidSubscriptions = await UserSubscription.find({
         planId: null,
-        isActive: true
+        isActive: true,
       });
 
       for (const sub of invalidSubscriptions) {
@@ -948,7 +1041,7 @@ class SubscriptionManagement {
         isActive: true,
         autoRenew: true,
         isTrial: false,
-        planId: { $ne: null }
+        planId: { $ne: null },
       }).populate("userId planId");
 
       for (const sub of expiringSoon) {
@@ -964,7 +1057,7 @@ class SubscriptionManagement {
         isActive: true,
         isTrial: false,
         autoRenew: true,
-        planId: { $ne: null }
+        planId: { $ne: null },
       }).populate("userId planId");
 
       for (const sub of expiredSubs) {
@@ -1018,7 +1111,10 @@ class SubscriptionManagement {
             await this.cancelSubscription(sub.userId._id, true, true);
           }
         } catch (error) {
-          console.error(`[SubscriptionManagement] Error renewing subscription: ${sub._id}`, error);
+          console.error(
+            `[SubscriptionManagement] Error renewing subscription: ${sub._id}`,
+            error
+          );
           await this.cancelSubscription(sub.userId._id, true, true);
         }
       }
@@ -1027,7 +1123,7 @@ class SubscriptionManagement {
         endDate: { $lte: now },
         isActive: true,
         $or: [{ isTrial: true }, { autoRenew: false }],
-        planId: { $ne: null }
+        planId: { $ne: null },
       }).populate("userId planId");
 
       for (const sub of expiredNonAutoRenew) {
@@ -1053,11 +1149,17 @@ class SubscriptionManagement {
             );
           }
         } catch (error) {
-          console.error(`[SubscriptionManagement] Error processing expired subscription: ${sub._id}`, error);
+          console.error(
+            `[SubscriptionManagement] Error processing expired subscription: ${sub._id}`,
+            error
+          );
         }
       }
     } catch (error) {
-      console.error("[SubscriptionManagement] processExpiredSubscriptions failed:", error);
+      console.error(
+        "[SubscriptionManagement] processExpiredSubscriptions failed:",
+        error
+      );
       throw error;
     }
   }

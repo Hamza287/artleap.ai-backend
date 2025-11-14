@@ -20,7 +20,7 @@ function buildPlanSnapshot(plan) {
     imageGenerationCredits: num(plan?.imageGenerationCredits),
     promptGenerationCredits: num(plan?.promptGenerationCredits),
     features: Array.isArray(plan?.features) ? plan.features : [],
-    version: (plan?.version ?? "").toString() || "1"
+    version: (plan?.version ?? "").toString() || "1",
   };
 }
 
@@ -28,7 +28,7 @@ class GoogleCancellationHandler {
   constructor() {
     this.auth = new google.auth.GoogleAuth({
       credentials: googleCredentials,
-      scopes: ["https://www.googleapis.com/auth/androidpublisher"]
+      scopes: ["https://www.googleapis.com/auth/androidpublisher"],
     });
   }
 
@@ -36,7 +36,7 @@ class GoogleCancellationHandler {
     console.error(`[GoogleCancellationHandler][ERROR] ${message}`, {
       error: error.message,
       stack: error.stack,
-      response: error.response?.data
+      response: error.response?.data,
     });
   }
 
@@ -49,68 +49,86 @@ class GoogleCancellationHandler {
     }
   }
 
-  async getAllSubscriptionsFromPlayStore(packageName = "com.XrDIgital.ImaginaryVerse") {
-  try {
-    await this.getBillingClient();
-    const allPaymentRecords = await PaymentRecord.aggregate([
-      {
-        $match: {
-          platform: "android",
-          receiptData: { $exists: true, $ne: null, $nin: ["", " "] }
+  async getAllSubscriptionsFromPlayStore(
+    packageName = "com.XrDIgital.ImaginaryVerse"
+  ) {
+    try {
+      await this.getBillingClient();
+      const allPaymentRecords = await PaymentRecord.aggregate([
+        {
+          $match: {
+            platform: "android",
+            receiptData: { $exists: true, $ne: null, $nin: ["", " "] },
+          },
+        },
+        { $sort: { createdAt: -1 } },
+        { $group: { _id: "$userId", latestRecord: { $first: "$$ROOT" } } },
+      ]);
+
+      const results = {
+        processed: 0,
+        updated: 0,
+        errors: 0,
+        details: [],
+        skipped: 0,
+      };
+
+      for (const record of allPaymentRecords) {
+        const paymentRecord = record.latestRecord;
+        if (
+          !paymentRecord ||
+          !paymentRecord.userId ||
+          !paymentRecord.receiptData ||
+          !paymentRecord.receiptData.trim()
+        ) {
+          results.skipped++;
+          continue;
         }
-      },
-      { $sort: { createdAt: -1 } },
-      { $group: { _id: "$userId", latestRecord: { $first: "$$ROOT" } } }
-    ]);
 
-    const results = { processed: 0, updated: 0, errors: 0, details: [], skipped: 0 };
+        try {
+          const playStoreStatus = await this.getSubscriptionStatusFromPlayStore(
+            packageName,
+            paymentRecord.receiptData,
+            paymentRecord.userId
+          );
 
-    for (const record of allPaymentRecords) {
-      const paymentRecord = record.latestRecord;
-      if (!paymentRecord || !paymentRecord.userId || !paymentRecord.receiptData || !paymentRecord.receiptData.trim()) {
-        results.skipped++;
-        continue;
+          if (playStoreStatus) {
+            const needsUpdate = await this.compareAndUpdateLocalRecords(
+              paymentRecord,
+              playStoreStatus
+            );
+            if (needsUpdate) results.updated++;
+            results.details.push({
+              paymentId: paymentRecord._id,
+              purchaseToken: paymentRecord.receiptData,
+              localStatus: paymentRecord.status,
+              playStoreStatus: playStoreStatus.finalStatus,
+              updated: needsUpdate,
+            });
+          }
+
+          results.processed++;
+          await new Promise((r) => setTimeout(r, 50));
+        } catch (error) {
+          if (error.message.includes("expired for too long")) {
+            await this.handleExpiredSubscription(paymentRecord);
+            results.updated++;
+          } else {
+            results.errors++;
+            this.logError(
+              `Error processing payment record ${paymentRecord._id}`,
+              error
+            );
+          }
+        }
       }
 
-      try {
-        const playStoreStatus = await this.getSubscriptionStatusFromPlayStore(
-          packageName,
-          paymentRecord.receiptData,
-          paymentRecord.userId
-        );
-
-        if (playStoreStatus) {
-          const needsUpdate = await this.compareAndUpdateLocalRecords(paymentRecord, playStoreStatus);
-          if (needsUpdate) results.updated++;
-          results.details.push({
-            paymentId: paymentRecord._id,
-            purchaseToken: paymentRecord.receiptData,
-            localStatus: paymentRecord.status,
-            playStoreStatus: playStoreStatus.finalStatus,
-            updated: needsUpdate
-          });
-        }
-
-        results.processed++;
-        await new Promise((r) => setTimeout(r, 50));
-      } catch (error) {
-        if (error.message.includes("expired for too long")) {
-          await this.handleExpiredSubscription(paymentRecord);
-          results.updated++;
-        } else {
-          results.errors++;
-          this.logError(`Error processing payment record ${paymentRecord._id}`, error);
-        }
-      }
+      return results;
+    } catch (error) {
+      this.logError("Failed to sync subscriptions", error);
+      throw error;
     }
-
-    return results;
-  } catch (error) {
-    this.logError("Failed to sync subscriptions", error);
-    throw error;
   }
-}
-
 
   async handleExpiredSubscription(paymentRecord) {
     try {
@@ -121,8 +139,8 @@ class GoogleCancellationHandler {
             status: "cancelled",
             cancelledAt: new Date(),
             cancellationType: "expired_too_long",
-            lastChecked: new Date()
-          }
+            lastChecked: new Date(),
+          },
         }
       );
 
@@ -138,36 +156,46 @@ class GoogleCancellationHandler {
             autoRenew: false,
             cancelledAt: new Date(),
             endDate: new Date(),
-            lastUpdated: new Date()
-          }
+            lastUpdated: new Date(),
+          },
         }
       );
 
       await this.downgradeToFreePlan(paymentRecord.userId, "expired_too_long");
     } catch (error) {
-      this.logError(`Error handling expired subscription for user ${paymentRecord.userId}`, error);
+      this.logError(
+        `Error handling expired subscription for user ${paymentRecord.userId}`,
+        error
+      );
     }
   }
 
-  async getSubscriptionStatusFromPlayStore(packageName = "com.XrDIgital.ImaginaryVerse", purchaseToken, userId) {
+  async getSubscriptionStatusFromPlayStore(
+    packageName = "com.XrDIgital.ImaginaryVerse",
+    purchaseToken,
+    userId
+  ) {
     try {
       const client = await this.getBillingClient();
       if (!purchaseToken) {
-        console.error("[GoogleCancellationHandler] ❌ Missing purchaseToken in receiptData", {
-          userId,
-          purchaseToken,
-        });
+        console.error(
+          "[GoogleCancellationHandler] ❌ Missing purchaseToken in receiptData",
+          {
+            userId,
+            purchaseToken,
+          }
+        );
         return {
           finalStatus: "error",
           error: "Missing purchaseToken",
-          isExpired: true
+          isExpired: true,
         };
       }
 
       const response = await client.purchases.subscriptionsv2.get({
         packageName,
         token: purchaseToken,
-        auth: this.auth
+        auth: this.auth,
       });
       const subscription = response.data;
 
@@ -188,7 +216,7 @@ class GoogleCancellationHandler {
           expiryTime: new Date(),
           finalStatus: "cancelled",
           autoRenewing: false,
-          foundInPlayStore: false
+          foundInPlayStore: false,
         };
       }
 
@@ -200,7 +228,6 @@ class GoogleCancellationHandler {
       return null;
     }
   }
-
 
   analyzePlayStoreSubscriptionStatus(lineItem, subscription) {
     const now = new Date();
@@ -218,19 +245,26 @@ class GoogleCancellationHandler {
     const autoRenewing = lineItem.autoRenewingPlan?.autoRenewEnabled ?? false;
     const isExpired = expiryTime ? expiryTime.getTime() < now.getTime() : true;
     const cancellationReason = lineItem.canceledReason;
-    const userCancellationTime = lineItem.userCancellationTime ? new Date(lineItem.userCancellationTime) : null;
+    const userCancellationTime = lineItem.userCancellationTime
+      ? new Date(lineItem.userCancellationTime)
+      : null;
     const isRefunded = lineItem.refunded ?? false;
     const isRevoked = !!subscription.revocationReason;
 
     const isInGracePeriod =
       !!userCancellationTime && !isExpired && expiryTime
-        ? now <= new Date(new Date(expiryTime).setDate(expiryTime.getDate() + 7))
+        ? now <=
+          new Date(new Date(expiryTime).setDate(expiryTime.getDate() + 7))
         : false;
 
     let cancellationType = "active";
     let finalStatus = "active";
 
-    if (isExpired) {
+    if (autoRenewing) {
+      cancellationType = "active";
+      finalStatus = "active";
+      isExpired = false;
+    } else if (isExpired) {
       cancellationType = "expired";
       finalStatus = "cancelled";
     } else if (!autoRenewing && userCancellationTime) {
@@ -261,10 +295,9 @@ class GoogleCancellationHandler {
       isRevoked,
       cancellationReason,
       finalStatus,
-      foundInPlayStore: true
+      foundInPlayStore: true,
     };
   }
-
 
   async compareAndUpdateLocalRecords(paymentRecord, playStoreStatus) {
     try {
@@ -275,11 +308,14 @@ class GoogleCancellationHandler {
         {
           $set: {
             status: playStoreStatus.finalStatus,
-            cancelledAt: playStoreStatus.finalStatus === "cancelled" ? new Date() : paymentRecord.cancelledAt,
+            cancelledAt:
+              playStoreStatus.finalStatus === "cancelled"
+                ? new Date()
+                : paymentRecord.cancelledAt,
             cancellationType: playStoreStatus.cancellationType,
             lastChecked: new Date(),
-            expiryDate: playStoreStatus.expiryTime
-          }
+            expiryDate: playStoreStatus.expiryTime,
+          },
         }
       );
 
@@ -288,18 +324,27 @@ class GoogleCancellationHandler {
 
       let userSubscription = await UserSubscription.findOne({
         userId: userId,
-        $or: [{ isActive: true }, { status: { $in: ["active", "grace_period", "cancelled"] } }]
+        $or: [
+          { isActive: true },
+          { status: { $in: ["active", "grace_period", "cancelled"] } },
+        ],
       }).populate("planId");
 
-      if (playStoreStatus.finalStatus === "cancelled" && playStoreStatus.isExpired) {
+      if (
+        playStoreStatus.finalStatus === "cancelled" &&
+        playStoreStatus.isExpired &&
+        !playStoreStatus.autoRenewing
+      ) {
         const activeRecord = await PaymentRecord.findOne({
           userId,
           platform: "android",
-          status: { $in: ["active", "grace_period"] }
+          status: { $in: ["active", "grace_period"] },
         });
 
         if (activeRecord) {
-          console.log(`⏩ Skipping downgrade: user ${userId} has another active subscription`);
+          console.log(
+            `⏩ Skipping downgrade: user ${userId} has another active subscription`
+          );
           return false;
         }
 
@@ -314,18 +359,23 @@ class GoogleCancellationHandler {
                 cancellationReason: playStoreStatus.cancellationType,
                 status: "cancelled",
                 endDate: new Date(),
-                lastUpdated: new Date()
-              }
+                lastUpdated: new Date(),
+              },
             }
           );
         }
 
-        await this.downgradeToFreePlan(userId, playStoreStatus.cancellationType);
+        await this.downgradeToFreePlan(
+          userId,
+          playStoreStatus.cancellationType
+        );
         return true;
       }
 
-
-      if (playStoreStatus.finalStatus === "cancelled" && !playStoreStatus.isExpired) {
+      if (
+        playStoreStatus.finalStatus === "cancelled" &&
+        !playStoreStatus.isExpired
+      ) {
         if (userSubscription) {
           await UserSubscription.updateOne(
             { _id: userSubscription._id },
@@ -337,12 +387,16 @@ class GoogleCancellationHandler {
                 cancellationReason: playStoreStatus.cancellationType,
                 status: "cancelled",
                 endDate: playStoreStatus.expiryTime,
-                lastUpdated: new Date()
-              }
+                lastUpdated: new Date(),
+              },
             }
           );
         }
-        await this.updateUserForCancelledButActive(userId, playStoreStatus.cancellationType, playStoreStatus.expiryTime);
+        await this.updateUserForCancelledButActive(
+          userId,
+          playStoreStatus.cancellationType,
+          playStoreStatus.expiryTime
+        );
         return true;
       }
 
@@ -358,8 +412,8 @@ class GoogleCancellationHandler {
                 cancellationReason: playStoreStatus.cancellationType,
                 status: "grace_period",
                 endDate: playStoreStatus.expiryTime,
-                lastUpdated: new Date()
-              }
+                lastUpdated: new Date(),
+              },
             }
           );
         }
@@ -368,9 +422,17 @@ class GoogleCancellationHandler {
       }
 
       if (playStoreStatus.finalStatus === "active") {
-        const prevEnd = userSubscription?.endDate ? new Date(userSubscription.endDate) : null;
-        const nextEnd = playStoreStatus.expiryTime ? new Date(playStoreStatus.expiryTime) : null;
-        const expiryChanged = !!(prevEnd && nextEnd && nextEnd.getTime() !== prevEnd.getTime());
+        const prevEnd = userSubscription?.endDate
+          ? new Date(userSubscription.endDate)
+          : null;
+        const nextEnd = playStoreStatus.expiryTime
+          ? new Date(playStoreStatus.expiryTime)
+          : null;
+        const expiryChanged = !!(
+          prevEnd &&
+          nextEnd &&
+          nextEnd.getTime() !== prevEnd.getTime()
+        );
 
         if (userSubscription) {
           await UserSubscription.updateOne(
@@ -381,13 +443,17 @@ class GoogleCancellationHandler {
                 isActive: true,
                 status: "active",
                 endDate: nextEnd,
-                lastUpdated: new Date()
-              }
+                lastUpdated: new Date(),
+              },
             }
           );
         }
 
-        await this.updateUserForActiveSubscription(userId, userSubscription, expiryChanged);
+        await this.updateUserForActiveSubscription(
+          userId,
+          userSubscription,
+          expiryChanged
+        );
 
         if (!userSubscription) {
           await this.ensureActiveSubscriptionRecord(userId, nextEnd);
@@ -398,12 +464,19 @@ class GoogleCancellationHandler {
 
       return false;
     } catch (error) {
-      this.logError(`Error updating records for user ${paymentRecord.userId}`, error);
+      this.logError(
+        `Error updating records for user ${paymentRecord.userId}`,
+        error
+      );
       return false;
     }
   }
 
-  async updateUserForActiveSubscription(userId, userSubscriptionDoc, expiryChanged) {
+  async updateUserForActiveSubscription(
+    userId,
+    userSubscriptionDoc,
+    expiryChanged
+  ) {
     try {
       const user = await User.findById(userId);
       if (!user) return;
@@ -411,7 +484,8 @@ class GoogleCancellationHandler {
       let planDoc = null;
       if (userSubscriptionDoc?.planId) {
         planDoc =
-          typeof userSubscriptionDoc.planId === "object" && userSubscriptionDoc.planId._id
+          typeof userSubscriptionDoc.planId === "object" &&
+          userSubscriptionDoc.planId._id
             ? userSubscriptionDoc.planId
             : await SubscriptionPlan.findById(userSubscriptionDoc.planId);
       }
@@ -419,15 +493,15 @@ class GoogleCancellationHandler {
         const activeSub = await UserSubscription.findOne({
           userId,
           isActive: true,
-          status: "active"
+          status: "active",
         }).populate("planId");
         planDoc = activeSub?.planId || null;
       }
       if (!planDoc) return;
 
       const snap = buildPlanSnapshot(planDoc);
-       console.log("plans reset to " + user.planName)
-      if (expiryChanged && user.lastCreditReset && user.planName != 'Free') {
+      console.log("plans reset to " + user.planName);
+      if (expiryChanged && user.lastCreditReset && user.planName != "Free") {
         const resetDate = new Date(user.lastCreditReset);
         const now = new Date();
         const timeDiff = now.getTime() - resetDate.getTime();
@@ -436,7 +510,10 @@ class GoogleCancellationHandler {
         if (hoursDiff >= 24) {
           user.totalCredits = num(planDoc.totalCredits, 0);
           user.imageGenerationCredits = num(planDoc.imageGenerationCredits, 0);
-          user.promptGenerationCredits = num(planDoc.promptGenerationCredits, 0);
+          user.promptGenerationCredits = num(
+            planDoc.promptGenerationCredits,
+            0
+          );
           user.lastCreditReset = now;
         }
       } else if (!user.lastCreditReset) {
@@ -468,11 +545,13 @@ class GoogleCancellationHandler {
       const existing = await UserSubscription.findOne({
         userId,
         isActive: true,
-        status: "active"
+        status: "active",
       });
       if (existing) return;
 
-      const paidSub = await UserSubscription.findOne({ userId }).sort({ createdAt: -1 }).populate("planId");
+      const paidSub = await UserSubscription.findOne({ userId })
+        .sort({ createdAt: -1 })
+        .populate("planId");
       if (!paidSub?.planId) return;
 
       const snap = buildPlanSnapshot(paidSub.planId);
@@ -487,7 +566,7 @@ class GoogleCancellationHandler {
         paymentMethod: paidSub.paymentMethod || "google_play",
         autoRenew: true,
         status: "active",
-        planSnapshot: snap
+        planSnapshot: snap,
       });
       await sub.save();
     } catch (error) {
@@ -518,95 +597,100 @@ class GoogleCancellationHandler {
         await user.save();
       }
     } catch (error) {
-      this.logError(`Error updating cancelled but active user ${userId}`, error);
+      this.logError(
+        `Error updating cancelled but active user ${userId}`,
+        error
+      );
     }
   }
 
-async downgradeToFreePlan(userId, cancellationType = "unknown") {
-  try {
-    const [freePlan, user] = await Promise.all([
-      SubscriptionPlan.findOne({ type: "free" }),
-      User.findById(userId)
-    ]);
+  async downgradeToFreePlan(userId, cancellationType = "unknown") {
+    try {
+      const [freePlan, user] = await Promise.all([
+        SubscriptionPlan.findOne({ type: "free" }),
+        User.findById(userId),
+      ]);
 
-    if (!freePlan) throw new Error("Free plan not configured");
-    if (!user) throw new Error("User not found");
+      if (!freePlan) throw new Error("Free plan not configured");
+      if (!user) throw new Error("User not found");
 
-    const isAlreadyOnFreePlan =
-      (user.subscriptionStatus === "cancelled" || user.subscriptionStatus === "active") && user.planName === "Free";
+      const isAlreadyOnFreePlan =
+        (user.subscriptionStatus === "cancelled" ||
+          user.subscriptionStatus === "active") &&
+        user.planName === "Free";
 
-    const lastDowngrade = user.planDowngradedAt ? new Date(user.planDowngradedAt) : null;
-    const now = new Date();
+      const lastDowngrade = user.planDowngradedAt
+        ? new Date(user.planDowngradedAt)
+        : null;
+      const now = new Date();
 
-    const isSameDay =
-      lastDowngrade &&
-      lastDowngrade.getUTCFullYear() === now.getUTCFullYear() &&
-      lastDowngrade.getUTCMonth() === now.getUTCMonth() &&
-      lastDowngrade.getUTCDate() === now.getUTCDate();
+      const isSameDay =
+        lastDowngrade &&
+        lastDowngrade.getUTCFullYear() === now.getUTCFullYear() &&
+        lastDowngrade.getUTCMonth() === now.getUTCMonth() &&
+        lastDowngrade.getUTCDate() === now.getUTCDate();
 
-    if (isAlreadyOnFreePlan && isSameDay) {
-      return;
-    }
-
-    const freeSnapshot = buildPlanSnapshot(freePlan);
-
-    const updateData = {
-      isSubscribed: false,
-      subscriptionStatus: "active",
-      cancellationReason: cancellationType,
-      planName: freePlan.name || "Free",
-      watermarkEnabled: true,
-    };
-
-    if (!isAlreadyOnFreePlan && !isSameDay) {
-      updateData.totalCredits = 4;
-      updateData.dailyCredits = 4;
-      updateData.imageGenerationCredits = 0;
-      updateData.promptGenerationCredits = 4;
-      updateData.usedImageCredits = 0;
-      updateData.usedPromptCredits = 0;
-      updateData.lastCreditReset = now;
-    }
-
-    await User.updateOne({ _id: userId }, { $set: updateData });
-
-    await UserSubscription.updateMany(
-      { userId: userId, isActive: true },
-      {
-        $set: {
-          isActive: true,
-          status: "cancelled",
-          autoRenew: false,
-          cancelledAt: now,
-          endDate: now,
-          lastUpdated: now
-        }
+      if (isAlreadyOnFreePlan && isSameDay) {
+        return;
       }
-    );
 
-    if (!isAlreadyOnFreePlan) {
-      const newFreeSub = new UserSubscription({
-        userId,
-        planId: freePlan._id,
-        startDate: now,
-        endDate: now,
-        isTrial: false,
-        isActive: true,
-        paymentMethod: "system",
-        autoRenew: false,
-        status: "active",
-        planSnapshot: freeSnapshot,
-        lastUpdated: now
-      });
-      await newFreeSub.save();
+      const freeSnapshot = buildPlanSnapshot(freePlan);
+
+      const updateData = {
+        isSubscribed: false,
+        subscriptionStatus: "active",
+        cancellationReason: cancellationType,
+        planName: freePlan.name || "Free",
+        watermarkEnabled: true,
+      };
+
+      if (!isAlreadyOnFreePlan && !isSameDay) {
+        updateData.totalCredits = 4;
+        updateData.dailyCredits = 4;
+        updateData.imageGenerationCredits = 0;
+        updateData.promptGenerationCredits = 4;
+        updateData.usedImageCredits = 0;
+        updateData.usedPromptCredits = 0;
+        updateData.lastCreditReset = now;
+      }
+
+      await User.updateOne({ _id: userId }, { $set: updateData });
+
+      await UserSubscription.updateMany(
+        { userId: userId, isActive: true },
+        {
+          $set: {
+            isActive: true,
+            status: "cancelled",
+            autoRenew: false,
+            cancelledAt: now,
+            endDate: now,
+            lastUpdated: now,
+          },
+        }
+      );
+
+      if (!isAlreadyOnFreePlan) {
+        const newFreeSub = new UserSubscription({
+          userId,
+          planId: freePlan._id,
+          startDate: now,
+          endDate: now,
+          isTrial: false,
+          isActive: true,
+          paymentMethod: "system",
+          autoRenew: false,
+          status: "active",
+          planSnapshot: freeSnapshot,
+          lastUpdated: now,
+        });
+        await newFreeSub.save();
+      }
+    } catch (error) {
+      this.logError(`Failed to downgrade user ${userId}`, error);
+      throw error;
     }
-
-  } catch (error) {
-    this.logError(`Failed to downgrade user ${userId}`, error);
-    throw error;
   }
-}
-
 
   isInGracePeriod(expiryTime, isExpired) {
     if (isExpired) return false;
@@ -626,7 +710,9 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
   }
 
   async forceExpireSubscription(purchaseToken) {
-    const paymentRecord = await PaymentRecord.findOne({ receiptData: purchaseToken });
+    const paymentRecord = await PaymentRecord.findOne({
+      receiptData: purchaseToken,
+    });
     if (paymentRecord) {
       await this.compareAndUpdateLocalRecords(paymentRecord, {
         isCancelledOrExpired: true,
@@ -636,7 +722,7 @@ async downgradeToFreePlan(userId, cancellationType = "unknown") {
         expiryTime: new Date(),
         finalStatus: "cancelled",
         autoRenewing: false,
-        foundInPlayStore: true
+        foundInPlayStore: true,
       });
     }
   }
