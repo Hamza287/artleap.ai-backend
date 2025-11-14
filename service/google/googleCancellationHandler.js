@@ -243,7 +243,7 @@ class GoogleCancellationHandler {
     }
 
     const autoRenewing = lineItem.autoRenewingPlan?.autoRenewEnabled ?? false;
-    const isExpired = expiryTime ? expiryTime.getTime() < now.getTime() : true;
+    let isExpired = expiryTime ? expiryTime.getTime() < now.getTime() : true;
     const cancellationReason = lineItem.canceledReason;
     const userCancellationTime = lineItem.userCancellationTime
       ? new Date(lineItem.userCancellationTime)
