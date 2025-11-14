@@ -26,7 +26,7 @@ const getUserNotifications = async (req, res) => {
     }
 
     const user = await User.findById(userId).select('hiddenNotifications');
-  
+
     const hiddenNotifications = user?.hiddenNotifications || [];
 
     const hiddenIds = hiddenNotifications.map(id => {
@@ -40,12 +40,12 @@ const getUserNotifications = async (req, res) => {
           $and: [
             {
               $or: [
-                { userId: userId },      
-                { type: 'general' }  
+                { userId: userId },
+                { type: 'general' }
               ]
             },
-            { 
-              _id: { $nin: hiddenIds } 
+            {
+              _id: { $nin: hiddenIds }
             }
           ]
         }
@@ -57,7 +57,7 @@ const getUserNotifications = async (req, res) => {
         $project: {
           _id: 1,
           userId: 1,
-          type: 1,                      
+          type: 1,
           title: 1,
           body: 1,
           data: 1,
@@ -68,10 +68,11 @@ const getUserNotifications = async (req, res) => {
     ]);
 
     const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page: 1,
+      limit: Number.MAX_SAFE_INTEGER,
       sort: { createdAt: -1 }
     };
+
     const notifications = await Notification.aggregatePaginate(aggregate, options);
 
     res.status(200).json({
@@ -287,7 +288,7 @@ const createNotification = async (req, res) => {
       });
     } else {
       const tokens = await getDeviceTokens(userId);
-      
+
       if (tokens.length > 0) {
         await sendPushNotification(tokens, { title, body, data });
       }
