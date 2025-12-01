@@ -20,15 +20,21 @@ const imagePrivacyRoutes = require("./routers/image_privacy_route");
 const likeRoutes = require("./routers/like_routes");
 const commentRoutes = require("./routers/coment_routes");
 const savedImageRoutes = require("./routers/saved_image_routes");
+const { videoRouter } = require("./routers/video_router");
+const path = require("path");
 const os = require("os");
+const { promptRouter } = require("./routers/prompt_router");
 
 initializeFirebase();
 const app = express();
+app.use("/api/public/generated", express.static(path.join(__dirname, "public/generated")));
+
 const PORT = 8000;
 
 app.use(express.json());
 app.use(cors());
 
+app.use("/api", videoRouter);
 app.use("/api", authrouter);
 app.use("/api", imageRoutes);
 app.use("/api", favoriteRouter);
@@ -36,6 +42,7 @@ app.use("/api", followRouter);
 app.use("/api", userRoutes);
 app.use("/api", starryAiRouter);
 app.use("/api", leonardoRoutes);
+app.use("/api", promptRouter);
 app.use("/api", freePikTxtToImg);
 app.use("/api", imageActionRouter);
 app.use("/api", notificationRouter);
@@ -44,7 +51,6 @@ app.use("/api", imagePrivacyRoutes);
 app.use("/api", likeRoutes);
 app.use("/api", commentRoutes);
 app.use("/api", savedImageRoutes);
-
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/user-auth")
