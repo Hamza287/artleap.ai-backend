@@ -21,9 +21,10 @@ const likeRoutes = require("./routers/like_routes");
 const commentRoutes = require("./routers/coment_routes");
 const savedImageRoutes = require("./routers/saved_image_routes");
 const { videoRouter } = require("./routers/video_router");
-const path = require("path");
-const os = require("os");
 const { promptRouter } = require("./routers/prompt_router");
+const userPrefernces = require("./routers/userPreferencesRoutes");
+const os = require("os");
+const path = require("path");
 
 initializeFirebase();
 const app = express();
@@ -33,7 +34,6 @@ const PORT = 8000;
 
 app.use(express.json());
 app.use(cors());
-
 app.use("/api", videoRouter);
 app.use("/api", authrouter);
 app.use("/api", imageRoutes);
@@ -51,11 +51,12 @@ app.use("/api", imagePrivacyRoutes);
 app.use("/api", likeRoutes);
 app.use("/api", commentRoutes);
 app.use("/api", savedImageRoutes);
+app.use("/api", userPrefernces);
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/user-auth")
   .then(() => {
-      console.log("Mongo Connected Successfully");
+    console.log("Mongo Connected Successfully");
     SubscriptionService.initializeDefaultPlans();
     SubscriptionService.syncPlansWithGooglePlay();
     subscriptionService.syncPlansWithAppStore();

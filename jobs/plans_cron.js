@@ -5,6 +5,7 @@ const SubscriptionService = require("../service/subscriptionService");
 
 let isInitialized = false;
 let isRunning = false;
+let shutdownInProgress = false;
 
 const connectToMongoDB = async () => {
   const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/user-auth';
@@ -23,6 +24,10 @@ const connectToMongoDB = async () => {
 };
 
 const ensureConnection = async () => {
+  if (shutdownInProgress) {
+    throw new Error('Shutdown in progress');
+  }
+  
   if (mongoose.connection.readyState !== 1) {
     await connectToMongoDB();
   }
@@ -38,6 +43,10 @@ const ensureConnection = async () => {
 };
 
 const executeWithConnection = async (operation) => {
+  if (shutdownInProgress) {
+    return;
+  }
+  
   const isConnected = await ensureConnection();
   if (!isConnected) {
     throw new Error('Unable to establish MongoDB connection');
@@ -83,7 +92,7 @@ const cleanupOrphanedSubscriptions = async () => {
 };
 
 const runAllTasksOnce = async () => {
-  if (isRunning || !isInitialized) {
+  if (isRunning || !isInitialized || shutdownInProgress) {
     return;
   }
   
@@ -95,6 +104,10 @@ const runAllTasksOnce = async () => {
     await processGracePeriodSubscriptions();
     await syncAllSubscriptions();          
     await cleanupOrphanedSubscriptions();
+  } catch (error) {
+    if (!shutdownInProgress) {
+      console.error('Error in cron job:', error);
+    }
   } finally {
     isRunning = false;
   }
@@ -105,26 +118,51 @@ const initializeCron = async () => {
   isInitialized = true;
 };
 
-cron.schedule('* * * * *', runAllTasksOnce, {
+const cronTask = cron.schedule('* * * * *', runAllTasksOnce, {
   scheduled: true,
   timezone: "Asia/Karachi"
 });
 
 const gracefulShutdown = async (signal) => {
+  if (shutdownInProgress) {
+    return;
+  }
+  
+  shutdownInProgress = true;
   isInitialized = false;
   
-  if (mongoose.connection.readyState === 1) {
-    await mongoose.connection.close();
+  console.log(`Received ${signal}, shutting down gracefully...`);
+  
+  cronTask.stop();
+  
+  let waitCount = 0;
+  const maxWait = 30; 
+  while (isRunning && waitCount < maxWait) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    waitCount++;
   }
+  
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await mongoose.connection.close();
+      console.log('MongoDB connection closed.');
+    } catch (error) {
+      console.error('Error closing MongoDB connection:', error);
+    }
+  }
+  
+  console.log('Graceful shutdown completed.');
   process.exit(0);
 };
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
   gracefulShutdown('uncaughtException');
 });
-process.on('unhandledRejection', (reason) => {
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown('unhandledRejection');
 });
 

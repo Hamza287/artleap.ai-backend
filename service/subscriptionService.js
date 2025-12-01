@@ -6,7 +6,7 @@ const NotificationService = require("./subscription_services/notificationService
 const CreditManagement = require("./subscription_services/creditsManagement");
 const ApplePlanSync = require('./apple/applePlanSync');
 const GoogleCancellationHandler = require("./google/googleCancellationHandler");
-const AppleCancellationHandler = require("./plans_handlers/appleCancellationHandler");
+const AppleCancellationHandler = require("./apple/appleCancellationHandler");
 
 class SubscriptionService {
   constructor() {
@@ -21,14 +21,38 @@ class SubscriptionService {
     this.appleCancellationHandler = new AppleCancellationHandler();
   }
 
+  async fixSubscriptionDataIssues() {
+    try {
+      const nullEndDateFix = await this.subscriptionManagement.fixNullEndDates();
+      const orphanedCleanup = await this.subscriptionManagement.cleanupOrphanedSubscriptions();
+      
+      return {
+        success: true,
+        message: "Subscription data issues fixed successfully",
+        fixes: {
+          nullEndDates: nullEndDateFix,
+          orphanedSubscriptions: orphanedCleanup
+        }
+      };
+    } catch (error) {
+      console.error("[SubscriptionService] Error fixing subscription data issues:", error);
+      throw error;
+    }
+  }
+
   async checkAndHandleSubscriptionCancellations() {
     try {
-      await this.googleCancellationHandler.getAllSubscriptionsFromPlayStore();
-      await this.appleCancellationHandler.checkAllActiveAppleSubscriptions();
+      const googleResults = await this.googleCancellationHandler.getAllSubscriptionsFromPlayStore();
+      const appleResults = await this.appleCancellationHandler.getAllSubscriptionsFromAppStore();
       await this.subscriptionManagement.processExpiredSubscriptions();
       await this.subscriptionManagement.processGracePeriodSubscriptions();
       await this.syncAllSubscriptionStatus();
       await this.cleanupOrphanedSubscriptions();
+      
+      return {
+        google: googleResults,
+        apple: appleResults
+      };
     } catch (error) {
       console.error("[SubscriptionService] Error checking subscription cancellations:", error);
       throw error;
@@ -40,6 +64,11 @@ class SubscriptionService {
       const googleResults = await this.googleCancellationHandler.syncAllSubscriptionsWithPlayStore();
       const appleResults = await this.appleCancellationHandler.syncAllSubscriptionsWithAppStore();
       await this.subscriptionManagement.syncLocalSubscriptionStatus();
+      
+      return {
+        google: googleResults,
+        apple: appleResults
+      };
     } catch (error) {
       console.error("[SubscriptionService] Error syncing subscription status:", error);
       throw error;
@@ -48,8 +77,13 @@ class SubscriptionService {
 
   async cleanupOrphanedSubscriptions() {
     try {
-      await this.subscriptionManagement.cleanupOrphanedSubscriptions();
-      await this.paymentProcessing.cleanupOrphanedPaymentRecords();
+      const subscriptionCleanup = await this.subscriptionManagement.cleanupOrphanedSubscriptions();
+      const paymentCleanup = await this.paymentProcessing.cleanupOrphanedPaymentRecords();
+      
+      return {
+        subscriptionCleanup,
+        paymentCleanup
+      };
     } catch (error) {
       console.error("[SubscriptionService] Error cleaning up orphaned subscriptions:", error);
       throw error;
@@ -93,6 +127,8 @@ class SubscriptionService {
       }
       
       await this.subscriptionManagement.verifyUserSubscriptionStatus(userId);
+      
+      return await this.getUserActiveSubscription(userId);
     } catch (error) {
       console.error("[SubscriptionService] Error force syncing user subscription:", error);
       throw error;
@@ -101,7 +137,7 @@ class SubscriptionService {
 
   async syncPlansWithGooglePlay() {
     try {
-      await this.planSync.syncPlansWithGooglePlay();
+      return await this.planSync.syncPlansWithGooglePlay();
     } catch (error) {
       console.error("[SubscriptionService] syncPlansWithGooglePlay failed:", error);
       throw error;
@@ -110,7 +146,7 @@ class SubscriptionService {
 
   async syncPlansWithAppStore() {
     try {
-      await this.applePlanSync.syncPlansWithAppStore();
+      return await this.applePlanSync.syncPlansWithAppStore();
     } catch (error) {
       console.error('[SubscriptionService] syncPlansWithAppStore failed:', error);
       throw error;
@@ -119,7 +155,7 @@ class SubscriptionService {
 
   async initializeDefaultPlans() {
     try {
-      await this.planManagement.initializeDefaultPlans();
+      return await this.planManagement.initializeDefaultPlans();
     } catch (error) {
       console.error("[SubscriptionService] initializeDefaultPlans failed:", error);
       throw error;
@@ -198,7 +234,7 @@ class SubscriptionService {
 
   async processExpiredSubscriptions() {
     try {
-      await this.subscriptionManagement.processExpiredSubscriptions();
+      return await this.subscriptionManagement.processExpiredSubscriptions();
     } catch (error) {
       console.error("[SubscriptionService] processExpiredSubscriptions failed:", error);
       throw error;
@@ -259,6 +295,39 @@ class SubscriptionService {
       return subscription;
     } catch (error) {
       console.error("[SubscriptionService] startFreeTrial failed:", error);
+      throw error;
+    }
+  }
+
+  async forceExpireGoogleSubscription(purchaseToken) {
+    try {
+      return await this.googleCancellationHandler.forceExpireSubscription(purchaseToken);
+    } catch (error) {
+      console.error("[SubscriptionService] Error force expiring Google subscription:", error);
+      throw error;
+    }
+  }
+
+  async forceExpireAppleSubscription(transactionId) {
+    try {
+      return await this.appleCancellationHandler.forceExpireSubscription(transactionId);
+    } catch (error) {
+      console.error("[SubscriptionService] Error force expiring Apple subscription:", error);
+      throw error;
+    }
+  }
+
+  async getSubscriptionStats() {
+    try {
+      const googleStats = await this.googleCancellationHandler.getSubscriptionStats();
+      const appleStats = await this.appleCancellationHandler.getSubscriptionStats();
+      
+      return {
+        google: googleStats,
+        apple: appleStats
+      };
+    } catch (error) {
+      console.error("[SubscriptionService] Error getting subscription stats:", error);
       throw error;
     }
   }
