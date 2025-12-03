@@ -297,8 +297,7 @@ const deleteAccount = async (req, res) => {
     });
 
     if (
-      activePaidSubscription &&
-      activePaidSubscription.planId?.type !== "free"
+      activePaidSubscription
     ) {
       return res.status(400).json({
         message:
