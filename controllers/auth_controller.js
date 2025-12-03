@@ -289,15 +289,11 @@ const deleteAccount = async (req, res) => {
       });
     }
 
-    const activePaidSubscription = await UserSubscription.findOne({
-      userId,
-    }).populate({
-      path: "planId",
-      match: { type: { $ne: "free" } },
-    });
+    const activeSubscription = await UserSubscription.findOne({ userId });
 
     if (
-      activePaidSubscription
+      activeSubscription &&
+      activeSubscription.planSnapshot?.type !== "free"
     ) {
       return res.status(400).json({
         message:
