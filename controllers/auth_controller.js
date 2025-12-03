@@ -285,7 +285,7 @@ const deleteAccount = async (req, res) => {
     if (user.planType !== "free") {
       return res.status(400).json({
         message:
-          "You must cancel your active subscription before deleting your account",
+          "You must cancel your active subscription before deleting your account 1",
       });
     }
 
@@ -297,7 +297,7 @@ const deleteAccount = async (req, res) => {
     ) {
       return res.status(400).json({
         message:
-          "You must cancel your active subscription before deleting your account",
+          "You must cancel your active subscription before deleting your account 2",
       });
     }
 
