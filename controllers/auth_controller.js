@@ -282,7 +282,7 @@ const deleteAccount = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.planType !== "free") {
+    if (user.planName !== "Free") {
       return res.status(400).json({
         message:
           "You must cancel your active subscription before deleting your account 1",
