@@ -2,13 +2,9 @@ const axios = require("axios");
 const mongoose = require("mongoose");
 const ImageModel = require("../models/image_model");
 const User = require("../models/user");
-const {
-  uploadImageToS3,
-  saveImageToDatabase,
-} = require("../utils/image_utils");
+const { uploadImageToS3, saveImageToDatabase } = require("../utils/image_utils");
 const SubscriptionService = require("../service/subscriptionService");
 const HistoryService = require("./../service/userHistoryService");
-
 require("dotenv").config();
 
 const FREEPIK_API_URL = process.env.FREEPIK_API_URL;
@@ -21,7 +17,7 @@ const generateTextToImage = async (req, res) => {
       username,
       creatorEmail,
       prompt,
-      presetStyle = "photo",
+      presetStyle = "neutral",
       aspectRatio = "square_1_1",
       num_images = 1,
       privacy = "public"
@@ -60,18 +56,13 @@ const generateTextToImage = async (req, res) => {
 
     const freepikRequestBody = {
       guidance_scale: 1,
-      image: { size: aspectRatio },
       num_images,
-      prompt,
-      negative_prompt:
-        "bad quality,b&w, earth, cartoon, ugly, lowres, blurry, out of focus",
+      image: { size: aspectRatio },
+      prompt: prompt,
+      negative_prompt: "low quality, blurry",
       styling: {
         style: presetStyle,
-        effects: {
-          color: "pastel",
-          lightning: "warm",
-          framing: "portrait",
-        },
+        effects: {}
       },
       seed: 0,
       filter_nsfw: true,
@@ -85,6 +76,7 @@ const generateTextToImage = async (req, res) => {
     });
 
     const imageDataArray = response?.data?.data || [];
+
     if (imageDataArray.length === 0) {
       return res.status(500).json({
         error: "❌ No image data received from Freepik API",
@@ -139,10 +131,7 @@ const generateTextToImage = async (req, res) => {
       images: savedImages,
     });
   } catch (error) {
-    console.error(
-      "❌ Freepik API Error:",
-      error?.response?.data || error.message
-    );
+    console.error("❌ Freepik API Error:", error?.response?.data || error.message);
     return res.status(error?.response?.status || 500).json({
       error: "Failed to generate image",
       details: error.message,
