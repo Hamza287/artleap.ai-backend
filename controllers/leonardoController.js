@@ -23,7 +23,7 @@ const generateTextToImage = async (req, res) => {
       width = 1024,
       modelId = 'b24e16ff-06e3-43eb-8d33-4416c2d75876',
       num_images = 1,
-      presetStyle = 'CREATIVE',
+      presetStyle = 'NONE',
       userId,
       username,
       creatorEmail,
@@ -34,24 +34,15 @@ const generateTextToImage = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields (prompt, userId, username).' });
     }
 
-    // const generationType = "prompt";
-    // const limits = await SubscriptionService.checkGenerationLimits(userId, generationType);
-
-    // if (!limits.allowed) {
-    //   return res.status(403).json({ 
-    //     error: "Generation limit reached",
-    //     details: limits 
-    //   });
-    // }
-
     const genRes = await axios.post(`${LEONARDO_BASE_URL}/generations`, {
       prompt,
       height,
       width,
       modelId,
       num_images,
-      presetStyle,
-      alchemy: true
+      presetStyle: "NONE",
+      alchemy: true,
+      negative_prompt: "low quality, blurry"
     }, {
       headers: {
         Authorization: `Bearer ${LEONARDO_API_KEY}`,
@@ -98,7 +89,7 @@ const generateTextToImage = async (req, res) => {
         imageUrl: s3Url,
         creatorEmail,
         username,
-        presetStyle,
+        presetStyle: "NONE",
         prompt,
         createdAt: new Date().toISOString(),
         privacy
@@ -123,14 +114,14 @@ const generateTextToImage = async (req, res) => {
       }
     }
 
-    await SubscriptionService.recordGenerationUsage(userId, generationType,num_images);
+    await SubscriptionService.recordGenerationUsage(userId, "prompt", num_images);
     await HistoryService.recordImageGeneration(userId, 'byPrompt');
     await HistoryService.updateCreditUsage(userId);
 
     return res.status(200).json({
       generationId,
       prompt,
-      presetStyle,
+      presetStyle: "NONE",
       images: uploadedImageDocs
     });
 
@@ -160,19 +151,9 @@ const generateImagetoImage = async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields (image, prompt, userId, username).' });
     }
 
-    const generationType = "image";
-    const limits = await SubscriptionService.checkGenerationLimits(userId, generationType);
-
-    if (!limits.allowed) {
-      return res.status(403).json({ 
-        error: "Generation limit reached",
-        details: limits 
-      });
-    }
-
     const styleKey = presetStyle.toUpperCase();
     const styleConfig = styleMap[styleKey] || styleMap['CINEMATIC'];
-    const finalPrompt = `${prompt}, ${styleConfig.promptBoost}`;
+    const finalPrompt = prompt;
 
     const imagePath = path.join(__dirname, '..', 'Uploads', image.filename);
     const imageBuffer = fs.readFileSync(imagePath);
@@ -205,7 +186,7 @@ const generateImagetoImage = async (req, res) => {
       prompt: finalPrompt,
       presetStyle,
       num_images: parseInt(num_images),
-      negative_prompt: "b&w, earth, cartoon, ugly,mutated hands,mutated foots, not recognizing the prompt,opposite gender, cross-gender, gender swap, genderbent, feminine, masculine, long hair, short hair, beard, breasts, lipstick, makeup, earrings, jewelry",
+      negative_prompt: "low quality, blurry",
       alchemy: true,
       init_image_id: initImageId,
       init_strength: 0.5,
@@ -293,7 +274,7 @@ const generateImagetoImage = async (req, res) => {
 
     fs.unlinkSync(imagePath);
 
-    await SubscriptionService.recordGenerationUsage(userId, generationType,num_images);
+    await SubscriptionService.recordGenerationUsage(userId, "image", num_images);
     await HistoryService.recordImageGeneration(userId, 'byImage');
     await HistoryService.updateCreditUsage(userId);
 
