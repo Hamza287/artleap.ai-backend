@@ -609,7 +609,7 @@ class AppleCancellationHandler {
       await User.updateOne({ _id: userId }, { $set: updateData });
 
       await UserSubscription.updateMany(
-        { userId: userId, isActive: true },
+        { userId: userId},
         {
           $set: {
             isActive: true,
