@@ -23,6 +23,7 @@ const savedImageRoutes = require("./routers/saved_image_routes");
 const { videoRouter } = require("./routers/video_router");
 const { promptRouter } = require("./routers/prompt_router");
 const userPrefernces = require("./routers/userPreferencesRoutes");
+const rewardedAds = require('./routers/rewarded_Ad_routes');
 const os = require("os");
 const path = require("path");
 
@@ -52,6 +53,7 @@ app.use("/api", likeRoutes);
 app.use("/api", commentRoutes);
 app.use("/api", savedImageRoutes);
 app.use("/api", userPrefernces);
+app.use("/api/rewarded_ads",rewardedAds)
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/user-auth")
