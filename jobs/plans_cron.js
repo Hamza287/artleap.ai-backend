@@ -127,15 +127,12 @@ const initializeCron = async () => {
   isInitialized = true;
 };
 
-// Schedule the main cron job to run every minute
 const cronTask = cron.schedule('* * * * *', runAllTasksOnce, {
   scheduled: true,
   timezone: "Asia/Karachi"
 });
 
-// Keep the daily reset at midnight for backward compatibility
 cron.schedule("0 0 * * *", async () => {
-  console.log('Running daily credit reset...');
   await resetUserCredits();
 }, {
   timezone: "Asia/Karachi"
@@ -148,8 +145,6 @@ const gracefulShutdown = async (signal) => {
   
   shutdownInProgress = true;
   isInitialized = false;
-  
-  console.log(`Received ${signal}, shutting down gracefully...`);
   
   cronTask.stop();
   
