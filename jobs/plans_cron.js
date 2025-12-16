@@ -2,6 +2,7 @@ require('dotenv').config();
 const cron = require('node-cron');
 const mongoose = require('mongoose');
 const SubscriptionService = require("../service/subscriptionService");
+const resetFreeUserCredits = require("./../controllers/freeCreditsReset");
 
 let isInitialized = false;
 let isRunning = false;
@@ -91,6 +92,13 @@ const cleanupOrphanedSubscriptions = async () => {
   );
 };
 
+// New function to reset user credits
+const resetUserCredits = async () => {
+  await executeWithConnection(async () => {
+    await resetFreeUserCredits();
+  });
+};
+
 const runAllTasksOnce = async () => {
   if (isRunning || !isInitialized || shutdownInProgress) {
     return;
@@ -104,6 +112,7 @@ const runAllTasksOnce = async () => {
     await processGracePeriodSubscriptions();
     await syncAllSubscriptions();          
     await cleanupOrphanedSubscriptions();
+    await resetUserCredits();              // Add credit reset here
   } catch (error) {
     if (!shutdownInProgress) {
       console.error('Error in cron job:', error);
@@ -118,8 +127,17 @@ const initializeCron = async () => {
   isInitialized = true;
 };
 
+// Schedule the main cron job to run every minute
 const cronTask = cron.schedule('* * * * *', runAllTasksOnce, {
   scheduled: true,
+  timezone: "Asia/Karachi"
+});
+
+// Keep the daily reset at midnight for backward compatibility
+cron.schedule("0 0 * * *", async () => {
+  console.log('Running daily credit reset...');
+  await resetUserCredits();
+}, {
   timezone: "Asia/Karachi"
 });
 
@@ -175,5 +193,6 @@ module.exports = {
   processGracePeriodSubscriptions,
   syncAllSubscriptions,
   cleanupOrphanedSubscriptions,
+  resetUserCredits,  // Export the new function
   runAllTasksOnce
 };
